@@ -1,6 +1,6 @@
 # ampere
 
-Tooling to track and visualize engagement with the [mrpowers-io]() organization
+Tooling to track and visualize engagement with the [mrpowers-io](https://github.com/mrpowers-io) organization
 
 ---
 
