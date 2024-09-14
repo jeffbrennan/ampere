@@ -1,20 +1,24 @@
-import requests
-import dotenv
-from sqlmodel import SQLModel
-import os
-import json
 import datetime
+import json
+import os
+
+import dotenv
+import requests
+from sqlmodel import SQLModel
 
 
 class StarInfo(SQLModel):
     user_id: int
     user_name: str
     user_avatar_link: str
-    timestamp: datetime.datetime
+    starred_at: datetime.datetime
+    retrieved_at: datetime.datetime
+
 
 class Repo(SQLModel):
     repo_id: str
     repo_name: str
+
 
 def get_token(secret_name: str) -> str:
     dotenv.load_dotenv()
@@ -30,8 +34,8 @@ def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
         f"https://api.github.com/repos/{owner_name}/{repo_name}/stargazers?per_page=100"
     )
     headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f'Bearer {os.environ.get("GITHUB_TOKEN")}',
+        "Accept": "application/vnd.github.star+json",
+        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
         "X-GitHub-Api-Version": "2022-11-28",
     }
 
@@ -41,12 +45,13 @@ def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
 
     output = [
         StarInfo(
-            user_id=user["id"],
-            user_name=user["login"],
-            user_avatar_link=user["avatar_url"],
-            timestamp=datetime.datetime.now(),
+            user_id=result['user']["id"],
+            user_name=result['user']["login"],
+            user_avatar_link=result['user']["avatar_url"],
+            starred_at=datetime.datetime.strptime(result['starred_at'], "%Y-%m-%dT%H:%M:%SZ"),
+            retrieved_at=datetime.datetime.now()
         )
-        for user in json.loads(response.content)
+        for result in json.loads(response.content)
     ]
     if "next" not in response.links:
         return output
@@ -59,14 +64,15 @@ def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
         response = requests.get(response.links["next"]["url"], headers=headers)
         if response.status_code != 200:
             raise ValueError(response.status_code)
-        users = json.loads(response.content)
-        for user in users:
+        results = json.loads(response.content)
+        for result in results:
             output.append(
                 StarInfo(
-                    user_id=user["id"],
-                    user_name=user["login"],
-                    user_avatar_link=user["avatar_url"],
-                    timestamp=datetime.datetime.now(),
+                    user_id=result['user']["id"],
+                    user_name=result['user']["login"],
+                    user_avatar_link=result['user']["avatar_url"],
+                    starred_at=datetime.datetime.strptime(result['starred_at'], "%Y-%m-%dT%H:%M:%SZ"),
+                    retrieved_at=datetime.datetime.now()
                 )
             )
         pages_checked += 1
@@ -74,11 +80,13 @@ def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
 
     return output
 
+
 def get_repos(owner_name: str) -> list[Repo]:
     """
     get repos in org
     """
     raise NotImplementedError()
+
 
 def main():
     repo_name = "quinn"
