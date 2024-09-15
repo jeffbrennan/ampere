@@ -12,6 +12,9 @@ sqlmodel = "^0.0.22"
 requests = "^2.32.3"
 ruff-lsp = "^0.0.56"
 pyright = "^1.1.380"
+polars = "^1.7.1"
+deltalake = "^0.19.2"
+pandas = "^2.2.2"
 
 
 [build-system]
