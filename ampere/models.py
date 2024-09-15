@@ -29,3 +29,10 @@ class Repo(SQLModel):
     created_at: datetime.datetime
     updated_at: datetime.datetime
     retrieved_at: datetime.datetime
+
+
+class ForkInfo(SQLModel):
+    owner_id: int
+    owner_name: str
+    fork_id: int
+    retrieved_at: datetime.datetime
