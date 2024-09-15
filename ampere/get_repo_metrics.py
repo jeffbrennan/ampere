@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 from pathlib import Path
+from typing import Optional
 
 import dotenv
 import pandas as pd
@@ -19,8 +20,20 @@ class StarInfo(SQLModel):
 
 
 class Repo(SQLModel):
-    repo_id: str
+    repo_id: int
     repo_name: str
+    license: Optional[dict[str, str]] = None
+    topics: list[str]
+    language: Optional[str] = None
+    size: int
+    forks_count: int
+    watchers_count: int
+    stargazers_count: int
+    open_issues_count: int
+    pushed_at: datetime.datetime
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    retrieved_at: datetime.datetime
 
 
 def get_token(secret_name: str) -> str:
@@ -115,25 +128,59 @@ def write_star_info(stars: list[StarInfo]) -> None:
     print(merge_results)
 
 
-def get_repos(owner_name: str) -> list[Repo]:
+def get_repos(org_name: str) -> list[Repo]:
     """
     get repos in org
     """
-    raise NotImplementedError()
+    url = (f"https://api.github.com/orgs/{org_name}/repos")
+
+    headers = {
+        "Accept": "application/vnd.github.star+json",
+        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise ValueError(response.status_code)
+    output = []
+    results = json.loads(response.content)
+    for result in results:
+        output.append(
+            Repo(
+                repo_id=result['id'],
+                repo_name=result['name'],
+                license=result['license'],
+                topics=result['topics'],
+                language=result['language'],
+                size=result['size'],
+                forks_count=result['forks_count'],
+                watchers_count=result['watchers_count'],
+                stargazers_count=result['stargazers_count'],
+                open_issues_count=result['open_issues_count'],
+                pushed_at=datetime.datetime.strptime(result['pushed_at'], "%Y-%m-%dT%H:%M:%SZ"),
+                created_at=datetime.datetime.strptime(result['created_at'], "%Y-%m-%dT%H:%M:%SZ"),
+                updated_at=datetime.datetime.strptime(result['updated_at'], "%Y-%m-%dT%H:%M:%SZ"),
+                retrieved_at=get_current_time(),
+            )
+        )
+    return output
 
 
 def main():
     owner_name = "mrpowers-io"
     repos = ["quinn"]
-    repo_stars = []
-    for i, repo in enumerate(repos, 1):
-        print(f"{i}/{len(repos)} - {repo}")
+    repos = get_repos(owner_name)
+    print(repos)
+    # repo_stars = []
+    # for i, repo in enumerate(repos, 1):
+    #     print(f"{i}/{len(repos)} - {repo}")
+    #
+    #     results = get_repo_stars(owner_name, repo)
+    #     print(f"obtained {len(results)} stars for {repo}")
+    #     repo_stars.extend(results)
 
-        results = get_repo_stars(owner_name, repo)
-        print(f"obtained {len(results)} stars for {repo}")
-        repo_stars.extend(results)
-
-    write_star_info(repo_stars)
+    # write_star_info(repo_stars)
 
 
 if __name__ == "__main__":
