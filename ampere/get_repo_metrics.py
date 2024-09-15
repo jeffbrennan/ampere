@@ -1,9 +1,12 @@
 import datetime
 import json
 import os
+from pathlib import Path
 
 import dotenv
+import pandas as pd
 import requests
+from deltalake import DeltaTable
 from sqlmodel import SQLModel
 
 
@@ -28,6 +31,11 @@ def get_token(secret_name: str) -> str:
     return token
 
 
+def get_current_time() -> datetime.datetime:
+    current_time = datetime.datetime.now()
+    return datetime.datetime.strptime(current_time.isoformat(timespec='seconds'), "%Y-%m-%dT%H:%M:%S")
+
+
 def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
     # https://docs.github.com/en/rest/activity/starring?apiVersion=2022-11-28
     url = (
@@ -49,7 +57,7 @@ def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
             user_name=result['user']["login"],
             user_avatar_link=result['user']["avatar_url"],
             starred_at=datetime.datetime.strptime(result['starred_at'], "%Y-%m-%dT%H:%M:%SZ"),
-            retrieved_at=datetime.datetime.now()
+            retrieved_at=get_current_time(),
         )
         for result in json.loads(response.content)
     ]
@@ -72,13 +80,39 @@ def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
                     user_name=result['user']["login"],
                     user_avatar_link=result['user']["avatar_url"],
                     starred_at=datetime.datetime.strptime(result['starred_at'], "%Y-%m-%dT%H:%M:%SZ"),
-                    retrieved_at=datetime.datetime.now()
+                    retrieved_at=get_current_time()
                 )
             )
         pages_checked += 1
         requests_finished = "next" not in response.links
 
     return output
+
+
+def write_star_info(stars: list[StarInfo]) -> None:
+    data_dir = Path(__file__).parents[1] / "data" / "bronze"
+    table_path = data_dir / "github_stars"
+
+    df = pd.DataFrame.from_records([vars(i) for i in stars])
+    delta_log_dir = table_path / "_delta_log"
+    if not delta_log_dir.exists():
+        table_path.mkdir(exist_ok=True, parents=True)
+        df.write_delta(table_path, mode="error")
+        return
+
+    delta_table = DeltaTable(table_path)
+    merge_results = (
+        delta_table
+        .merge(df,
+               predicate="s.user_id = t.user_id",
+               source_alias="s",
+               target_alias="t", )
+        .when_matched_update_all()
+        .when_not_matched_insert_all()
+        .when_not_matched_by_source_delete()
+        .execute()
+    )
+    print(merge_results)
 
 
 def get_repos(owner_name: str) -> list[Repo]:
@@ -89,9 +123,17 @@ def get_repos(owner_name: str) -> list[Repo]:
 
 
 def main():
-    repo_name = "quinn"
-    repo_stars = get_repo_stars("mrpowers-io", repo_name)
-    print(f"obtained {len(repo_stars)} stars for {repo_name}")
+    owner_name = "mrpowers-io"
+    repos = ["quinn"]
+    repo_stars = []
+    for i, repo in enumerate(repos, 1):
+        print(f"{i}/{len(repos)} - {repo}")
+
+        results = get_repo_stars(owner_name, repo)
+        print(f"obtained {len(results)} stars for {repo}")
+        repo_stars.extend(results)
+
+    write_star_info(repo_stars)
 
 
 if __name__ == "__main__":
