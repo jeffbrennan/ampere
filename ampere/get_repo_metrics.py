@@ -11,10 +11,10 @@ from ampere.common import (
     write_delta_table,
     DeltaWriteConfig,
 )
-from ampere.models import Repo, Fork, Stargazer
+from ampere.models import Repo, Fork, Stargazer, Release
 
 
-def get_fork_info(owner_name: str, repo_name: str) -> list[Fork]:
+def get_forks(owner_name: str, repo_name: str) -> list[Fork]:
     print("getting forks...")
     # https://docs.github.com/en/rest/activity/starring?apiVersion=2022-11-28
     url = f"https://api.github.com/repos/{owner_name}/{repo_name}/forks?per_page=100"
@@ -24,30 +24,17 @@ def get_fork_info(owner_name: str, repo_name: str) -> list[Fork]:
         "X-GitHub-Api-Version": "2022-11-28",
     }
 
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        raise ValueError(response.status_code)
-
-    output = [
-        Fork(
-            fork_id=result["id"],
-            owner_id=result["owner"]["id"],
-            retrieved_at=get_current_time(),
-        )
-        for result in json.loads(response.content)
-    ]
-    if "next" not in response.links:
-        return output
-
+    output = []
     requests_finished = False
     max_pages = 10
-    pages_checked = 1
+    pages_checked = 0
+
+    response = requests.get(url, headers=headers)
     while not requests_finished and pages_checked < max_pages:
-        print(f"n={len(output)}")
-        response = requests.get(response.links["next"]["url"], headers=headers)
         if response.status_code != 200:
             raise ValueError(response.status_code)
         results = json.loads(response.content)
+
         for result in results:
             output.append(
                 Fork(
@@ -56,13 +43,16 @@ def get_fork_info(owner_name: str, repo_name: str) -> list[Fork]:
                     retrieved_at=get_current_time(),
                 )
             )
+
         pages_checked += 1
+        print(f"n={len(output)}")
         requests_finished = "next" not in response.links
+        response = requests.get(response.links["next"]["url"], headers=headers)
 
     return output
 
 
-def get_repo_stargazers(owner_name: str, repo_name: str) -> list[Stargazer]:
+def get_stargazers(owner_name: str, repo_name: str) -> list[Stargazer]:
     # https://docs.github.com/en/rest/activity/starring?apiVersion=2022-11-28
     print("getting stargazers...")
     url = f"https://api.github.com/repos/{owner_name}/{repo_name}/stargazers?per_page=100"
@@ -73,31 +63,17 @@ def get_repo_stargazers(owner_name: str, repo_name: str) -> list[Stargazer]:
     }
 
     response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        raise ValueError(response.status_code)
 
-    output = [
-        Stargazer(
-            user_id=result["user"]["id"],
-            starred_at=datetime.datetime.strptime(
-                result["starred_at"], "%Y-%m-%dT%H:%M:%SZ"
-            ),
-            retrieved_at=get_current_time(),
-        )
-        for result in json.loads(response.content)
-    ]
-    if "next" not in response.links:
-        return output
-
+    output = []
     requests_finished = False
     max_pages = 10
-    pages_checked = 1
+    pages_checked = 0
+
     while not requests_finished and pages_checked < max_pages:
-        print(f"n={len(output)}")
-        response = requests.get(response.links["next"]["url"], headers=headers)
         if response.status_code != 200:
             raise ValueError(response.status_code)
         results = json.loads(response.content)
+
         for result in results:
             output.append(
                 Stargazer(
@@ -108,8 +84,11 @@ def get_repo_stargazers(owner_name: str, repo_name: str) -> list[Stargazer]:
                     retrieved_at=get_current_time(),
                 )
             )
+
         pages_checked += 1
+        print(f"n={len(output)}")
         requests_finished = "next" not in response.links
+        response = requests.get(response.links["next"]["url"], headers=headers)
 
     return output
 
@@ -131,6 +110,7 @@ def get_repos(org_name: str) -> list[Repo]:
         raise ValueError(response.status_code)
     output = []
     results = json.loads(response.content)
+
     for result in results:
         output.append(
             Repo(
@@ -139,7 +119,7 @@ def get_repos(org_name: str) -> list[Repo]:
                 license=result["license"],
                 topics=result["topics"],
                 language=result["language"],
-                size=result["size"],
+                repo_size=result["size"],
                 forks_count=result["forks_count"],
                 watchers_count=result["watchers_count"],
                 stargazers_count=result["stargazers_count"],
@@ -156,6 +136,50 @@ def get_repos(org_name: str) -> list[Repo]:
                 retrieved_at=get_current_time(),
             )
         )
+
+    return output
+
+
+def get_releases(owner_name: str, repo_name: str) -> list[Release]:
+    print("getting releases...")
+    url = f"https://api.github.com/repos/{owner_name}/{repo_name}/releases?per_page=100"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+
+    output = []
+    requests_finished = False
+    max_pages = 10
+    pages_checked = 0
+
+    response = requests.get(url, headers=headers)
+    while not requests_finished and pages_checked < max_pages:
+        if response.status_code != 200:
+            raise ValueError(response.status_code)
+        results = json.loads(response.content)
+        for result in results:
+            output.append(
+                Release(
+                    release_id=result["id"],
+                    release_name=result["name"],
+                    tag_name=result["tag_name"],
+                    release_body=result["body"],
+                    release_state=result["state"],
+                    release_size=result["size"],
+                    download_count=result["download_count"],
+                    created_at=result["created_at"],
+                    published_at=result["published_at"],
+                    retrieved_at=get_current_time(),
+                )
+            )
+
+        pages_checked += 1
+        print(f"n={len(output)}")
+        requests_finished = "next" not in response.links
+        response = requests.get(response.links["next"]["url"], headers=headers)
+
     return output
 
 
@@ -189,7 +213,7 @@ def main():
             table_name=str(Fork.__tablename__),
             pk="fork_id",
         ),
-        get_fork_info,
+        get_forks,
     )
     refresh_github_table(
         owner_name,
@@ -199,7 +223,7 @@ def main():
             table_name=str(Stargazer.__tablename__),
             pk="user_id",
         ),
-        get_repo_stargazers,
+        get_stargazers,
     )
 
 
