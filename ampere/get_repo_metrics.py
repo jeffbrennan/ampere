@@ -1,56 +1,10 @@
 import datetime
 import json
-import os
-from pathlib import Path
-from typing import Optional, TypeVar
 
-import dotenv
-import pandas as pd
 import requests
-from deltalake import DeltaTable, write_deltalake
-from sqlmodel import SQLModel
 
-from ampere.common import create_header
-
-SQLModelType = TypeVar("SQLModelType", bound=SQLModel)
-
-
-class StarInfo(SQLModel):
-    user_id: int
-    user_name: str
-    user_avatar_link: str
-    starred_at: datetime.datetime
-    retrieved_at: datetime.datetime
-
-
-class Repo(SQLModel):
-    repo_id: int
-    repo_name: str
-    license: Optional[dict[str, str]] = None
-    topics: list[str]
-    language: Optional[str] = None
-    size: int
-    forks_count: int
-    watchers_count: int
-    stargazers_count: int
-    open_issues_count: int
-    pushed_at: datetime.datetime
-    created_at: datetime.datetime
-    updated_at: datetime.datetime
-    retrieved_at: datetime.datetime
-
-
-def get_token(secret_name: str) -> str:
-    dotenv.load_dotenv()
-    token = os.environ.get(secret_name)
-    if token is None:
-        raise ValueError()
-    return token
-
-
-def get_current_time() -> datetime.datetime:
-    current_time = datetime.datetime.now()
-    return datetime.datetime.strptime(current_time.isoformat(timespec='seconds'), "%Y-%m-%dT%H:%M:%S")
+from ampere.common import create_header, get_token, get_current_time, write_delta_table
+from ampere.models import StarInfo, Repo
 
 
 def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
@@ -107,38 +61,11 @@ def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
     return output
 
 
-def write_delta_table(records: list[SQLModelType], table_dir: str, table_name: str, pk: str) -> None:
-    data_dir = Path(__file__).parents[1] / "data" / table_dir
-    table_path = data_dir / table_name
-
-    df = pd.DataFrame.from_records([vars(i) for i in records])
-    delta_log_dir = table_path / "_delta_log"
-    print(f"writing {len(records)} to {table_path}...")
-    if not delta_log_dir.exists():
-        table_path.mkdir(exist_ok=True, parents=True)
-        write_deltalake(table_path, df, mode="error")
-        return
-
-    delta_table = DeltaTable(table_path)
-    merge_results = (
-        delta_table
-        .merge(df,
-               predicate=f"s.{pk} = t.{pk}",
-               source_alias="s",
-               target_alias="t", )
-        .when_matched_update_all()
-        .when_not_matched_insert_all()
-        .when_not_matched_by_source_delete()
-        .execute()
-    )
-    print(merge_results)
-
-
 def get_repos(org_name: str) -> list[Repo]:
     """
     get repos in org
     """
-    url = (f"https://api.github.com/orgs/{org_name}/repos")
+    url = f"https://api.github.com/orgs/{org_name}/repos"
 
     headers = {
         "Accept": "application/vnd.github.star+json",
