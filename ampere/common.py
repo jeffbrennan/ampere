@@ -1,5 +1,6 @@
 import datetime
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 import dotenv
@@ -7,6 +8,13 @@ import pandas as pd
 from deltalake import write_deltalake, DeltaTable
 
 from ampere.models import SQLModelType
+
+
+@dataclass
+class DeltaWriteConfig:
+    table_dir: str
+    table_name: str
+    pk: str
 
 
 def create_header(header_length: int, title: str, center: bool, spacer: str):

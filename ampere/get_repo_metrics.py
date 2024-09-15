@@ -1,6 +1,5 @@
 import datetime
 import json
-from dataclasses import dataclass
 from typing import Callable
 
 import requests
@@ -10,11 +9,12 @@ from ampere.common import (
     get_token,
     get_current_time,
     write_delta_table,
+    DeltaWriteConfig,
 )
-from ampere.models import StarInfo, Repo, ForkInfo
+from ampere.models import Repo, Fork, Stargazer
 
 
-def get_fork_info(owner_name: str, repo_name: str) -> list[ForkInfo]:
+def get_fork_info(owner_name: str, repo_name: str) -> list[Fork]:
     print("getting forks...")
     # https://docs.github.com/en/rest/activity/starring?apiVersion=2022-11-28
     url = f"https://api.github.com/repos/{owner_name}/{repo_name}/forks?per_page=100"
@@ -29,10 +29,9 @@ def get_fork_info(owner_name: str, repo_name: str) -> list[ForkInfo]:
         raise ValueError(response.status_code)
 
     output = [
-        ForkInfo(
+        Fork(
             fork_id=result["id"],
             owner_id=result["owner"]["id"],
-            owner_name=result["owner"]["login"],
             retrieved_at=get_current_time(),
         )
         for result in json.loads(response.content)
@@ -51,10 +50,9 @@ def get_fork_info(owner_name: str, repo_name: str) -> list[ForkInfo]:
         results = json.loads(response.content)
         for result in results:
             output.append(
-                ForkInfo(
+                Fork(
                     fork_id=result["id"],
                     owner_id=result["owner"]["id"],
-                    owner_name=result["owner"]["login"],
                     retrieved_at=get_current_time(),
                 )
             )
@@ -64,9 +62,9 @@ def get_fork_info(owner_name: str, repo_name: str) -> list[ForkInfo]:
     return output
 
 
-def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
+def get_repo_stargazers(owner_name: str, repo_name: str) -> list[Stargazer]:
     # https://docs.github.com/en/rest/activity/starring?apiVersion=2022-11-28
-    print("getting stars...")
+    print("getting stargazers...")
     url = f"https://api.github.com/repos/{owner_name}/{repo_name}/stargazers?per_page=100"
     headers = {
         "Accept": "application/vnd.github.star+json",
@@ -79,10 +77,8 @@ def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
         raise ValueError(response.status_code)
 
     output = [
-        StarInfo(
+        Stargazer(
             user_id=result["user"]["id"],
-            user_name=result["user"]["login"],
-            user_avatar_link=result["user"]["avatar_url"],
             starred_at=datetime.datetime.strptime(
                 result["starred_at"], "%Y-%m-%dT%H:%M:%SZ"
             ),
@@ -104,10 +100,8 @@ def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
         results = json.loads(response.content)
         for result in results:
             output.append(
-                StarInfo(
+                Stargazer(
                     user_id=result["user"]["id"],
-                    user_name=result["user"]["login"],
-                    user_avatar_link=result["user"]["avatar_url"],
                     starred_at=datetime.datetime.strptime(
                         result["starred_at"], "%Y-%m-%dT%H:%M:%SZ"
                     ),
@@ -165,13 +159,6 @@ def get_repos(org_name: str) -> list[Repo]:
     return output
 
 
-@dataclass
-class DeltaWriteConfig:
-    table_dir: str
-    table_name: str
-    pk: str
-
-
 def refresh_github_table(
     owner_name: str,
     repos: list[Repo],
@@ -199,10 +186,20 @@ def main():
         repos,
         DeltaWriteConfig(
             table_dir="bronze",
-            table_name="github_forks",
+            table_name=str(Fork.__tablename__),
             pk="fork_id",
         ),
         get_fork_info,
+    )
+    refresh_github_table(
+        owner_name,
+        repos,
+        DeltaWriteConfig(
+            table_dir="bronze",
+            table_name=str(Stargazer.__tablename__),
+            pk="user_id",
+        ),
+        get_repo_stargazers,
     )
 
 
