@@ -2,13 +2,15 @@ import datetime
 import json
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TypeVar
 
 import dotenv
 import pandas as pd
 import requests
-from deltalake import DeltaTable
+from deltalake import DeltaTable, write_deltalake
 from sqlmodel import SQLModel
+
+SQLModelType = TypeVar("SQLModelType", bound=SQLModel)
 
 
 class StarInfo(SQLModel):
@@ -102,22 +104,23 @@ def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
     return output
 
 
-def write_star_info(stars: list[StarInfo]) -> None:
-    data_dir = Path(__file__).parents[1] / "data" / "bronze"
-    table_path = data_dir / "github_stars"
+def write_delta_table(records: list[SQLModelType], table_dir: str, table_name: str, pk: str) -> None:
+    data_dir = Path(__file__).parents[1] / "data" / table_dir
+    table_path = data_dir / table_name
 
-    df = pd.DataFrame.from_records([vars(i) for i in stars])
+    df = pd.DataFrame.from_records([vars(i) for i in records])
     delta_log_dir = table_path / "_delta_log"
+    print(f"writing {len(records)} to {table_path}...")
     if not delta_log_dir.exists():
         table_path.mkdir(exist_ok=True, parents=True)
-        df.write_delta(table_path, mode="error")
+        write_deltalake(table_path, df, mode="error")
         return
 
     delta_table = DeltaTable(table_path)
     merge_results = (
         delta_table
         .merge(df,
-               predicate="s.user_id = t.user_id",
+               predicate=f"s.{pk} = t.{pk}",
                source_alias="s",
                target_alias="t", )
         .when_matched_update_all()
@@ -171,7 +174,7 @@ def main():
     owner_name = "mrpowers-io"
     repos = ["quinn"]
     repos = get_repos(owner_name)
-    print(repos)
+    write_delta_table(repos, "bronze", "github_repos", "repo_id")
     # repo_stars = []
     # for i, repo in enumerate(repos, 1):
     #     print(f"{i}/{len(repos)} - {repo}")
@@ -180,7 +183,7 @@ def main():
     #     print(f"obtained {len(results)} stars for {repo}")
     #     repo_stars.extend(results)
 
-    # write_star_info(repo_stars)
+    # write_delta_table(repo_stars, "bronze", "github_stars")
 
 
 if __name__ == "__main__":
