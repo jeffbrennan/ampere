@@ -34,10 +34,14 @@ def get_token(secret_name: str) -> str:
 
 def get_current_time() -> datetime.datetime:
     current_time = datetime.datetime.now()
-    return datetime.datetime.strptime(current_time.isoformat(timespec='seconds'), "%Y-%m-%dT%H:%M:%S")
+    return datetime.datetime.strptime(
+        current_time.isoformat(timespec="seconds"), "%Y-%m-%dT%H:%M:%S"
+    )
 
 
-def write_delta_table(records: list[SQLModelType], table_dir: str, table_name: str, pk: str) -> None:
+def write_delta_table(
+    records: list[SQLModelType], table_dir: str, table_name: str, pk: str
+) -> None:
     data_dir = Path(__file__).parents[1] / "data" / table_dir
     table_path = data_dir / table_name
 
@@ -51,11 +55,12 @@ def write_delta_table(records: list[SQLModelType], table_dir: str, table_name: s
 
     delta_table = DeltaTable(table_path)
     merge_results = (
-        delta_table
-        .merge(df,
-               predicate=f"s.{pk} = t.{pk}",
-               source_alias="s",
-               target_alias="t", )
+        delta_table.merge(
+            df,
+            predicate=f"s.{pk} = t.{pk}",
+            source_alias="s",
+            target_alias="t",
+        )
         .when_matched_update_all()
         .when_not_matched_insert_all()
         .when_not_matched_by_source_delete()
