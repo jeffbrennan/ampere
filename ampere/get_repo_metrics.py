@@ -10,6 +10,8 @@ import requests
 from deltalake import DeltaTable, write_deltalake
 from sqlmodel import SQLModel
 
+from ampere.common import create_header
+
 SQLModelType = TypeVar("SQLModelType", bound=SQLModel)
 
 
@@ -53,6 +55,7 @@ def get_current_time() -> datetime.datetime:
 
 def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
     # https://docs.github.com/en/rest/activity/starring?apiVersion=2022-11-28
+    print("getting stars...")
     url = (
         f"https://api.github.com/repos/{owner_name}/{repo_name}/stargazers?per_page=100"
     )
@@ -83,7 +86,7 @@ def get_repo_stars(owner_name: str, repo_name: str) -> list[StarInfo]:
     max_pages = 10
     pages_checked = 1
     while not requests_finished and pages_checked < max_pages:
-        print(f"obtained {len(output)} stars for {repo_name}")
+        print(f"n={len(output)}")
         response = requests.get(response.links["next"]["url"], headers=headers)
         if response.status_code != 200:
             raise ValueError(response.status_code)
@@ -172,18 +175,18 @@ def get_repos(org_name: str) -> list[Repo]:
 
 def main():
     owner_name = "mrpowers-io"
-    repos = ["quinn"]
     repos = get_repos(owner_name)
     write_delta_table(repos, "bronze", "github_repos", "repo_id")
-    # repo_stars = []
-    # for i, repo in enumerate(repos, 1):
-    #     print(f"{i}/{len(repos)} - {repo}")
-    #
-    #     results = get_repo_stars(owner_name, repo)
-    #     print(f"obtained {len(results)} stars for {repo}")
-    #     repo_stars.extend(results)
+    repo_stars = []
+    for i, repo in enumerate(repos, 1):
+        header_text = f"[{i:02d}/{len(repos):02d}] {repo.repo_name}"
+        print(create_header(80, header_text, True, '-'))
 
-    # write_delta_table(repo_stars, "bronze", "github_stars")
+        results = get_repo_stars(owner_name, repo.repo_name)
+        print(f"obtained {len(results)} stargazers")
+        repo_stars.extend(results)
+
+    write_delta_table(repo_stars, "bronze", "github_stars", "user_id")
 
 
 if __name__ == "__main__":
