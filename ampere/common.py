@@ -2,19 +2,27 @@ import datetime
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
 import dotenv
 import pandas as pd
 from deltalake import write_deltalake, DeltaTable
+from sqlmodel.main import SQLModelMetaclass
 
 from ampere.models import SQLModelType
+
+
+@dataclass
+class RefreshConfig:
+    model: SQLModelMetaclass
+    get_func: Callable
 
 
 @dataclass
 class DeltaWriteConfig:
     table_dir: str
     table_name: str
-    pk: str
+    pks: list[str]
 
 
 def create_header(header_length: int, title: str, center: bool, spacer: str):
@@ -48,7 +56,7 @@ def get_current_time() -> datetime.datetime:
 
 
 def write_delta_table(
-    records: list[SQLModelType], table_dir: str, table_name: str, pk: str
+    records: list[SQLModelType], table_dir: str, table_name: str, pks: list[str]
 ) -> None:
     data_dir = Path(__file__).parents[1] / "data" / table_dir
     table_path = data_dir / table_name
@@ -62,10 +70,11 @@ def write_delta_table(
         return
 
     delta_table = DeltaTable(table_path)
+    predicate_str = " and ".join([f"s.{i} = t.{i}" for i in pks])
     merge_results = (
         delta_table.merge(
             df,
-            predicate=f"s.{pk} = t.{pk}",
+            predicate=predicate_str,
             source_alias="s",
             target_alias="t",
         )
@@ -75,3 +84,12 @@ def write_delta_table(
         .execute()
     )
     print(merge_results)
+
+
+def get_model_primary_key(model: SQLModelMetaclass) -> list[str]:
+    pks = []
+    for k, v in model.model_fields.items():
+        if hasattr(v, "primary_key"):
+            pks.append(k)
+
+    return pks
