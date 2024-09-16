@@ -22,6 +22,7 @@ from ampere.models import (
     Commit,
     CommitStats,
     PullRequest,
+    Issue,
 )
 
 
@@ -342,7 +343,61 @@ def get_pull_requests(owner_name: str, repo: Repo) -> list[PullRequest]:
         if requests_finished:
             break
 
-        response = requests.get(response.links["next"]["url"], headers=headers, params=parameters)
+        response = requests.get(
+            response.links["next"]["url"], headers=headers, params=parameters
+        )
+
+    return output
+
+
+def get_issues(owner_name: str, repo: Repo) -> list[Issue]:
+    print("getting issues...")
+    url = f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/issues"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    parameters = {"per_page": 100, "state": "all"}
+
+    output = []
+    requests_finished = False
+    max_pages = 10
+    pages_checked = 0
+
+    response = requests.get(url, headers=headers, params=parameters)
+    while not requests_finished and pages_checked < max_pages:
+        if response.status_code != 200:
+            raise ValueError(response.status_code)
+        results = json.loads(response.content)
+        for result in results:
+            output.append(
+                Issue(
+                    repo_id=repo.repo_id,
+                    issue_id=result["id"],
+                    issue_number=result["number"],
+                    issue_title=result["title"],
+                    issue_body=result["body"],
+                    author_id=result["user"]["id"],
+                    state=result["state"],
+                    state_reason=result["state_reason"],
+                    comments_count=result["comments"],
+                    created_at=result["created_at"],
+                    updated_at=result["updated_at"],
+                    closed_at=result["closed_at"],
+                    retrieved_at=get_current_time(),
+                )
+            )
+
+        pages_checked += 1
+        print(f"n={len(output)}")
+        requests_finished = "next" not in response.links
+        if requests_finished:
+            break
+
+        response = requests.get(
+            response.links["next"]["url"], headers=headers, params=parameters
+        )
 
     return output
 
@@ -381,7 +436,8 @@ def main():
         #     model=Commit,
         #     get_func=get_commits,
         # ),
-        RefreshConfig(model=PullRequest, get_func=get_pull_requests)
+        # RefreshConfig(model=PullRequest, get_func=get_pull_requests),
+        RefreshConfig(model=Issue, get_func=get_issues)
     ]
 
     repos = get_repos(owner_name)

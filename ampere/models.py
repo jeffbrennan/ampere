@@ -83,13 +83,14 @@ class Issue(SQLModel):
     issue_id: int = Field(primary_key=True)
     issue_number: int
     issue_title: str
-    issue_body: str
+    issue_body: Optional[str] = None
     author_id: int = Field(foreign_key="user.user_id")
-    state_reason: str
+    state: str
+    state_reason: Optional[str] = None
     comments_count: int
     created_at: datetime.datetime
-    updated_at: datetime.datetime
-    closed_at: datetime.datetime
+    updated_at: Optional[datetime.datetime] = None
+    closed_at: Optional[datetime.datetime] = None
     retrieved_at: datetime.datetime
 
 
