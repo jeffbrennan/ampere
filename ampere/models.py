@@ -51,17 +51,23 @@ class Fork(SQLModel):
     __tablename__ = "forks"  # pyright: ignore [reportAssignmentType]
     repo_id: int = Field(primary_key=True, foreign_key="repo.repo_id")
     fork_id: int = Field(primary_key=True)
-    owner_id: int
+    owner_id: int = Field(primary_key=True, foreign_key="user.user_id")
     retrieved_at: datetime.datetime
 
 
 # https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#list-commits
 # https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#get-a-commit
+@dataclass
+class CommitStats:
+    additions: int
+    deletions: int
+
+
 class Commit(SQLModel):
     __tablename__ = "commits"  # pyright: ignore [reportAssignmentType]
     repo_id: int = Field(primary_key=True, foreign_key="repo.repo_id")
     commit_id: str = Field(primary_key=True)
-    author_id: int
+    author_id: Optional[int] = Field(foreign_key="user.user_id")
     comment_count: int
     message: str
     additions_count: int
@@ -78,7 +84,7 @@ class Issue(SQLModel):
     issue_number: int
     issue_title: str
     issue_body: str
-    author_id: int
+    author_id: int = Field(foreign_key="user.user_id")
     state_reason: str
     comments_count: int
     created_at: datetime.datetime
@@ -107,7 +113,7 @@ class PullRequest(SQLModel):
     pr_title: str
     pr_state: str
     pr_body: str
-    author_id: int
+    author_id: int = Field(foreign_key="user.user_id")
     created_at: datetime.datetime
     updated_at: datetime.datetime
     closed_at: datetime.datetime

@@ -13,7 +13,15 @@ from ampere.common import (
     RefreshConfig,
     get_model_primary_key,
 )
-from ampere.models import Repo, Fork, Stargazer, Release, Language, Commit
+from ampere.models import (
+    Repo,
+    Fork,
+    Stargazer,
+    Release,
+    Language,
+    Commit,
+    CommitStats,
+)
 
 
 def get_forks(owner_name: str, repo: Repo) -> list[Fork]:
@@ -214,6 +222,25 @@ def get_releases(owner_name: str, repo: Repo) -> list[Release]:
     return output
 
 
+def get_commit_stats(owner_name: str, repo_name: str, commit_id: str) -> CommitStats:
+    url = f"https://api.github.com/repos/{owner_name}/{repo_name}/commits/{commit_id}"
+
+    headers = {
+        "Accept": "application/vnd.github.star+json",
+        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise ValueError(response.status_code)
+
+    result = json.loads(response.content)
+    return CommitStats(
+        additions=result["stats"]["additions"],
+        deletions=result["stats"]["deletions"],
+    )
+
+
 def get_commits(owner_name: str, repo: Repo) -> list[Commit]:
     print("getting commits...")
     url = (
@@ -236,15 +263,25 @@ def get_commits(owner_name: str, repo: Repo) -> list[Commit]:
             raise ValueError(response.status_code)
         results = json.loads(response.content)
         for result in results:
+            print(result["sha"])
+            commit_stats = get_commit_stats(owner_name, repo.repo_name, result["sha"])
+            if result["author"] is not None:
+                author_id = result["author"]["id"]
+            elif result["committer"] is not None:
+                author_id = result["committer"]["id"]
+            else:
+                author_id = None
+
             output.append(
-                Release(
+                Commit(
                     repo_id=repo.repo_id,
-                    release_id=result["id"],
-                    release_name=result["name"],
-                    tag_name=result["tag_name"],
-                    release_body=result["body"],
-                    created_at=result["created_at"],
-                    published_at=result["published_at"],
+                    commit_id=result["sha"],
+                    author_id=author_id,
+                    comment_count=result["commit"]["comment_count"],
+                    message=result["commit"]["message"],
+                    additions_count=commit_stats.additions,
+                    deletions_count=commit_stats.deletions,
+                    committed_at=result["commit"]["author"]["date"],
                     retrieved_at=get_current_time(),
                 )
             )
@@ -281,15 +318,19 @@ def refresh_github_table(
 def main():
     owner_name = "mrpowers-io"
     model_configs = [
+        #     RefreshConfig(
+        #         model=Stargazer,
+        #         get_func=get_stargazers,
+        #     ),
+        #     RefreshConfig(model=Fork, get_func=get_forks),
+        #     RefreshConfig(
+        #         model=Release,
+        #         get_func=get_releases,
+        #     ),
         RefreshConfig(
-            model=Stargazer,
-            get_func=get_stargazers,
-        ),
-        RefreshConfig(model=Fork, get_func=get_forks),
-        RefreshConfig(
-            model=Release,
-            get_func=get_releases,
-        ),
+            model=Commit,
+            get_func=get_commits,
+        )
     ]
 
     repos = get_repos(owner_name)
