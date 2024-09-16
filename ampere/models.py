@@ -93,7 +93,6 @@ class Issue(SQLModel):
     retrieved_at: datetime.datetime
 
 
-# TODO: check if  have the auth for this
 # https://docs.github.com/en/rest/metrics/traffic?apiVersion=2022-11-28#get-page-views
 class View(SQLModel):
     __tablename__ = "views"  # pyright: ignore [reportAssignmentType]
