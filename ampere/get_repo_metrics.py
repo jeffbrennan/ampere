@@ -1,8 +1,11 @@
 import datetime
 import json
-from typing import Callable
+import time
+from pathlib import Path
+from typing import Callable, Optional
 
 import requests
+from deltalake import DeltaTable
 
 from ampere.common import (
     create_header,
@@ -11,6 +14,7 @@ from ampere.common import (
     write_delta_table,
     DeltaWriteConfig,
     RefreshConfig,
+    get_model_foreign_key,
     get_model_primary_key,
 )
 from ampere.models import (
@@ -25,6 +29,7 @@ from ampere.models import (
     Issue,
     Watcher,
     View,
+    User,
 )
 
 
@@ -476,6 +481,64 @@ def get_views(owner_name: str, repo: Repo) -> list[View]:
     return output
 
 
+def get_user(user_id: int) -> Optional[User]:
+    url = f"https://api.github.com/user/{user_id}"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+
+    output = []
+
+    response = requests.get(url, headers=headers)
+    if response.status_code == 404:
+        print("user not found", user_id)
+        return None
+    elif response.status_code != 200:
+        raise ValueError(response.status_code)
+
+    results = json.loads(response.content)
+    return User(
+        user_id=results["id"],
+        user_name=results["login"],
+        full_name=results["name"],
+        company=results["company"],
+        avatar_url=results["avatar_url"],
+        repos_count=results["public_repos"],
+        followers_count=results["followers"],
+        following_count=results["following"],
+        created_at=results["created_at"],
+        updated_at=results["updated_at"],
+        retrieved_at=get_current_time(),
+    )
+
+
+def get_user_ids() -> list[int]:
+    user_models = [Stargazer, Watcher, Fork, Commit, Issue, PullRequest]
+
+    users = []
+    print("getting user ids from existing tables")
+    for model in user_models:
+        print("-", model.__name__)
+        table_path = Path(__file__).parents[1] / "data" / "bronze" / model.__tablename__
+        delta_dir_path = table_path / "_delta_log"
+        if not delta_dir_path.exists():
+            print("not a delta table:", table_path)
+            continue
+        user_col = get_model_foreign_key(model, "user.user_id")
+        if user_col is None:
+            print("missing user id foreign key")
+            continue
+
+        df = DeltaTable(table_path).to_pandas(columns=[user_col])
+        users.extend(df.squeeze().tolist())
+
+    unique_users = sorted(set(users))
+    print(f"got {len(unique_users)} unique users")
+    return unique_users
+
+
 def refresh_github_table(
     owner_name: str,
     repos: list[Repo],
@@ -490,6 +553,33 @@ def refresh_github_table(
         results = get_func(owner_name, repo)
         print(f"obtained {len(results)} records")
         all_results.extend(results)
+
+    write_delta_table(all_results, config.table_dir, config.table_name, config.pks)
+
+
+def refresh_users(
+    user_ids: list[int],
+    config: DeltaWriteConfig,
+) -> None:
+    all_results = []
+    start_time = time.time()
+    for i, user_id in enumerate(user_ids, 1):
+        header_text = f"[{i:04d}/{len(user_ids):04d}] {user_id}"
+        print(create_header(80, header_text, True, "-"))
+        try:
+            result = get_user(user_id)
+        except Exception as e:
+            raise e
+
+        if result is None:
+            continue
+
+        all_results.append(result)
+    elapsed_time = time.time() - start_time
+    avg_time_per_user = elapsed_time / len(user_ids)
+
+    print(f"elapsed time: {elapsed_time:.2f} seconds")
+    print(f"average time per user: {avg_time_per_user:.2f} seconds")
 
     write_delta_table(all_results, config.table_dir, config.table_name, config.pks)
 
@@ -515,21 +605,30 @@ def main():
         # RefreshConfig(model=Issue, get_func=get_issues),
         # RefreshConfig(model=Watcher, get_func=get_watchers),
     ]
+    # repos = get_repos(owner_name)
+    # write_delta_table(repos, "bronze", "repos", ["repo_id"])
+    #
+    # for config in model_configs:
+    #     refresh_github_table(
+    #         owner_name,
+    #         repos,
+    #         DeltaWriteConfig(
+    #             table_dir="bronze",
+    #             table_name=config.model.__tablename__,  # pyright: ignore [reportAttributeAccessIssue]
+    #             pks=get_model_primary_key(config.model),
+    #         ),
+    #         config.get_func,
+    #     )
 
-    repos = get_repos(owner_name)
-    write_delta_table(repos, "bronze", "repos", ["repo_id"])
-
-    for config in model_configs:
-        refresh_github_table(
-            owner_name,
-            repos,
-            DeltaWriteConfig(
-                table_dir="bronze",
-                table_name=config.model.__tablename__,  # pyright: ignore [reportAttributeAccessIssue]
-                pks=get_model_primary_key(config.model),
-            ),
-            config.get_func,
-        )
+    user_ids = get_user_ids()
+    refresh_users(
+        user_ids,
+        DeltaWriteConfig(
+            table_dir="bronze",
+            table_name=User.__tablename__,  # pyright: ignore [reportArgumentType]
+            pks=get_model_primary_key(User),
+        ),
+    )
 
 
 if __name__ == "__main__":
