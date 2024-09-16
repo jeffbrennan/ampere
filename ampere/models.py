@@ -27,21 +27,12 @@ class Language:
     size_bytes: int
 
 
-@dataclass
-class License:
-    key: str
-    name: str
-    url: str
-    spdx_id: str
-    node_id: str
-    html_url: str
-
 
 class Repo(SQLModel):
     __tablename__ = "repos"  # pyright: ignore [reportAssignmentType]
     repo_id: int
     repo_name: str
-    license: Optional[License] = None
+    license: Optional[str] = None
     topics: list[str]
     language: Optional[list[Language]] = None
     repo_size: int

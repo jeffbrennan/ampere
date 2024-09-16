@@ -11,7 +11,7 @@ from ampere.common import (
     write_delta_table,
     DeltaWriteConfig,
 )
-from ampere.models import Repo, Fork, Stargazer, Release
+from ampere.models import Repo, Fork, Stargazer, Release, Language
 
 
 def get_forks(owner_name: str, repo_name: str) -> list[Fork]:
@@ -93,6 +93,22 @@ def get_stargazers(owner_name: str, repo_name: str) -> list[Stargazer]:
     return output
 
 
+def get_repo_language(owner_name: str, repo_name: str) -> list[Language]:
+    url = f"https://api.github.com/repos/{owner_name}/{repo_name}/languages"
+
+    headers = {
+        "Accept": "application/vnd.github.star+json",
+        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise ValueError(response.status_code)
+
+    result = json.loads(response.content)
+    return [Language(name=k, size_bytes=v) for k, v in result.items()]
+
+
 def get_repos(org_name: str) -> list[Repo]:
     """
     get repos in org
@@ -112,13 +128,17 @@ def get_repos(org_name: str) -> list[Repo]:
     results = json.loads(response.content)
 
     for result in results:
+        language = get_repo_language(owner_name=org_name, repo_name=result["name"])
+        repo_license = None
+        if result['license'] is not None:
+            repo_license = result["license"]["name"]
         output.append(
             Repo(
                 repo_id=result["id"],
                 repo_name=result["name"],
-                license=result["license"],
+                license=repo_license,
                 topics=result["topics"],
-                language=result["language"],
+                language=language,
                 repo_size=result["size"],
                 forks_count=result["forks_count"],
                 watchers_count=result["watchers_count"],
