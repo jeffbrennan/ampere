@@ -19,7 +19,6 @@ class Watcher(SQLModel):
     __tablename__ = "watchers"  # pyright: ignore [reportAssignmentType]
     repo_id: int = Field(primary_key=True, foreign_key="repo.repo_id")
     user_id: int = Field(primary_key=True, foreign_key="user.user_id")
-    watched_at: datetime.datetime
     retrieved_at: datetime.datetime
 
 
