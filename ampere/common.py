@@ -53,7 +53,7 @@ def write_delta_table(
     data_dir = Path(__file__).parents[1] / "data" / table_dir
     table_path = data_dir / table_name
 
-    df = pd.DataFrame.from_records([vars(i) for i in records])
+    df = pd.DataFrame.from_records([i.model_dump() for i in records])
     delta_log_dir = table_path / "_delta_log"
     print(f"writing {len(records)} to {table_path}...")
     if not delta_log_dir.exists():
