@@ -47,6 +47,9 @@ def get_forks(owner_name: str, repo_name: str) -> list[Fork]:
         pages_checked += 1
         print(f"n={len(output)}")
         requests_finished = "next" not in response.links
+        if requests_finished:
+            break
+
         response = requests.get(response.links["next"]["url"], headers=headers)
 
     return output
@@ -88,6 +91,9 @@ def get_stargazers(owner_name: str, repo_name: str) -> list[Stargazer]:
         pages_checked += 1
         print(f"n={len(output)}")
         requests_finished = "next" not in response.links
+        if requests_finished:
+            break
+
         response = requests.get(response.links["next"]["url"], headers=headers)
 
     return output
@@ -198,6 +204,9 @@ def get_releases(owner_name: str, repo_name: str) -> list[Release]:
         pages_checked += 1
         print(f"n={len(output)}")
         requests_finished = "next" not in response.links
+        if requests_finished:
+            break
+
         response = requests.get(response.links["next"]["url"], headers=headers)
 
     return output
