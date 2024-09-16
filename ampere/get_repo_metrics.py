@@ -21,6 +21,7 @@ from ampere.models import (
     Language,
     Commit,
     CommitStats,
+    PullRequest,
 )
 
 
@@ -297,6 +298,55 @@ def get_commits(owner_name: str, repo: Repo) -> list[Commit]:
     return output
 
 
+def get_pull_requests(owner_name: str, repo: Repo) -> list[PullRequest]:
+    print("getting prs...")
+    url = f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/pulls"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    parameters = {"per_page": 100, "state": "all"}
+
+    output = []
+    requests_finished = False
+    max_pages = 10
+    pages_checked = 0
+
+    response = requests.get(url, headers=headers, params=parameters)
+    while not requests_finished and pages_checked < max_pages:
+        if response.status_code != 200:
+            raise ValueError(response.status_code)
+        results = json.loads(response.content)
+        for result in results:
+            output.append(
+                PullRequest(
+                    repo_id=repo.repo_id,
+                    pr_id=result["id"],
+                    pr_number=result["number"],
+                    pr_title=result["title"],
+                    pr_state=result["state"],
+                    pr_body=result["body"],
+                    author_id=result["user"]["id"],
+                    created_at=result["created_at"],
+                    updated_at=result["updated_at"],
+                    closed_at=result["closed_at"],
+                    merged_at=result["merged_at"],
+                    retrieved_at=get_current_time(),
+                )
+            )
+
+        pages_checked += 1
+        print(f"n={len(output)}")
+        requests_finished = "next" not in response.links
+        if requests_finished:
+            break
+
+        response = requests.get(response.links["next"]["url"], headers=headers, params=parameters)
+
+    return output
+
+
 def refresh_github_table(
     owner_name: str,
     repos: list[Repo],
@@ -327,10 +377,11 @@ def main():
         #         model=Release,
         #         get_func=get_releases,
         #     ),
-        RefreshConfig(
-            model=Commit,
-            get_func=get_commits,
-        )
+        # RefreshConfig(
+        #     model=Commit,
+        #     get_func=get_commits,
+        # ),
+        RefreshConfig(model=PullRequest, get_func=get_pull_requests)
     ]
 
     repos = get_repos(owner_name)

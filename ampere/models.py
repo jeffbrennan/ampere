@@ -112,12 +112,12 @@ class PullRequest(SQLModel):
     pr_number: int
     pr_title: str
     pr_state: str
-    pr_body: str
+    pr_body: Optional[str] = None
     author_id: int = Field(foreign_key="user.user_id")
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    closed_at: datetime.datetime
-    merged_at: datetime.datetime
+    closed_at: Optional[datetime.datetime] = None
+    merged_at: Optional[datetime.datetime] = None
     retrieved_at: datetime.datetime
 
 
