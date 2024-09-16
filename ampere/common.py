@@ -2,7 +2,7 @@ import datetime
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
 
 import dotenv
 import pandas as pd
@@ -93,3 +93,11 @@ def get_model_primary_key(model: SQLModelMetaclass) -> list[str]:
             pks.append(k)
 
     return pks
+
+
+def get_model_foreign_key(model: SQLModelMetaclass, fk_name: str) -> Optional[str]:
+    for k, v in model.model_fields.items():
+        if not hasattr(v, "foreign_key"):
+            continue
+        if v.foreign_key == fk_name:
+            return k
