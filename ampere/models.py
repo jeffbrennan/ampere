@@ -125,8 +125,8 @@ class User(SQLModel):
     __tablename__ = "users"  # pyright: ignore [reportAssignmentType]
     user_id: int = Field(primary_key=True)
     user_name: str
-    full_name: str
-    company: str
+    full_name: Optional[str] = None
+    company: Optional[str] = None
     avatar_url: str
     repos_count: int
     followers_count: int
