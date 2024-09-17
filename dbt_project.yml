@@ -1,0 +1,12 @@
+name: ampere 
+
+profile: ampere 
+
+models:
+  ampere:
+    staging:
+      +materialized: view
+    transformations:
+      +materialized: view
+    marts:
+      +materialized: table

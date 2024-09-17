@@ -6,7 +6,7 @@ authors = ["Jeff Brennan <jeffbrennan10@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11, <3.13"
 python-dotenv = "^1.0.1"
 sqlmodel = "^0.0.22"
 requests = "^2.32.3"
@@ -15,6 +15,11 @@ pyright = "^1.1.380"
 polars = "^1.7.1"
 deltalake = "^0.19.2"
 pandas = "^2.2.2"
+dagster = "^1.8.7"
+dagster-webserver = "^1.8.7"
+dbt-core = "^1.8.6"
+dbt-duckdb = "^1.8.3"
+dagster-dbt = "^0.24.7"
 
 
 [build-system]
@@ -23,3 +28,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 line-length = 90
+
+[tool.dagster]
+module_name = "ampere.dagster.definitions"
+code_location_name = "ampere/dagster"

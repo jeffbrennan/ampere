@@ -1,0 +1,42 @@
+version: 2
+
+sources:
+    -   name: main
+        tables:
+            -   name: commits
+                meta:
+                    dagster:
+                        asset_key: [ "commits" ]
+            -   name: forks
+                meta:
+                    dagster:
+                        asset_key: [ "forks" ]
+            -   name: issues
+                meta:
+                    dagster:
+                        asset_key: [ "issues" ]
+            -   name: pull_requests
+                meta:
+                    dagster:
+                        asset_key: [ "pull_requests" ]
+            -   name: releases
+                meta:
+                    dagster:
+                        asset_key: [ "releases" ]
+            -   name: repos
+                meta:
+                    dagster:
+                        asset_key: [ "repos" ]
+            -   name: stargazers
+                meta:
+                    dagster:
+                        asset_key: [ "stargazers" ]
+            -   name: users
+                meta:
+                    dagster:
+                        asset_key: [ "users" ]
+
+            -   name: watchers
+                meta:
+                    dagster:
+                        asset_key: [ "watchers" ]
