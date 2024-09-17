@@ -2,3 +2,9 @@
 *.idea
 /scratch
 /data
+
+target/
+logs/
+dbt_packages/
+tmp*
+
