@@ -8,3 +8,5 @@ logs/
 dbt_packages/
 tmp*
 
+*.DS_Store
+*.pyc
