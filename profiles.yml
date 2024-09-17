@@ -1,0 +1,8 @@
+ampere:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: 'data/ampere.duckdb'
+      extensions:
+        - delta
