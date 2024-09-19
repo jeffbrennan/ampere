@@ -17,6 +17,7 @@ from ampere.get_repo_metrics import (
     get_user_ids,
     refresh_users,
     get_commits,
+    refresh_followers,
 )
 from ampere.models import (
     Stargazer,
@@ -27,6 +28,7 @@ from ampere.models import (
     Watcher,
     User,
     Commit,
+    Follower,
 )
 from .project import ampere_project
 
@@ -172,6 +174,21 @@ def dagster_get_users(context: AssetExecutionContext) -> None:
             table_dir="bronze",
             table_name=User.__tablename__,  # pyright: ignore [reportArgumentType]
             pks=get_model_primary_key(User),
+        ),
+    )
+
+    context.add_output_metadata({"n_records": n})
+
+
+@asset(compute_kind="python", key=["followers"], deps=["users"])
+def dagster_get_followers(context: AssetExecutionContext) -> None:
+    user_ids = get_user_ids()
+    n = refresh_followers(
+        user_ids,
+        DeltaWriteConfig(
+            table_dir="bronze",
+            table_name=Follower.__tablename__,  # pyright: ignore [reportArgumentType]
+            pks=get_model_primary_key(Follower),
         ),
     )
 
