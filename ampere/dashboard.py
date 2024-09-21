@@ -96,9 +96,9 @@ def create_follower_network(follower_info: list[FollowerInfo]) -> nx.Graph:
             )
             added_nodes.append(record.follower_name)
 
-        G.add_edge(record.user_name, record.follower_name)
+        G.add_edge(record.user_name, record.follower_name, weight=0.05)
 
-    pos = nx.spring_layout(G)
+    pos = nx.arf_layout(G)
     nx.set_node_attributes(G, pos, "pos")
     return G
 
@@ -122,7 +122,7 @@ def create_star_network_plot(
     edge_trace = go.Scatter(
         x=edge_x,
         y=edge_y,
-        line=dict(width=0.4, color="rgba(0, 0, 0, 0.2)"),
+        line=dict(width=0.1, color="rgba(0, 0, 0, 0.2)"),
         hoverinfo="none",
         mode="lines",
         showlegend=False,
@@ -216,7 +216,7 @@ def create_follower_network_plot(
     edge_trace = go.Scatter(
         x=edge_x,
         y=edge_y,
-        line=dict(width=0.4, color="rgba(0, 0, 0, 0.2)"),
+        line=dict(width=1, color="rgba(0, 0, 0, 0.4)"),
         hoverinfo="none",
         mode="lines",
         showlegend=False,
@@ -245,13 +245,18 @@ def create_follower_network_plot(
         )
 
     node_df = pd.DataFrame(node_info)
-    node_df["size_group"] = pd.qcut(node_df["size"], 6, labels=False, duplicates="drop")
-    node_df["size_group"] = (node_df["size_group"] + 1) * 5
+    node_df["size_group"] = pd.qcut(
+        node_df["size"],
+        10,
+        labels=False,
+        duplicates="drop",
+    )
+    node_df["size_group"] = (node_df["size_group"] + 1) ** 1.5
 
     node_trace = go.Scatter(
         x=node_df.x,
         y=node_df.y,
-        marker_size=node_df.size_group,
+        marker_size=6,
         mode="markers",
         hoverinfo="text",
         hovertext=node_df.text,
@@ -307,7 +312,7 @@ def viz_star_network():
     fig.show()
 
 
-def viz_user_network():
+def viz_follower_network():
     con = duckdb.connect("../data/ampere.duckdb")
     follower_info = con.sql(
         """
@@ -335,4 +340,4 @@ def viz_user_network():
 
 if __name__ == "__main__":
     # viz_star_network()
-    viz_user_network()
+    viz_follower_network()
