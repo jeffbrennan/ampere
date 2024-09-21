@@ -27,8 +27,9 @@ def timeit(func):
 @dataclass(slots=True, frozen=True)
 class StargazerNetworkRecord:
     user_name: str
-    following_count: int
+    followers_count: int
     starred_at: datetime.datetime
+    retrieved_at: datetime.datetime
     repo_name: str
 
 
@@ -50,7 +51,7 @@ def create_star_network(
         node_name = f"{record.user_name}_{record.repo_name}"
         G.add_node(
             node_name,
-            following_count=record.following_count,
+            followers_count=record.followers_count,
             node_type="user_repo",
             repo=record.repo_name,
         )
@@ -72,7 +73,9 @@ def create_star_network(
 
 
 @timeit
-def create_star_network_plot(G: nx.Graph, repos: list[str]) -> go.Figure:
+def create_star_network_plot(
+    G: nx.Graph, repos: list[str], stargazers: list[StargazerNetworkRecord]
+) -> go.Figure:
     edge_x = []
     edge_y = []
     for edge in G.edges():
@@ -91,28 +94,44 @@ def create_star_network_plot(G: nx.Graph, repos: list[str]) -> go.Figure:
         line=dict(width=0.4, color="rgba(0, 0, 0, 0.2)"),
         hoverinfo="none",
         mode="lines",
+        showlegend=False,
     )
 
     node_info = []
     for node in G.nodes():
-        x, y = G.nodes[node]["pos"]
         node_data = G.nodes.data()[node]
-        if node == node_data["repo"]:
+        repo = node_data["repo"]
+        if node == repo:
             continue
 
+        x, y = G.nodes[node]["pos"]
+        followers_count = node_data["followers_count"]
+        user_name = node.split("_")[0]
+
+        all_repos = [i.repo_name for i in stargazers if i.user_name == user_name]
+
+        all_repos_text = ", ".join(all_repos)
+
+        node_text_list = [
+            user_name,
+            f"followers={followers_count}",
+            f"repos={all_repos_text}",
+        ]
+
+        node_text = "<br>".join(node_text_list)
         node_info.append(
             {
                 "x": x,
                 "y": y,
-                "repo": node_data["repo"],
-                "text": node.split("_")[0],
-                "size": node_data["following_count"],
+                "repo": repo,
+                "text": node_text,
+                "size": followers_count,
             }
         )
 
     node_df = pd.DataFrame(node_info)
-    node_df["size_group"] = pd.qcut(node_df["size"], 5, labels=False, duplicates="drop")
-    node_df["size_group"] = (node_df["size_group"] + 1) * 6
+    node_df["size_group"] = pd.qcut(node_df["size"], 6, labels=False, duplicates="drop")
+    node_df["size_group"] = (node_df["size_group"] + 1) * 5
 
     all_node_traces = []
     for repo in repos:
@@ -128,13 +147,17 @@ def create_star_network_plot(G: nx.Graph, repos: list[str]) -> go.Figure:
         )
         all_node_traces.append(node_trace)
 
+    last_updated = max([i.retrieved_at for i in stargazers])
+    last_updated_str = last_updated.strftime("%Y-%m-%d")
+
+    title_text = f"mrpowers-io Stargazers<br><sup>last updated: {last_updated_str}</sup>"
     fig = go.Figure(
         data=[edge_trace, *all_node_traces],
         layout=go.Layout(
-            title="mrpowers-io Stargazers",
+            title=title_text,
             showlegend=True,
             hovermode="closest",
-            margin=dict(b=20, l=5, r=5, t=50),
+            margin=dict(b=20, l=5, r=5, t=55),
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         ),
@@ -151,8 +174,9 @@ def viz_star_network():
         select
         distinct
         a.user_name,
-        a.following_count,
+        a.followers_count,
         b.starred_at,
+        b.retrieved_at,
         c.repo_name
         from users a 
         inner join stargazers b
@@ -167,7 +191,7 @@ def viz_star_network():
     repos = sorted(set(i.repo_name for i in stargazers))
 
     network = create_star_network(repos, stargazers)
-    fig = create_star_network_plot(network, repos)
+    fig = create_star_network_plot(network, repos, stargazers)
     fig.show()
 
 
