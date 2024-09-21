@@ -33,6 +33,15 @@ class StargazerNetworkRecord:
     repo_name: str
 
 
+@dataclass(slots=True, frozen=True)
+class FollowerInfo:
+    user_name: str
+    followers_count: int
+    follower_name: str
+    follower_followers_count: int
+    retrieved_at: datetime.datetime
+
+
 @timeit
 def create_star_network(
     repos: list[str], stargazers: list[StargazerNetworkRecord]
@@ -66,6 +75,28 @@ def create_star_network(
                 )
         added_repos.append(record.repo_name)
         current_user = record.user_name
+
+    pos = nx.spring_layout(G)
+    nx.set_node_attributes(G, pos, "pos")
+    return G
+
+
+@timeit
+def create_follower_network(follower_info: list[FollowerInfo]) -> nx.Graph:
+    random.seed(42)
+    added_nodes = []
+    G = nx.Graph()
+    for record in follower_info:
+        if record.user_name not in added_nodes:
+            G.add_node(record.user_name, followers_count=record.followers_count)
+            added_nodes.append(record.user_name)
+        if record.follower_name not in added_nodes:
+            G.add_node(
+                record.follower_name, followers_count=record.follower_followers_count
+            )
+            added_nodes.append(record.follower_name)
+
+        G.add_edge(record.user_name, record.follower_name)
 
     pos = nx.spring_layout(G)
     nx.set_node_attributes(G, pos, "pos")
@@ -167,6 +198,87 @@ def create_star_network_plot(
 
 
 @timeit
+def create_follower_network_plot(
+    G: nx.Graph, follower_info: list[FollowerInfo]
+) -> go.Figure:
+    edge_x = []
+    edge_y = []
+    for edge in G.edges():
+        x0, y0 = G.nodes[edge[0]]["pos"]
+        x1, y1 = G.nodes[edge[1]]["pos"]
+        edge_x.append(x0)
+        edge_x.append(x1)
+        edge_x.append(None)
+        edge_y.append(y0)
+        edge_y.append(y1)
+        edge_y.append(None)
+
+    edge_trace = go.Scatter(
+        x=edge_x,
+        y=edge_y,
+        line=dict(width=0.4, color="rgba(0, 0, 0, 0.2)"),
+        hoverinfo="none",
+        mode="lines",
+        showlegend=False,
+    )
+
+    node_info = []
+    for node in G.nodes():
+        node_data = G.nodes.data()[node]
+        x, y = G.nodes[node]["pos"]
+        followers_count = node_data["followers_count"]
+        user_name = node
+
+        node_text_list = [
+            user_name,
+            f"followers={followers_count}",
+        ]
+
+        node_text = "<br>".join(node_text_list)
+        node_info.append(
+            {
+                "x": x,
+                "y": y,
+                "text": node_text,
+                "size": followers_count,
+            }
+        )
+
+    node_df = pd.DataFrame(node_info)
+    node_df["size_group"] = pd.qcut(node_df["size"], 6, labels=False, duplicates="drop")
+    node_df["size_group"] = (node_df["size_group"] + 1) * 5
+
+    node_trace = go.Scatter(
+        x=node_df.x,
+        y=node_df.y,
+        marker_size=node_df.size_group,
+        mode="markers",
+        hoverinfo="text",
+        hovertext=node_df.text,
+    )
+
+    last_updated = max([i.retrieved_at for i in follower_info])
+    last_updated_str = last_updated.strftime("%Y-%m-%d")
+
+    title_text = (
+        f"mrpowers-io User Network<br><sup>last updated: {last_updated_str}</sup>"
+    )
+    fig = go.Figure(
+        data=[edge_trace, node_trace],
+        layout=go.Layout(
+            title=title_text,
+            showlegend=True,
+            hovermode="closest",
+            margin=dict(b=20, l=5, r=5, t=55),
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        ),
+    )
+
+    return fig
+
+
+@timeit
 def viz_star_network():
     con = duckdb.connect("../data/ampere.duckdb")
     stargazers = con.sql(
@@ -183,11 +295,11 @@ def viz_star_network():
         on a.user_id = b.user_id
         inner join repos c
         on b.repo_id = c.repo_id
-        order by user_name 
+        order by b.user_name 
         """
     ).to_df()
 
-    stargazers = list(StargazerNetworkRecord(*record) for record in stargazers.values)  # pyright: ignore [reportAttributeAccessIssue]
+    stargazers = list(StargazerNetworkRecord(*record) for record in stargazers.values)
     repos = sorted(set(i.repo_name for i in stargazers))
 
     network = create_star_network(repos, stargazers)
@@ -195,5 +307,32 @@ def viz_star_network():
     fig.show()
 
 
+def viz_user_network():
+    con = duckdb.connect("../data/ampere.duckdb")
+    follower_info = con.sql(
+        """
+        select
+        distinct
+        b.user_name,
+        b.followers_count,
+        c.user_name  follower_name,
+        c.followers_count  follower_followers_count,
+        a.retrieved_at
+        from followers a 
+        inner join users b
+        on a.user_id = b.user_id
+        inner join users c
+        on a.follower_id = c.user_id
+        order by b.user_name 
+        """
+    ).to_df()
+
+    follower_info = list(FollowerInfo(*record) for record in follower_info.values)
+    network = create_follower_network(follower_info)
+    fig = create_follower_network_plot(network, follower_info)
+    fig.show()
+
+
 if __name__ == "__main__":
-    viz_star_network()
+    # viz_star_network()
+    viz_user_network()
