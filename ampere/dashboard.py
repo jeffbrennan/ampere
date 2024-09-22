@@ -9,6 +9,7 @@ from pathlib import Path
 import duckdb
 import networkx as nx
 import pandas as pd
+import plotly.express as px
 import plotly.graph_objects as go
 
 
@@ -47,7 +48,7 @@ class FollowerInfo:
 
 @timeit
 def create_star_network(
-    repos: list[str], stargazers: list[StargazerNetworkRecord]
+        repos: list[str], stargazers: list[StargazerNetworkRecord]
 ) -> nx.Graph:
     random.seed(42)
     added_repos = []
@@ -121,7 +122,7 @@ def create_follower_network(follower_info: list[FollowerInfo], out_dir: Path) ->
 
 @timeit
 def create_star_network_plot(
-    graph: nx.Graph, repos: list[str], stargazers: list[StargazerNetworkRecord]
+        graph: nx.Graph, repos: list[str], stargazers: list[StargazerNetworkRecord]
 ) -> go.Figure:
     edge_x = []
     edge_y = []
@@ -215,7 +216,7 @@ def create_star_network_plot(
 
 @timeit
 def create_follower_network_plot(
-    graph: nx.Graph, follower_info: list[FollowerInfo], last_updated: datetime.datetime
+        graph: nx.Graph, follower_info: list[FollowerInfo], last_updated: datetime.datetime
 ) -> go.Figure:
     all_connections = [(i.user_name, i.follower_name) for i in follower_info]
     solo_edges = {"x": [], "y": []}
@@ -262,7 +263,7 @@ def create_follower_network_plot(
             internal_followers_pct = 0
         else:
             internal_followers_pct = (
-                node_data["internal_followers_count"] / followers_count
+                    node_data["internal_followers_count"] / followers_count
             )
         user_name = node
 
@@ -378,17 +379,17 @@ def viz_follower_network(use_cache: bool):
             c.followers_count  follower_followers_count,
             e.internal_followers_count  follower_internal_followers_count
         from followers a 
-        
+
         inner join users b
         on a.user_id = b.user_id
         inner join users c
         on a.follower_id = c.user_id
-        
+
         left join internal_followers d
         on a.user_id = d.user_id
         left join internal_followers e
         on a.follower_id = e.user_id
-        
+
         order by b.user_name 
         """
     ).to_df()
@@ -412,6 +413,34 @@ def viz_follower_network(use_cache: bool):
     fig.show()
 
 
+def viz_summary():
+    con = duckdb.connect("../data/ampere.duckdb")
+    df = con.sql("""
+    select
+        b.repo_name,
+        starred_at,
+        c.user_name,
+        count(a.user_id) over (partition by a.repo_id order by starred_at rows between unbounded preceding and current row) as followers_count
+    from stargazers a
+	inner join repos b
+        on a.repo_id = b.repo_id
+	inner join users c
+        on a.user_id = c.user_id
+    """).to_df()
+
+    fig = px.line(
+        df,
+        x="starred_at",
+        y="followers_count",
+        color="repo_name",
+        markers=True
+    )
+    fig.show()
+
+
 if __name__ == "__main__":
     # viz_star_network()
-    viz_follower_network(use_cache=False)
+    # viz_follower_network(use_cache=False)
+    # viz_follower_network(use_cache=False)
+    viz_summary()
+
