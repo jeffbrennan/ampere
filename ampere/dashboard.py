@@ -53,24 +53,24 @@ def create_star_network(
     added_repos = []
     current_user = stargazers[0].user_name
 
-    G = nx.Graph()
+    graph = nx.Graph()
     for repo in repos:
-        G.add_node(repo, node_type="repo", repo=repo)
+        graph.add_node(repo, node_type="repo", repo=repo)
 
     for record in stargazers:
         if record.user_name != current_user:
             added_repos = []
         node_name = f"{record.user_name}_{record.repo_name}"
-        G.add_node(
+        graph.add_node(
             node_name,
             followers_count=record.followers_count,
             node_type="user_repo",
             repo=record.repo_name,
         )
-        G.add_edge(node_name, record.repo_name, weight=50, edge_type="user_repo")
+        graph.add_edge(node_name, record.repo_name, weight=50, edge_type="user_repo")
         if len(added_repos) > 0:
             for added_repo in added_repos:
-                G.add_edge(
+                graph.add_edge(
                     node_name,
                     f"{record.user_name}_{added_repo}",
                     edge_type="user_user",
@@ -79,19 +79,19 @@ def create_star_network(
         added_repos.append(record.repo_name)
         current_user = record.user_name
 
-    pos = nx.spring_layout(G)
-    nx.set_node_attributes(G, pos, "pos")
-    return G
+    pos = nx.spring_layout(graph)
+    nx.set_node_attributes(graph, pos, "pos")
+    return graph
 
 
 @timeit
 def create_follower_network(follower_info: list[FollowerInfo], out_dir: Path) -> nx.Graph:
     random.seed(42)
     added_nodes = []
-    G = nx.Graph()
+    graph = nx.Graph()
     for record in follower_info:
         if record.user_name not in added_nodes:
-            G.add_node(
+            graph.add_node(
                 record.user_name,
                 followers_count=record.followers_count,
                 internal_followers_count=record.internal_followers_count,
@@ -99,35 +99,35 @@ def create_follower_network(follower_info: list[FollowerInfo], out_dir: Path) ->
             added_nodes.append(record.user_name)
 
         if record.follower_name not in added_nodes:
-            G.add_node(
+            graph.add_node(
                 record.follower_name,
                 followers_count=record.follower_followers_count,
                 internal_followers_count=record.follower_internal_followers_count,
             )
             added_nodes.append(record.follower_name)
 
-        G.add_edge(record.user_name, record.follower_name, weight=0.03)
+        graph.add_edge(record.user_name, record.follower_name, weight=0.03)
 
-    pos = nx.spring_layout(G)
-    nx.set_node_attributes(G, pos, "pos")
+    pos = nx.spring_layout(graph)
+    nx.set_node_attributes(graph, pos, "pos")
 
     out_dir.mkdir(exist_ok=True, parents=True)
     out_path = out_dir / "follower_network.pkl"
     with out_path.open("wb") as f:
-        pickle.dump(G, f)
+        pickle.dump(graph, f)
 
-    return G
+    return graph
 
 
 @timeit
 def create_star_network_plot(
-    G: nx.Graph, repos: list[str], stargazers: list[StargazerNetworkRecord]
+    graph: nx.Graph, repos: list[str], stargazers: list[StargazerNetworkRecord]
 ) -> go.Figure:
     edge_x = []
     edge_y = []
-    for edge in G.edges():
-        x0, y0 = G.nodes[edge[0]]["pos"]
-        x1, y1 = G.nodes[edge[1]]["pos"]
+    for edge in graph.edges():
+        x0, y0 = graph.nodes[edge[0]]["pos"]
+        x1, y1 = graph.nodes[edge[1]]["pos"]
         edge_x.append(x0)
         edge_x.append(x1)
         edge_x.append(None)
@@ -145,13 +145,13 @@ def create_star_network_plot(
     )
 
     node_info = []
-    for node in G.nodes():
-        node_data = G.nodes.data()[node]
+    for node in graph.nodes():
+        node_data = graph.nodes.data()[node]
         repo = node_data["repo"]
         if node == repo:
             continue
 
-        x, y = G.nodes[node]["pos"]
+        x, y = graph.nodes[node]["pos"]
         followers_count = node_data["followers_count"]
         user_name = node.split("_")[0]
 
@@ -215,18 +215,18 @@ def create_star_network_plot(
 
 @timeit
 def create_follower_network_plot(
-    G: nx.Graph, follower_info: list[FollowerInfo], last_updated: datetime.datetime
+    graph: nx.Graph, follower_info: list[FollowerInfo], last_updated: datetime.datetime
 ) -> go.Figure:
     all_connections = [(i.user_name, i.follower_name) for i in follower_info]
     solo_edges = {"x": [], "y": []}
     mutual_edges = {"x": [], "y": []}
-    for edge in G.edges():
+    for edge in graph.edges():
         followed = edge[0]
         follower = edge[1]
 
         is_mutual = (follower, followed) in all_connections
-        x0, y0 = G.nodes[followed]["pos"]
-        x1, y1 = G.nodes[follower]["pos"]
+        x0, y0 = graph.nodes[followed]["pos"]
+        x1, y1 = graph.nodes[follower]["pos"]
 
         if is_mutual:
             mutual_edges["x"].extend([x0, x1, None])
@@ -253,9 +253,9 @@ def create_follower_network_plot(
     )
 
     node_info = []
-    for node in G.nodes():
-        node_data = G.nodes.data()[node]
-        x, y = G.nodes[node]["pos"]
+    for node in graph.nodes():
+        node_data = graph.nodes.data()[node]
+        x, y = graph.nodes[node]["pos"]
         followers_count = node_data["followers_count"]
         internal_followers_count = node_data["internal_followers_count"]
         if followers_count == 0:
@@ -293,7 +293,7 @@ def create_follower_network_plot(
         duplicates="drop",
     )
 
-    node_df["followers_group"] = node_df["followers_group"] ** 8
+    node_df["followers_group"] **= 8
 
     node_trace = go.Scatter(
         x=node_df.x,
@@ -414,6 +414,4 @@ def viz_follower_network(use_cache: bool):
 
 if __name__ == "__main__":
     # viz_star_network()
-    # TODOS - make different colors for follower and following lines
-    # calculate percentage of internal follower and following
     viz_follower_network(use_cache=False)
