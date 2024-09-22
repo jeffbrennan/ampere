@@ -147,3 +147,9 @@ class Release(SQLModel):
     created_at: datetime.datetime
     published_at: datetime.datetime
     retrieved_at: datetime.datetime
+
+class Follower(SQLModel):
+    __tablename__ = "followers"  # pyright: ignore [reportAssignmentType]
+    user_id: int = Field(primary_key=True, foreign_key="users.user_id")
+    follower_id: int = Field(primary_key=True, foreign_key="users.user_id")
+    retrieved_at: datetime.datetime

@@ -33,3 +33,8 @@ from delta_scan("/Users/jeffb/Desktop/Life/personal-projects/ampere/data/bronze/
 create table watchers as
 select *
 from delta_scan("/Users/jeffb/Desktop/Life/personal-projects/ampere/data/bronze/watchers");
+
+create table followers as
+select *
+from delta_scan("/Users/jeffb/Desktop/Life/personal-projects/ampere/data/bronze/followers");
+

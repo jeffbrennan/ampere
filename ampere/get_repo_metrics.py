@@ -28,6 +28,7 @@ from ampere.models import (
     Watcher,
     View,
     User,
+    Follower,
 )
 
 
@@ -457,6 +458,90 @@ def get_issues(owner_name: str, repo: Repo) -> list[Issue]:
     return output
 
 
+def get_followers(user_id: int) -> list[Follower]:
+    print("getting followers...")
+    url = f"https://api.github.com/user/{user_id}/followers"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    parameters = {"per_page": 100}
+
+    output = []
+    requests_finished = False
+    max_pages = 10
+    pages_checked = 0
+
+    response = requests.get(url, headers=headers, params=parameters)
+    while not requests_finished and pages_checked < max_pages:
+        if response.status_code != 200:
+            raise ValueError(response.status_code)
+        results = json.loads(response.content)
+        for result in results:
+            output.append(
+                Follower(
+                    user_id=user_id,
+                    follower_id=result["id"],
+                    retrieved_at=get_current_time(),
+                )
+            )
+
+        pages_checked += 1
+        print(f"n={len(output)}")
+        requests_finished = "next" not in response.links
+        if requests_finished:
+            break
+
+        response = requests.get(
+            response.links["next"]["url"], headers=headers, params=parameters
+        )
+
+    return output
+
+
+def get_following(user_id: int) -> list[Follower]:
+    print("getting following...")
+    url = f"https://api.github.com/user/{user_id}/following"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    parameters = {"per_page": 100}
+
+    output = []
+    requests_finished = False
+    max_pages = 10
+    pages_checked = 0
+
+    response = requests.get(url, headers=headers, params=parameters)
+    while not requests_finished and pages_checked < max_pages:
+        if response.status_code != 200:
+            raise ValueError(response.status_code)
+        results = json.loads(response.content)
+        for result in results:
+            output.append(
+                Follower(
+                    user_id=result["id"],
+                    follower_id=user_id,
+                    retrieved_at=get_current_time(),
+                )
+            )
+
+        pages_checked += 1
+        print(f"n={len(output)}")
+        requests_finished = "next" not in response.links
+        if requests_finished:
+            break
+
+        response = requests.get(
+            response.links["next"]["url"], headers=headers, params=parameters
+        )
+
+    return output
+
+
 def get_views(owner_name: str, repo: Repo) -> list[View]:
     # TODO: get "Administration" repository permissions (read)
     print("getting views...")
@@ -588,4 +673,36 @@ def refresh_users(
     print(f"average time per user: {avg_time_per_user:.2f} seconds")
 
     write_delta_table(all_results, config.table_dir, config.table_name, config.pks)
+    return len(all_results)
+
+
+def refresh_followers(
+    user_ids: list[int],
+    config: DeltaWriteConfig,
+) -> int:
+    all_results = []
+    start_time = time.time()
+    for i, user_id in enumerate(user_ids, 1):
+        header_text = f"[{i:04d}/{len(user_ids):04d}] {user_id}"
+        print(create_header(80, header_text, True, "-"))
+        try:
+            follower_result = get_followers(user_id)
+            all_results.extend(follower_result)
+        except Exception as e:
+            print(e)
+
+        try:
+            following_result = get_following(user_id)
+            all_results.extend(following_result)
+        except Exception as e:
+            print(e)
+
+    elapsed_time = time.time() - start_time
+    avg_time_per_user = elapsed_time / len(user_ids)
+
+    print(f"elapsed time: {elapsed_time:.2f} seconds")
+    print(f"average time per user: {avg_time_per_user:.2f} seconds")
+    valid_results = [i for i in all_results if i is not None]
+
+    write_delta_table(valid_results, config.table_dir, config.table_name, config.pks)
     return len(all_results)
