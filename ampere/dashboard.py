@@ -1,8 +1,10 @@
 import datetime
+import pickle
 import random
 import time
 from dataclasses import dataclass
 from functools import wraps
+from pathlib import Path
 
 import duckdb
 import networkx as nx
@@ -37,9 +39,10 @@ class StargazerNetworkRecord:
 class FollowerInfo:
     user_name: str
     followers_count: int
+    internal_followers_count: int
     follower_name: str
     follower_followers_count: int
-    retrieved_at: datetime.datetime
+    follower_internal_followers_count: int
 
 
 @timeit
@@ -82,24 +85,37 @@ def create_star_network(
 
 
 @timeit
-def create_follower_network(follower_info: list[FollowerInfo]) -> nx.Graph:
+def create_follower_network(follower_info: list[FollowerInfo], out_dir: Path) -> nx.Graph:
     random.seed(42)
     added_nodes = []
     G = nx.Graph()
     for record in follower_info:
         if record.user_name not in added_nodes:
-            G.add_node(record.user_name, followers_count=record.followers_count)
+            G.add_node(
+                record.user_name,
+                followers_count=record.followers_count,
+                internal_followers_count=record.internal_followers_count,
+            )
             added_nodes.append(record.user_name)
+
         if record.follower_name not in added_nodes:
             G.add_node(
-                record.follower_name, followers_count=record.follower_followers_count
+                record.follower_name,
+                followers_count=record.follower_followers_count,
+                internal_followers_count=record.follower_internal_followers_count,
             )
             added_nodes.append(record.follower_name)
 
-        G.add_edge(record.user_name, record.follower_name, weight=0.05)
+        G.add_edge(record.user_name, record.follower_name, weight=0.03)
 
-    pos = nx.arf_layout(G)
+    pos = nx.spring_layout(G)
     nx.set_node_attributes(G, pos, "pos")
+
+    out_dir.mkdir(exist_ok=True, parents=True)
+    out_path = out_dir / "follower_network.pkl"
+    with out_path.open("wb") as f:
+        pickle.dump(G, f)
+
     return G
 
 
@@ -199,24 +215,38 @@ def create_star_network_plot(
 
 @timeit
 def create_follower_network_plot(
-    G: nx.Graph, follower_info: list[FollowerInfo]
+    G: nx.Graph, follower_info: list[FollowerInfo], last_updated: datetime.datetime
 ) -> go.Figure:
-    edge_x = []
-    edge_y = []
+    all_connections = [(i.user_name, i.follower_name) for i in follower_info]
+    solo_edges = {"x": [], "y": []}
+    mutual_edges = {"x": [], "y": []}
     for edge in G.edges():
-        x0, y0 = G.nodes[edge[0]]["pos"]
-        x1, y1 = G.nodes[edge[1]]["pos"]
-        edge_x.append(x0)
-        edge_x.append(x1)
-        edge_x.append(None)
-        edge_y.append(y0)
-        edge_y.append(y1)
-        edge_y.append(None)
+        followed = edge[0]
+        follower = edge[1]
 
-    edge_trace = go.Scatter(
-        x=edge_x,
-        y=edge_y,
-        line=dict(width=1, color="rgba(0, 0, 0, 0.4)"),
+        is_mutual = (follower, followed) in all_connections
+        x0, y0 = G.nodes[followed]["pos"]
+        x1, y1 = G.nodes[follower]["pos"]
+
+        if is_mutual:
+            mutual_edges["x"].extend([x0, x1, None])
+            mutual_edges["y"].extend([y0, y1, None])
+        else:
+            solo_edges["x"].extend([x0, x1, None])
+            solo_edges["y"].extend([y0, y1, None])
+
+    solo_edge_trace = go.Scatter(
+        x=solo_edges["x"],
+        y=solo_edges["y"],
+        line=dict(width=1, color="rgba(0, 0, 0, 0.3)"),
+        hoverinfo="none",
+        mode="lines",
+        showlegend=False,
+    )
+    mutual_edge_trace = go.Scatter(
+        x=mutual_edges["x"],
+        y=mutual_edges["y"],
+        line=dict(width=1, color="rgba(0, 117, 255, 0.8)"),
         hoverinfo="none",
         mode="lines",
         showlegend=False,
@@ -227,11 +257,20 @@ def create_follower_network_plot(
         node_data = G.nodes.data()[node]
         x, y = G.nodes[node]["pos"]
         followers_count = node_data["followers_count"]
+        internal_followers_count = node_data["internal_followers_count"]
+        if followers_count == 0:
+            internal_followers_pct = 0
+        else:
+            internal_followers_pct = (
+                node_data["internal_followers_count"] / followers_count
+            )
         user_name = node
 
         node_text_list = [
             user_name,
             f"followers={followers_count}",
+            f"internal_followers={internal_followers_count}",
+            f"internal_followers_pct={internal_followers_pct:.2f}",
         ]
 
         node_text = "<br>".join(node_text_list)
@@ -240,36 +279,43 @@ def create_follower_network_plot(
                 "x": x,
                 "y": y,
                 "text": node_text,
-                "size": followers_count,
+                "followers_count": followers_count,
+                "internal_followers_count": internal_followers_count,
+                "internal_followers_pct": internal_followers_pct,
             }
         )
 
     node_df = pd.DataFrame(node_info)
-    node_df["size_group"] = pd.qcut(
-        node_df["size"],
+    node_df["followers_group"] = pd.qcut(
+        node_df["followers_count"],
         10,
         labels=False,
         duplicates="drop",
     )
-    node_df["size_group"] = (node_df["size_group"] + 1) ** 1.5
+
+    node_df["followers_group"] = node_df["followers_group"] ** 8
 
     node_trace = go.Scatter(
         x=node_df.x,
         y=node_df.y,
-        marker_size=6,
+        marker=dict(
+            size=6,
+            color=node_df.followers_group,
+            colorscale="Greys",
+            line=dict(width=1.1, color="black"),
+        ),
         mode="markers",
         hoverinfo="text",
         hovertext=node_df.text,
     )
 
-    last_updated = max([i.retrieved_at for i in follower_info])
     last_updated_str = last_updated.strftime("%Y-%m-%d")
 
     title_text = (
-        f"mrpowers-io User Network<br><sup>last updated: {last_updated_str}</sup>"
+        f"mrpowers-io Follower Network<br><sup>last updated: {last_updated_str}</sup>"
     )
     fig = go.Figure(
-        data=[edge_trace, node_trace],
+        data=[solo_edge_trace, mutual_edge_trace, node_trace],
         layout=go.Layout(
             title=title_text,
             showlegend=True,
@@ -312,32 +358,62 @@ def viz_star_network():
     fig.show()
 
 
-def viz_follower_network():
+@timeit
+def viz_follower_network(use_cache: bool):
     con = duckdb.connect("../data/ampere.duckdb")
     follower_info = con.sql(
         """
-        select
-        distinct
-        b.user_name,
-        b.followers_count,
-        c.user_name  follower_name,
-        c.followers_count  follower_followers_count,
-        a.retrieved_at
+        with internal_followers as (
+            select
+                user_id,
+                count(distinct follower_id)  internal_followers_count
+            from followers
+            group by user_id
+        )
+        select distinct
+            b.user_name,
+            b.followers_count,
+            d.internal_followers_count,
+            c.user_name  follower_name,
+            c.followers_count  follower_followers_count,
+            e.internal_followers_count  follower_internal_followers_count
         from followers a 
+        
         inner join users b
         on a.user_id = b.user_id
         inner join users c
         on a.follower_id = c.user_id
+        
+        left join internal_followers d
+        on a.user_id = d.user_id
+        left join internal_followers e
+        on a.follower_id = e.user_id
+        
         order by b.user_name 
         """
     ).to_df()
 
+    last_updated = (
+        con.sql("select max(retrieved_at)  retrieved_at from followers")
+        .to_df()
+        .to_dict()["retrieved_at"][0]
+    )
+
+    out_dir = Path(__file__).parents[1] / "data" / "viz"
     follower_info = list(FollowerInfo(*record) for record in follower_info.values)
-    network = create_follower_network(follower_info)
-    fig = create_follower_network_plot(network, follower_info)
+    if use_cache:
+        out_path = out_dir / "follower_network.pkl"
+        with out_path.open("rb") as f:
+            network = pickle.load(f)
+    else:
+        network = create_follower_network(follower_info, out_dir)
+
+    fig = create_follower_network_plot(network, follower_info, last_updated)
     fig.show()
 
 
 if __name__ == "__main__":
     # viz_star_network()
-    viz_follower_network()
+    # TODOS - make different colors for follower and following lines
+    # calculate percentage of internal follower and following
+    viz_follower_network(use_cache=False)
