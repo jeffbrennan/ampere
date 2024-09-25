@@ -46,6 +46,17 @@ class FollowerInfo:
     follower_internal_followers_count: int
 
 
+# intended for traces to appear in this order
+REPO_PALETTE = {
+    "spark-fast-tests": "#636EFA",
+    "spark-daria": "#EF553B",
+    "quinn": "#00CC96",
+    "jodie": "#AB63FA",
+    "levi": "#FFA15A",
+    "falsa": "#19D3F3",
+}
+
+
 @timeit
 def create_star_network(
     repos: list[str], stargazers: list[StargazerNetworkRecord]
