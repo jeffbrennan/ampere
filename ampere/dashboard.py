@@ -420,21 +420,29 @@ def viz_summary():
         b.repo_name,
         starred_at,
         c.user_name,
-        count(a.user_id) over (partition by a.repo_id order by starred_at rows between unbounded preceding and current row) as followers_count
-    from stargazers a
-	inner join repos b
-        on a.repo_id = b.repo_id
-	inner join users c
-        on a.user_id = c.user_id
+        count(a.user_id) over (partition BY a.repo_id ORDER BY starred_at ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS stars 
+    FROM stargazers a
+	INNER JOIN repos b
+        ON a.repo_id = b.repo_id
+	INNER JOIN users c
+        ON a.user_id = c.user_id
     """).to_df()
 
     fig = px.line(
         df,
         x="starred_at",
-        y="followers_count",
+        y="stars",
         color="repo_name",
-        markers=True
+        markers=True,
+        template="simple_white",
+        hover_name="repo_name",
     )
+
+    fig.update_traces(hovertemplate="<b>%{x}</b><br>%{y} ⭐")
+    fig.update_layout(
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, title="repo")
+    )
+    fig.update_layout(xaxis_title=None)
     fig.show()
 
 
