@@ -48,7 +48,7 @@ class FollowerInfo:
 
 @timeit
 def create_star_network(
-        repos: list[str], stargazers: list[StargazerNetworkRecord]
+    repos: list[str], stargazers: list[StargazerNetworkRecord]
 ) -> nx.Graph:
     random.seed(42)
     added_repos = []
@@ -122,7 +122,7 @@ def create_follower_network(follower_info: list[FollowerInfo], out_dir: Path) ->
 
 @timeit
 def create_star_network_plot(
-        graph: nx.Graph, repos: list[str], stargazers: list[StargazerNetworkRecord]
+    graph: nx.Graph, repos: list[str], stargazers: list[StargazerNetworkRecord]
 ) -> go.Figure:
     edge_x = []
     edge_y = []
@@ -216,7 +216,7 @@ def create_star_network_plot(
 
 @timeit
 def create_follower_network_plot(
-        graph: nx.Graph, follower_info: list[FollowerInfo], last_updated: datetime.datetime
+    graph: nx.Graph, follower_info: list[FollowerInfo], last_updated: datetime.datetime
 ) -> go.Figure:
     all_connections = [(i.user_name, i.follower_name) for i in follower_info]
     solo_edges = {"x": [], "y": []}
@@ -263,7 +263,7 @@ def create_follower_network_plot(
             internal_followers_pct = 0
         else:
             internal_followers_pct = (
-                    node_data["internal_followers_count"] / followers_count
+                node_data["internal_followers_count"] / followers_count
             )
         user_name = node
 
@@ -335,19 +335,19 @@ def viz_star_network():
     con = duckdb.connect("../data/ampere.duckdb")
     stargazers = con.sql(
         """
-        select
-        distinct
+        SELECT
+        DISTINCT
         a.user_name,
         a.followers_count,
         b.starred_at,
         b.retrieved_at,
         c.repo_name
-        from users a 
-        inner join stargazers b
-        on a.user_id = b.user_id
-        inner join repos c
-        on b.repo_id = c.repo_id
-        order by b.user_name 
+        FROM users a 
+        INNER JOIN stargazers b
+        ON a.user_id = b.user_id
+        INNER JOIN repos c
+        ON b.repo_id = c.repo_id
+        ORDER BY b.user_name 
         """
     ).to_df()
 
@@ -364,38 +364,38 @@ def viz_follower_network(use_cache: bool):
     con = duckdb.connect("../data/ampere.duckdb")
     follower_info = con.sql(
         """
-        with internal_followers as (
-            select
+        WITH internal_followers AS (
+            SELECT
                 user_id,
-                count(distinct follower_id)  internal_followers_count
-            from followers
-            group by user_id
+                count(DISTINCT follower_id)  internal_followers_count
+            FROM followers
+            GROUP BY user_id
         )
-        select distinct
+        SELECT DISTINCT
             b.user_name,
             b.followers_count,
             d.internal_followers_count,
             c.user_name  follower_name,
             c.followers_count  follower_followers_count,
             e.internal_followers_count  follower_internal_followers_count
-        from followers a 
+        FROM followers a 
 
-        inner join users b
-        on a.user_id = b.user_id
-        inner join users c
-        on a.follower_id = c.user_id
+        INNER JOIN users b
+        ON a.user_id = b.user_id
+        INNER JOIN users c
+        ON a.follower_id = c.user_id
 
-        left join internal_followers d
-        on a.user_id = d.user_id
-        left join internal_followers e
-        on a.follower_id = e.user_id
+        LEFT JOIN internal_followers d
+        ON a.user_id = d.user_id
+        LEFT JOIN internal_followers e
+        ON a.follower_id = e.user_id
 
-        order by b.user_name 
+        ORDER BY b.user_name 
         """
     ).to_df()
 
     last_updated = (
-        con.sql("select max(retrieved_at)  retrieved_at from followers")
+        con.sql("SELECT max(retrieved_at)  retrieved_at FROM followers")
         .to_df()
         .to_dict()["retrieved_at"][0]
     )
@@ -416,7 +416,7 @@ def viz_follower_network(use_cache: bool):
 def viz_summary():
     con = duckdb.connect("../data/ampere.duckdb")
     df = con.sql("""
-    select
+    SELECT
         b.repo_name,
         starred_at,
         c.user_name,
@@ -451,4 +451,3 @@ if __name__ == "__main__":
     # viz_follower_network(use_cache=False)
     # viz_follower_network(use_cache=False)
     viz_summary()
-
