@@ -444,11 +444,12 @@ def viz_summary():
         x="starred_at",
         y="stars",
         color="repo_name",
-        markers=True,
         template="simple_white",
         hover_name="repo_name",
+        markers=True,
+        color_discrete_map=REPO_PALETTE,
     )
-
+    fig.update_traces(line=dict(width=1), marker=dict(size=6))
     fig.update_traces(hovertemplate="<b>%{x}</b><br>%{y} ⭐")
     fig.update_layout(
         legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, title="repo")
