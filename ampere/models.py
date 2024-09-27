@@ -51,6 +51,7 @@ class Fork(SQLModel):
     repo_id: int = Field(primary_key=True, foreign_key="repo.repo_id")
     fork_id: int = Field(primary_key=True)
     owner_id: int = Field(primary_key=True, foreign_key="user.user_id")
+    created_at: datetime.datetime
     retrieved_at: datetime.datetime
 
 
@@ -147,6 +148,7 @@ class Release(SQLModel):
     created_at: datetime.datetime
     published_at: datetime.datetime
     retrieved_at: datetime.datetime
+
 
 class Follower(SQLModel):
     __tablename__ = "followers"  # pyright: ignore [reportAssignmentType]
