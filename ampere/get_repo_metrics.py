@@ -34,7 +34,6 @@ from ampere.models import (
 
 def get_forks(owner_name: str, repo: Repo) -> list[Fork]:
     print("getting forks...")
-    # https://docs.github.com/en/rest/activity/starring?apiVersion=2022-11-28
     url = f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/forks?per_page=100"
     headers = {
         "Accept": "application/vnd.github.star+json",
@@ -59,6 +58,7 @@ def get_forks(owner_name: str, repo: Repo) -> list[Fork]:
                     repo_id=repo.repo_id,
                     fork_id=result["id"],
                     owner_id=result["owner"]["id"],
+                    created_at=result["created_at"],
                     retrieved_at=get_current_time(),
                 )
             )

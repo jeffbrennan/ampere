@@ -9,6 +9,7 @@ from pathlib import Path
 import duckdb
 import networkx as nx
 import pandas as pd
+import plotly.express as px
 import plotly.graph_objects as go
 
 
@@ -43,6 +44,17 @@ class FollowerInfo:
     follower_name: str
     follower_followers_count: int
     follower_internal_followers_count: int
+
+
+# intended for traces to appear in this order
+REPO_PALETTE = {
+    "spark-fast-tests": "#636EFA",
+    "spark-daria": "#EF553B",
+    "quinn": "#00CC96",
+    "jodie": "#AB63FA",
+    "levi": "#FFA15A",
+    "falsa": "#19D3F3",
+}
 
 
 @timeit
@@ -334,19 +346,19 @@ def viz_star_network():
     con = duckdb.connect("../data/ampere.duckdb")
     stargazers = con.sql(
         """
-        select
-        distinct
+        SELECT
+        DISTINCT
         a.user_name,
         a.followers_count,
         b.starred_at,
         b.retrieved_at,
         c.repo_name
-        from users a 
-        inner join stargazers b
-        on a.user_id = b.user_id
-        inner join repos c
-        on b.repo_id = c.repo_id
-        order by b.user_name 
+        FROM users a 
+        INNER JOIN stargazers b
+        ON a.user_id = b.user_id
+        INNER JOIN repos c
+        ON b.repo_id = c.repo_id
+        ORDER BY b.user_name 
         """
     ).to_df()
 
@@ -363,38 +375,38 @@ def viz_follower_network(use_cache: bool):
     con = duckdb.connect("../data/ampere.duckdb")
     follower_info = con.sql(
         """
-        with internal_followers as (
-            select
+        WITH internal_followers AS (
+            SELECT
                 user_id,
-                count(distinct follower_id)  internal_followers_count
-            from followers
-            group by user_id
+                count(DISTINCT follower_id)  internal_followers_count
+            FROM followers
+            GROUP BY user_id
         )
-        select distinct
+        SELECT DISTINCT
             b.user_name,
             b.followers_count,
             d.internal_followers_count,
             c.user_name  follower_name,
             c.followers_count  follower_followers_count,
             e.internal_followers_count  follower_internal_followers_count
-        from followers a 
-        
-        inner join users b
-        on a.user_id = b.user_id
-        inner join users c
-        on a.follower_id = c.user_id
-        
-        left join internal_followers d
-        on a.user_id = d.user_id
-        left join internal_followers e
-        on a.follower_id = e.user_id
-        
-        order by b.user_name 
+        FROM followers a 
+
+        INNER JOIN users b
+        ON a.user_id = b.user_id
+        INNER JOIN users c
+        ON a.follower_id = c.user_id
+
+        LEFT JOIN internal_followers d
+        ON a.user_id = d.user_id
+        LEFT JOIN internal_followers e
+        ON a.follower_id = e.user_id
+
+        ORDER BY b.user_name 
         """
     ).to_df()
 
     last_updated = (
-        con.sql("select max(retrieved_at)  retrieved_at from followers")
+        con.sql("SELECT max(retrieved_at)  retrieved_at FROM followers")
         .to_df()
         .to_dict()["retrieved_at"][0]
     )
@@ -412,6 +424,58 @@ def viz_follower_network(use_cache: bool):
     fig.show()
 
 
+def viz_summary():
+    con = duckdb.connect("data/ampere.duckdb")
+    df = con.sql("""SELECT
+	repo_id,
+	metric_type,
+	metric_date,
+	metric_count,
+	repo_name
+FROM main.mart_repo_summary
+ORDER BY
+	metric_date
+    """).to_df()
+
+    fig = px.line(
+        df,
+        x="metric_date",
+        y="metric_count",
+        color="repo_name",
+        facet_col="metric_type",
+        facet_col_wrap=2,
+        template="simple_white",
+        hover_name="repo_name",
+        markers=True,
+        color_discrete_map=REPO_PALETTE,
+        height=350 * 6 / 2,
+        category_orders={
+            "metric_type": [
+                "stars",
+                "issues",
+                "commits",
+                "lines of code",
+                "forks",
+                "pull requests",
+            ]
+        },
+    )
+
+    fig.update_yaxes(matches=None, showticklabels=True)
+    fig.update_traces(line=dict(width=1.75), marker=dict(size=4))
+    fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
+    fig.update_layout(legend=dict(title="<b>repo</b>"))
+    fig.for_each_annotation(
+        lambda a: a.update(text="<b>" + a.text.split("=")[-1] + "</b>")
+    )
+    fig.for_each_yaxis(lambda y: y.update(title=""))
+    fig.for_each_xaxis(lambda x: x.update(title="", showticklabels=True))
+
+    fig.show()
+
+
 if __name__ == "__main__":
     # viz_star_network()
-    viz_follower_network(use_cache=False)
+    # viz_follower_network(use_cache=False)
+    # viz_follower_network(use_cache=False)
+    viz_summary()
