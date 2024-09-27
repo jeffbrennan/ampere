@@ -167,15 +167,6 @@ with
 		union all
 		select *
 		from pr_metrics
-	),
-	combined_agg as (
-		select
-			repo_id,
-			metric_type,
-			time_bucket(INTERVAL '1 week', metric_timestamp) as metric_date,
-			max(metric_count) as metric_count
-		from combined
-		group by all
 	)
 select *
 from combined_agg
