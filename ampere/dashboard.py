@@ -425,36 +425,52 @@ def viz_follower_network(use_cache: bool):
 
 
 def viz_summary():
-    con = duckdb.connect("../data/ampere.duckdb")
-    df = con.sql("""
-    SELECT
-        b.repo_name,
-        starred_at,
-        c.user_name,
-        count(a.user_id) over (partition BY a.repo_id ORDER BY starred_at ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS stars 
-    FROM stargazers a
-	INNER JOIN repos b
-        ON a.repo_id = b.repo_id
-	INNER JOIN users c
-        ON a.user_id = c.user_id
+    con = duckdb.connect("data/ampere.duckdb")
+    df = con.sql("""SELECT
+	repo_id,
+	metric_type,
+	metric_date,
+	metric_count,
+	repo_name
+FROM main.mart_repo_summary
+ORDER BY
+	metric_date
     """).to_df()
 
     fig = px.line(
         df,
-        x="starred_at",
-        y="stars",
+        x="metric_date",
+        y="metric_count",
         color="repo_name",
+        facet_col="metric_type",
+        facet_col_wrap=2,
         template="simple_white",
         hover_name="repo_name",
         markers=True,
         color_discrete_map=REPO_PALETTE,
+        height=350 * 6 / 2,
+        category_orders={
+            "metric_type": [
+                "stars",
+                "issues",
+                "commits",
+                "lines of code",
+                "forks",
+                "pull requests",
+            ]
+        },
     )
-    fig.update_traces(line=dict(width=1), marker=dict(size=6))
-    fig.update_traces(hovertemplate="<b>%{x}</b><br>%{y} ⭐")
-    fig.update_layout(
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, title="repo")
+
+    fig.update_yaxes(matches=None, showticklabels=True)
+    fig.update_traces(line=dict(width=1.75), marker=dict(size=4))
+    fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
+    fig.update_layout(legend=dict(title="<b>repo</b>"))
+    fig.for_each_annotation(
+        lambda a: a.update(text="<b>" + a.text.split("=")[-1] + "</b>")
     )
-    fig.update_layout(xaxis_title=None)
+    fig.for_each_yaxis(lambda y: y.update(title=""))
+    fig.for_each_xaxis(lambda x: x.update(title="", showticklabels=True))
+
     fig.show()
 
 
