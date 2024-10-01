@@ -127,6 +127,24 @@ with
             deletions_count * -1 as metric_count,
         from commits
     ),
+    commit_metrics_combined as (
+        select
+            repo_id,
+            metric_id,
+            metric_timestamp,
+            user_id,
+            sum(metric_count) as metric_count
+        from
+            (
+                select *
+                from commit_metrics_added
+                union all
+                select *
+                from commit_metrics_deleted
+            )
+        group by all
+
+    ),
     codebase_size_metrics as (
         select
             repo_id,
@@ -139,14 +157,7 @@ with
                 order by metric_timestamp
                 rows between unbounded preceding and current row
             ) as metric_count
-        from
-            (
-                select *
-                from commit_metrics_added
-                union all
-                select *
-                from commit_metrics_deleted
-            )
+        from commit_metrics_combined
     ),
     commit_metrics as (
         select
@@ -160,14 +171,7 @@ with
                 order by metric_timestamp
                 rows between unbounded preceding and current row
             ) as metric_count
-        from
-            (
-                select *
-                from commit_metrics_added
-                union all
-                select *
-                from commit_metrics_deleted
-            )
+        from commit_metrics_combined
     ),
     combined as (
         select *
