@@ -6,5 +6,3 @@ ampere:
       path: 'data/ampere.duckdb'
       extensions:
         - delta
-config:
-    send_anonymous_usage_stats: False
