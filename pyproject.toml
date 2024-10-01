@@ -25,6 +25,7 @@ plotly = "^5.24.1"
 kaleido = "0.2.1"
 jupyter = "^1.1.1"
 scipy = "^1.14.1"
+dash = "^2.18.1"
 
 
 [build-system]
