@@ -350,7 +350,7 @@ def viz_star_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
         ON a.user_id = b.user_id
         INNER JOIN repos c
         ON b.repo_id = c.repo_id
-        ORDER BY b.user_name 
+        ORDER BY a.user_name 
         """
     ).to_df()
 
