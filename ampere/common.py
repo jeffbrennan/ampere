@@ -1,12 +1,16 @@
 import datetime
 import os
+import time
 from dataclasses import dataclass
+from functools import wraps
 from pathlib import Path
 from typing import Callable, Optional
 
 import dotenv
+import duckdb
 import pandas as pd
 from deltalake import write_deltalake, DeltaTable
+from duckdb import DuckDBPyConnection
 from sqlmodel.main import SQLModelMetaclass
 
 from ampere.models import SQLModelType
@@ -101,3 +105,22 @@ def get_model_foreign_key(model: SQLModelMetaclass, fk_name: str) -> Optional[st
             continue
         if v.foreign_key == fk_name:
             return k
+
+
+def get_db_con() -> DuckDBPyConnection:
+    db_path = Path(__file__).parents[1] / "data" / "ampere.duckdb"
+    return duckdb.connect(str(db_path))
+
+
+def timeit(func):
+    # https://dev.to/kcdchennai/python-decorator-to-measure-execution-time-54hk
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        print(f"Function {func.__name__} Took {total_time:.2f} seconds")
+        return result
+
+    return timeit_wrapper

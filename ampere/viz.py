@@ -6,25 +6,13 @@ from dataclasses import dataclass
 from functools import wraps
 from pathlib import Path
 
-import duckdb
 import networkx as nx
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.graph_objs import Figure
 
-
-def timeit(func):
-    # https://dev.to/kcdchennai/python-decorator-to-measure-execution-time-54hk
-    @wraps(func)
-    def timeit_wrapper(*args, **kwargs):
-        start_time = time.perf_counter()
-        result = func(*args, **kwargs)
-        end_time = time.perf_counter()
-        total_time = end_time - start_time
-        print(f"Function {func.__name__} Took {total_time:.2f} seconds")
-        return result
-
-    return timeit_wrapper
+from ampere.common import get_db_con, timeit
 
 
 @dataclass(slots=True, frozen=True)
@@ -61,6 +49,8 @@ REPO_PALETTE = {
 def create_star_network(
     repos: list[str], stargazers: list[StargazerNetworkRecord]
 ) -> nx.Graph:
+    start_time = time.time()
+    print("creating star network...")
     random.seed(42)
     added_repos = []
     current_user = stargazers[0].user_name
@@ -93,6 +83,8 @@ def create_star_network(
 
     pos = nx.spring_layout(graph)
     nx.set_node_attributes(graph, pos, "pos")
+    elapsed_time = time.time() - start_time
+    print(f"{elapsed_time:.2f} seconds")
     return graph
 
 
@@ -342,8 +334,8 @@ def create_follower_network_plot(
 
 
 @timeit
-def viz_star_network():
-    con = duckdb.connect("../data/ampere.duckdb")
+def viz_star_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
+    con = get_db_con()
     stargazers = con.sql(
         """
         SELECT
@@ -364,15 +356,27 @@ def viz_star_network():
 
     stargazers = list(StargazerNetworkRecord(*record) for record in stargazers.values)
     repos = sorted(set(i.repo_name for i in stargazers))
+    out_dir = Path(__file__).parents[1] / "data" / "viz"
+    out_path = out_dir / "star_network.pkl"
 
-    network = create_star_network(repos, stargazers)
+    if use_cache and out_path.exists():
+        print("loading from cache")
+        with out_path.open("rb") as f:
+            network = pickle.load(f)
+    else:
+        print("creating from scratch")
+        network = create_star_network(repos, stargazers)
+
     fig = create_star_network_plot(network, repos, stargazers)
-    fig.show()
+    if show_fig:
+        fig.show()
+
+    return fig
 
 
 @timeit
 def viz_follower_network(use_cache: bool):
-    con = duckdb.connect("../data/ampere.duckdb")
+    con = get_db_con()
     follower_info = con.sql(
         """
         WITH internal_followers AS (
@@ -425,7 +429,7 @@ def viz_follower_network(use_cache: bool):
 
 
 def viz_summary(show_fig: bool = False):
-    con = duckdb.connect("data/ampere.duckdb")
+    con = get_db_con()
     df = con.sql("""SELECT
 	repo_id,
 	metric_type,
@@ -475,6 +479,7 @@ ORDER BY
         fig.show()
 
     return fig
+
 
 if __name__ == "__main__":
     # viz_star_network()
