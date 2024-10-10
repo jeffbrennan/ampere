@@ -3,7 +3,6 @@ import pickle
 import random
 import time
 from dataclasses import dataclass
-from functools import wraps
 from pathlib import Path
 
 import networkx as nx
@@ -47,7 +46,7 @@ REPO_PALETTE = {
 
 @timeit
 def create_star_network(
-    repos: list[str], stargazers: list[StargazerNetworkRecord]
+    repos: list[str], stargazers: list[StargazerNetworkRecord], out_dir: Path
 ) -> nx.Graph:
     start_time = time.time()
     print("creating star network...")
@@ -83,8 +82,12 @@ def create_star_network(
 
     pos = nx.spring_layout(graph)
     nx.set_node_attributes(graph, pos, "pos")
-    elapsed_time = time.time() - start_time
-    print(f"{elapsed_time:.2f} seconds")
+
+    out_dir.mkdir(exist_ok=True, parents=True)
+    out_path = out_dir / "star_network.pkl"
+    with out_path.open("wb") as f:
+        pickle.dump(graph, f)
+
     return graph
 
 
@@ -365,7 +368,7 @@ def viz_star_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
             network = pickle.load(f)
     else:
         print("creating from scratch")
-        network = create_star_network(repos, stargazers)
+        network = create_star_network(repos, stargazers, out_dir)
 
     fig = create_star_network_plot(network, repos, stargazers)
     if show_fig:
