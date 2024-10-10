@@ -14,15 +14,15 @@ def layout(**kwargs):
         [
             dbc.Col(sidebar(), width=1),
             dcc.Interval(
-                id="network-follower-load-interval",
+                id="network-stargazer-load-interval",
                 n_intervals=0,
                 max_intervals=0,
                 interval=1,
             ),
             dbc.Col(
                 dcc.Graph(
-                    id="network-follower-graph",
-                    style={"height": "100vh"},
+                    id="network-stargazer-graph",
+                    style={"height": "95vh"},
                 ),
                 width=11,
             ),
@@ -31,8 +31,8 @@ def layout(**kwargs):
 
 
 @callback(
-    Output("network-follower-graph", "figure"),
-    Input("network-follower-load-interval", "n_intervals"),
+    Output("network-stargazer-graph", "figure"),
+    Input("network-stargazer-load-interval", "n_intervals"),
 )
 def show_summary_graph(_: int) -> Figure:
     return viz_star_network()
