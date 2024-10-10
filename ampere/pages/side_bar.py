@@ -4,7 +4,7 @@ from dash import html
 
 
 def clean_network_name(orig_name: str) -> str:
-    return orig_name.replace("network followers", "followers").replace(
+    return orig_name.replace("Network followers", "followers").replace(
         "network", "stargazers"
     )
 
