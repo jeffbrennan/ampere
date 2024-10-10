@@ -3,28 +3,15 @@ import pickle
 import random
 import time
 from dataclasses import dataclass
-from functools import wraps
 from pathlib import Path
 
-import duckdb
 import networkx as nx
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.graph_objs import Figure
 
-
-def timeit(func):
-    # https://dev.to/kcdchennai/python-decorator-to-measure-execution-time-54hk
-    @wraps(func)
-    def timeit_wrapper(*args, **kwargs):
-        start_time = time.perf_counter()
-        result = func(*args, **kwargs)
-        end_time = time.perf_counter()
-        total_time = end_time - start_time
-        print(f"Function {func.__name__} Took {total_time:.2f} seconds")
-        return result
-
-    return timeit_wrapper
+from ampere.common import get_db_con, timeit
 
 
 @dataclass(slots=True, frozen=True)
@@ -59,8 +46,10 @@ REPO_PALETTE = {
 
 @timeit
 def create_star_network(
-    repos: list[str], stargazers: list[StargazerNetworkRecord]
+    repos: list[str], stargazers: list[StargazerNetworkRecord], out_dir: Path
 ) -> nx.Graph:
+    start_time = time.time()
+    print("creating star network...")
     random.seed(42)
     added_repos = []
     current_user = stargazers[0].user_name
@@ -93,6 +82,12 @@ def create_star_network(
 
     pos = nx.spring_layout(graph)
     nx.set_node_attributes(graph, pos, "pos")
+
+    out_dir.mkdir(exist_ok=True, parents=True)
+    out_path = out_dir / "star_network.pkl"
+    with out_path.open("wb") as f:
+        pickle.dump(graph, f)
+
     return graph
 
 
@@ -342,8 +337,8 @@ def create_follower_network_plot(
 
 
 @timeit
-def viz_star_network():
-    con = duckdb.connect("../data/ampere.duckdb")
+def viz_star_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
+    con = get_db_con()
     stargazers = con.sql(
         """
         SELECT
@@ -358,21 +353,33 @@ def viz_star_network():
         ON a.user_id = b.user_id
         INNER JOIN repos c
         ON b.repo_id = c.repo_id
-        ORDER BY b.user_name 
+        ORDER BY a.user_name 
         """
     ).to_df()
 
     stargazers = list(StargazerNetworkRecord(*record) for record in stargazers.values)
     repos = sorted(set(i.repo_name for i in stargazers))
+    out_dir = Path(__file__).parents[1] / "data" / "viz"
+    out_path = out_dir / "star_network.pkl"
 
-    network = create_star_network(repos, stargazers)
+    if use_cache and out_path.exists():
+        print("loading from cache")
+        with out_path.open("rb") as f:
+            network = pickle.load(f)
+    else:
+        print("creating from scratch")
+        network = create_star_network(repos, stargazers, out_dir)
+
     fig = create_star_network_plot(network, repos, stargazers)
-    fig.show()
+    if show_fig:
+        fig.show()
+
+    return fig
 
 
 @timeit
-def viz_follower_network(use_cache: bool):
-    con = duckdb.connect("../data/ampere.duckdb")
+def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
+    con = get_db_con()
     follower_info = con.sql(
         """
         WITH internal_followers AS (
@@ -411,21 +418,25 @@ def viz_follower_network(use_cache: bool):
         .to_dict()["retrieved_at"][0]
     )
 
-    out_dir = Path(__file__).parents[1] / "data" / "viz"
     follower_info = list(FollowerInfo(*record) for record in follower_info.values)
-    if use_cache:
-        out_path = out_dir / "follower_network.pkl"
+
+    out_dir = Path(__file__).parents[1] / "data" / "viz"
+    out_path = out_dir / "follower_network.pkl"
+    if use_cache and out_path.exists():
         with out_path.open("rb") as f:
             network = pickle.load(f)
     else:
         network = create_follower_network(follower_info, out_dir)
 
     fig = create_follower_network_plot(network, follower_info, last_updated)
-    fig.show()
+    if show_fig:
+        fig.show()
+
+    return fig
 
 
-def viz_summary():
-    con = duckdb.connect("data/ampere.duckdb")
+def viz_summary(show_fig: bool = False):
+    con = get_db_con()
     df = con.sql("""SELECT
 	repo_id,
 	metric_type,
@@ -471,7 +482,10 @@ ORDER BY
     fig.for_each_yaxis(lambda y: y.update(title=""))
     fig.for_each_xaxis(lambda x: x.update(title="", showticklabels=True))
 
-    fig.show()
+    if show_fig:
+        fig.show()
+
+    return fig
 
 
 if __name__ == "__main__":
