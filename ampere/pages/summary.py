@@ -2,6 +2,7 @@ import dash
 from dash import callback, Output, Input
 from dash import dcc
 from dash import html
+from plotly.graph_objs import Figure
 
 from ampere.viz import viz_summary
 
@@ -24,6 +25,5 @@ layout = [
     Output("summary-graph", "figure"),
     Input("load-interval", "n_intervals"),
 )
-def show_summary_graph(metric_selection: str):
-    print(metric_selection)
+def show_summary_graph(_: int) -> Figure:
     return viz_summary()
