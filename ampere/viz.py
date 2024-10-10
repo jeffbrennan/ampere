@@ -424,7 +424,7 @@ def viz_follower_network(use_cache: bool):
     fig.show()
 
 
-def viz_summary():
+def viz_summary(show_fig: bool = False):
     con = duckdb.connect("data/ampere.duckdb")
     df = con.sql("""SELECT
 	repo_id,
@@ -471,8 +471,10 @@ ORDER BY
     fig.for_each_yaxis(lambda y: y.update(title=""))
     fig.for_each_xaxis(lambda x: x.update(title="", showticklabels=True))
 
-    fig.show()
+    if show_fig:
+        fig.show()
 
+    return fig
 
 if __name__ == "__main__":
     # viz_star_network()
