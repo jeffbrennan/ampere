@@ -378,7 +378,7 @@ def viz_star_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
 
 
 @timeit
-def viz_follower_network(use_cache: bool):
+def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
     con = get_db_con()
     follower_info = con.sql(
         """
@@ -418,17 +418,21 @@ def viz_follower_network(use_cache: bool):
         .to_dict()["retrieved_at"][0]
     )
 
-    out_dir = Path(__file__).parents[1] / "data" / "viz"
     follower_info = list(FollowerInfo(*record) for record in follower_info.values)
-    if use_cache:
-        out_path = out_dir / "follower_network.pkl"
+
+    out_dir = Path(__file__).parents[1] / "data" / "viz"
+    out_path = out_dir / "follower_network.pkl"
+    if use_cache and out_path.exists():
         with out_path.open("rb") as f:
             network = pickle.load(f)
     else:
         network = create_follower_network(follower_info, out_dir)
 
     fig = create_follower_network_plot(network, follower_info, last_updated)
-    fig.show()
+    if show_fig:
+        fig.show()
+
+    return fig
 
 
 def viz_summary(show_fig: bool = False):
