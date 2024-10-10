@@ -1,7 +1,6 @@
 import dash
 from dash import callback, Output, Input
 from dash import dcc
-from dash import html
 from plotly.graph_objs import Figure
 
 from ampere.viz import viz_summary
@@ -9,7 +8,6 @@ from ampere.viz import viz_summary
 dash.register_page(__name__, name="summary", path="/", top_nav=True, order=0)
 
 layout = [
-    html.H1(children="Summary", style={"textAlign": "center"}),
     # dummy input for reload on refresh
     dcc.Interval(
         id="load-interval",
