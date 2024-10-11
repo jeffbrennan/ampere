@@ -20,9 +20,11 @@ def layout(**kwargs):
                 interval=1,
             ),
             dbc.Col(
-                dcc.Graph(
-                    id="network-stargazer-graph",
-                    style={"height": "95vh"},
+                dcc.Loading(
+                    dcc.Graph(
+                        id="network-stargazer-graph",
+                        style={"height": "95vh"},
+                    )
                 ),
                 width=10,
             ),
