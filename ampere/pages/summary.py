@@ -30,11 +30,13 @@ def handle_summary_widescreen(display_width_px: int):
 
     if is_widescreen:
         return {
+            "marginTop": "2vw",
             "marginLeft": "20vw",
             "marginRight": "20vw",
         }
 
     return {
+        "marginTop": "2vw",
         "marginLeft": "0vw",
         "marginRight": "0vw",
     }

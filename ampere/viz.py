@@ -448,7 +448,7 @@ ORDER BY
         hover_name="repo_name",
         markers=True,
         color_discrete_map=REPO_PALETTE,
-        height=350 * 6 / 2,
+        height=400 * 6 / 2,
         facet_col_spacing=0.08,
         facet_row_spacing=0.10,
         category_orders={
