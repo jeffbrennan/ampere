@@ -35,12 +35,13 @@ class FollowerInfo:
 
 # intended for traces to appear in this order
 REPO_PALETTE = {
-    "spark-fast-tests": "#636EFA",
     "spark-daria": "#EF553B",
     "quinn": "#00CC96",
+    "spark-fast-tests": "#636EFA",
     "jodie": "#AB63FA",
     "levi": "#FFA15A",
     "falsa": "#19D3F3",
+    "community": "#D57DBF",
 }
 
 
@@ -470,14 +471,15 @@ ORDER BY
                 "lines of code",
                 "forks",
                 "pull requests",
-            ]
+            ],
+            "repo_name": REPO_PALETTE.keys(),
         },
     )
 
     fig.update_yaxes(matches=None, showticklabels=True)
     fig.update_traces(line=dict(width=1.75), marker=dict(size=4))
     fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
-    fig.update_layout(legend=dict(title=None, font=dict(size=14)))
+    fig.update_layout(legend=dict(title=None, itemsizing="constant", font=dict(size=14)))
     fig.for_each_annotation(
         lambda a: a.update(text="<b>" + a.text.split("=")[-1] + "</b>")
     )
