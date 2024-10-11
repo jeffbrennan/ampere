@@ -46,7 +46,7 @@ footer = html.Footer(
     style={
         "position": "fixed",
         "bottom": "0",
-        "width": "100%",
+        "width": "98%",
         "backgroundColor": "#3F6DF9",
         "color": "#FFFFFF",
         "paddingLeft": "4.5vw",
