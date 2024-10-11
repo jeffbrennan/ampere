@@ -220,7 +220,7 @@ def create_star_network_plot(
 
 @timeit
 def create_follower_network_plot(
-    graph: nx.Graph, follower_info: list[FollowerInfo], last_updated: datetime.datetime
+    graph: nx.Graph, follower_info: list[FollowerInfo]
 ) -> go.Figure:
     all_connections = [(i.user_name, i.follower_name) for i in follower_info]
     solo_edges = {"x": [], "y": []}
@@ -246,7 +246,7 @@ def create_follower_network_plot(
         line=dict(width=1, color="rgba(0, 0, 0, 0.3)"),
         hoverinfo="none",
         mode="lines",
-        showlegend=False,
+        name="solo connection",
     )
     mutual_edge_trace = go.Scatter(
         x=mutual_edges["x"],
@@ -254,7 +254,7 @@ def create_follower_network_plot(
         line=dict(width=1, color="rgba(0, 117, 255, 0.8)"),
         hoverinfo="none",
         mode="lines",
-        showlegend=False,
+        name="mutual connection",
     )
 
     node_info = []
@@ -312,22 +312,18 @@ def create_follower_network_plot(
         mode="markers",
         hoverinfo="text",
         hovertext=node_df.text,
+        name="follower count",
     )
 
-    last_updated_str = last_updated.strftime("%Y-%m-%d")
-
-    title_text = (
-        f"mrpowers-io Follower Network<br><sup>last updated: {last_updated_str}</sup>"
-    )
     fig = go.Figure(
         data=[solo_edge_trace, mutual_edge_trace, node_trace],
         layout=go.Layout(
-            title=title_text,
             showlegend=True,
             hovermode="closest",
             margin=dict(b=20, l=5, r=5, t=55),
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            template="none",
         ),
     )
 
@@ -411,12 +407,6 @@ def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figu
         """
     ).to_df()
 
-    last_updated = (
-        con.sql("SELECT max(retrieved_at)  retrieved_at FROM followers")
-        .to_df()
-        .to_dict()["retrieved_at"][0]
-    )
-
     follower_info = list(FollowerInfo(*record) for record in follower_info.values)
 
     out_dir = Path(__file__).parents[1] / "data" / "viz"
@@ -427,7 +417,7 @@ def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figu
     else:
         network = create_follower_network(follower_info, out_dir)
 
-    fig = create_follower_network_plot(network, follower_info, last_updated)
+    fig = create_follower_network_plot(network, follower_info)
     if show_fig:
         fig.show()
 
