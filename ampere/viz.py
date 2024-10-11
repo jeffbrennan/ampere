@@ -460,6 +460,8 @@ ORDER BY
         markers=True,
         color_discrete_map=REPO_PALETTE,
         height=350 * 6 / 2,
+        facet_col_spacing=0.08,
+        facet_row_spacing=0.10,
         category_orders={
             "metric_type": [
                 "stars",
@@ -475,13 +477,33 @@ ORDER BY
     fig.update_yaxes(matches=None, showticklabels=True)
     fig.update_traces(line=dict(width=1.75), marker=dict(size=4))
     fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
-    fig.update_layout(legend=dict(title="<b>repo</b>"))
+    fig.update_layout(legend=dict(title=None, font=dict(size=14)))
     fig.for_each_annotation(
         lambda a: a.update(text="<b>" + a.text.split("=")[-1] + "</b>")
     )
-    fig.for_each_yaxis(lambda y: y.update(title=""))
-    fig.for_each_xaxis(lambda x: x.update(title="", showticklabels=True))
 
+    fig.update_annotations(font_size=14)
+    fig.for_each_yaxis(
+        lambda y: y.update(
+            title="",
+            showline=True,
+            linewidth=1,
+            linecolor="black",
+            mirror=True,
+            tickfont_size=14,
+        )
+    )
+    fig.for_each_xaxis(
+        lambda x: x.update(
+            title="",
+            showline=True,
+            linewidth=1,
+            linecolor="black",
+            mirror=True,
+            showticklabels=True,
+            tickfont_size=14,
+        )
+    )
     if show_fig:
         fig.show()
 
