@@ -1,4 +1,5 @@
 import dash
+import pandas as pd
 from dash import html, dash_table
 
 from ampere.common import get_db_con
@@ -6,7 +7,7 @@ from ampere.common import get_db_con
 dash.register_page(__name__, name="about", top_nav=True, order=2)
 
 
-def repo_table():
+def create_repo_table() -> pd.DataFrame:
     con = get_db_con()
     return con.sql(
         """SELECT
@@ -24,7 +25,7 @@ def repo_table():
 
 
 def layout(**kwargs):
-    df = repo_table()
+    df = create_repo_table()
     return [
         html.H2("Repos"),
         dash_table.DataTable(
