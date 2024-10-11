@@ -203,14 +203,9 @@ def create_star_network_plot(
         )
         all_node_traces.append(node_trace)
 
-    last_updated = max([i.retrieved_at for i in stargazers])
-    last_updated_str = last_updated.strftime("%Y-%m-%d")
-
-    title_text = f"mrpowers-io Stargazers<br><sup>last updated: {last_updated_str}</sup>"
     fig = go.Figure(
         data=[edge_trace, *all_node_traces],
         layout=go.Layout(
-            title=title_text,
             showlegend=True,
             hovermode="closest",
             margin=dict(b=20, l=5, r=5, t=55),
