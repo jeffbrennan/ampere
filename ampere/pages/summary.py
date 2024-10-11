@@ -1,6 +1,6 @@
 import dash
-from dash import callback, Output, Input
-from dash import dcc
+import dash_breakpoints
+from dash import Input, Output, callback, dcc
 from plotly.graph_objs import Figure
 
 from ampere.viz import viz_summary
@@ -15,14 +15,29 @@ layout = [
         max_intervals=0,
         interval=1,
     ),
+    dash_breakpoints.WindowBreakpoints(id="breakpoints"),
     dcc.Loading(
         id="loading-graph",
         type="default",
-        children=[
-            dcc.Graph(id="summary-graph"),
-        ],
+        children=[dcc.Graph(id="summary-graph")],
     ),
 ]
+
+
+@callback(Output("summary-graph", "style"), [Input("breakpoints", "width")])
+def handle_widescreen(display_width_px: int):
+    is_widescreen = display_width_px > 1920
+
+    if is_widescreen:
+        return {
+            "marginLeft": "20vw",
+            "marginRight": "20vw",
+        }
+
+    return {
+        "marginLeft": "0vw",
+        "marginRight": "0vw",
+    }
 
 
 @callback(
