@@ -146,7 +146,7 @@ def create_star_network_plot(
     edge_trace = go.Scatter(
         x=edge_x,
         y=edge_y,
-        line=dict(width=0.1, color="rgba(0, 0, 0, 0.2)"),
+        line=dict(width=1, color="rgba(0, 0, 0, 0.3)"),
         hoverinfo="none",
         mode="lines",
         showlegend=False,
@@ -195,6 +195,7 @@ def create_star_network_plot(
             x=repo_df.x,
             y=repo_df.y,
             marker_size=repo_df.size_group,
+            marker_color=REPO_PALETTE[repo],
             mode="markers",
             hoverinfo="text",
             hovertext=repo_df.text,
@@ -215,6 +216,7 @@ def create_star_network_plot(
             margin=dict(b=20, l=5, r=5, t=55),
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            template="none",
         ),
     )
 
@@ -359,7 +361,8 @@ def viz_star_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
     ).to_df()
 
     stargazers = list(StargazerNetworkRecord(*record) for record in stargazers.values)
-    repos = sorted(set(i.repo_name for i in stargazers))
+    repos_with_stargazers = list(set(i.repo_name for i in stargazers))
+    repos = [i for i in REPO_PALETTE if i in repos_with_stargazers]
     out_dir = Path(__file__).parents[1] / "data" / "viz"
     out_path = out_dir / "star_network.pkl"
 
