@@ -35,9 +35,10 @@ navbar = dbc.NavbarSimple(
         ],
     ),
     brand="ampere",
-    color="primary",
-    dark=True,
+    color="#3F6DF9",
     className="mb-2",
+    dark=True,
+    style={"width": "100%", "color": "#FFFFFF"},
 )
 
 footer = html.Footer(
@@ -46,7 +47,7 @@ footer = html.Footer(
         "position": "fixed",
         "bottom": "0",
         "width": "100%",
-        "backgroundColor": "#316CF4",
+        "backgroundColor": "#3F6DF9",
         "color": "#FFFFFF",
         "paddingLeft": "4.5vw",
     },
