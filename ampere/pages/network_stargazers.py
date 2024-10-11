@@ -1,6 +1,7 @@
 import dash
 import dash_bootstrap_components as dbc
 from dash import dcc, callback, Output, Input
+import dash_breakpoints
 from plotly.graph_objects import Figure
 
 from ampere.pages.side_bar import sidebar
@@ -19,17 +20,31 @@ def layout(**kwargs):
                 max_intervals=0,
                 interval=1,
             ),
-            dbc.Col(
-                dcc.Loading(
-                    dcc.Graph(
-                        id="network-stargazer-graph",
-                        style={"height": "95vh"},
-                    )
-                ),
-                width=10,
-            ),
+            dash_breakpoints.WindowBreakpoints(id="network-stargazer-breakpoints"),
+            dbc.Col(dcc.Loading(dcc.Graph(id="network-stargazer-graph")), width=10),
         ]
     )
+
+
+@callback(
+    Output("network-stargazer-graph", "style"),
+    Input("network-stargazer-breakpoints", "width"),
+)
+def handle_stargazer_widescreen(display_width_px: int):
+    is_widescreen = display_width_px > 1920
+
+    if is_widescreen:
+        return {
+            "height": "95vh",
+            "marginLeft": "0vw",
+            "marginRight": "20vw",
+        }
+
+    return {
+        "height": "95vh",
+        "marginLeft": "0vw",
+        "marginRight": "0vw",
+    }
 
 
 @callback(
