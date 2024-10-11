@@ -24,8 +24,8 @@ layout = [
 ]
 
 
-@callback(Output("summary-graph", "style"), [Input("breakpoints", "width")])
-def handle_widescreen(display_width_px: int):
+@callback(Output("summary-graph", "style"), Input("breakpoints", "width"))
+def handle_summary_widescreen(display_width_px: int):
     is_widescreen = display_width_px > 1920
 
     if is_widescreen:
