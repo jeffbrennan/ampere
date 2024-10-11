@@ -1,9 +1,10 @@
 import datetime
+
 import dash
 import dash_bootstrap_components as dbc
+from dash import html
 
 from ampere.common import get_db_con
-from dash import dcc, html
 
 app = dash.Dash(
     __name__,
