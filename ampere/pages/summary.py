@@ -15,7 +15,13 @@ layout = [
         max_intervals=0,
         interval=1,
     ),
-    dcc.Graph(id="summary-graph"),
+    dcc.Loading(
+        id="loading-graph",
+        type="default",
+        children=[
+            dcc.Graph(id="summary-graph"),
+        ],
+    ),
 ]
 
 
