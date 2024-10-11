@@ -12,7 +12,7 @@ dash.register_page(__name__, name="network", top_nav=True, order=1)
 def layout(**kwargs):
     return dbc.Row(
         [
-            dbc.Col(sidebar(), width=1),
+            dbc.Col(sidebar(), width=2),
             dcc.Interval(
                 id="network-stargazer-load-interval",
                 n_intervals=0,
@@ -24,7 +24,7 @@ def layout(**kwargs):
                     id="network-stargazer-graph",
                     style={"height": "95vh"},
                 ),
-                width=11,
+                width=10,
             ),
         ]
     )
