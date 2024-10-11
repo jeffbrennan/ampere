@@ -2,7 +2,7 @@ import datetime
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import html
+from dash import html, callback, Input, Output
 
 from ampere.common import get_db_con
 
@@ -35,11 +35,17 @@ navbar = dbc.NavbarSimple(
             if page.get("top_nav")
         ],
     ),
+    id="navbar",
     brand="ampere",
     color="#3F6DF9",
     className="mb-2",
     dark=True,
-    style={"width": "100%", "color": "#FFFFFF"},
+    fluid=True,
+    links_left=True,
+    style={
+        "width": "100%",
+        "color": "#FFFFFF",
+    },
 )
 
 footer = html.Footer(
@@ -47,10 +53,10 @@ footer = html.Footer(
     style={
         "position": "fixed",
         "bottom": "0",
-        "width": "98%",
+        "width": "300px",
         "backgroundColor": "#3F6DF9",
         "color": "#FFFFFF",
-        "paddingLeft": "4.5vw",
+        "paddingLeft": "50px",
     },
 )
 app.layout = dbc.Container(
