@@ -44,7 +44,8 @@ def handle_summary_widescreen(display_width_px: int):
 
 @callback(
     Output("summary-graph", "figure"),
-    Input("load-interval", "n_intervals"),
+    [Input("load-interval", "n_intervals"), Input("breakpoints", "width")],
 )
-def show_summary_graph(_: int) -> Figure:
-    return viz_summary()
+def show_summary_graph(_: int, screen_width_px: int) -> Figure:
+    print(screen_width_px)
+    return viz_summary(show_fig=False, screen_width_px=screen_width_px)

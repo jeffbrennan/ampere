@@ -424,7 +424,7 @@ def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figu
     return fig
 
 
-def viz_summary(show_fig: bool = False):
+def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
     con = get_db_con()
     df = con.sql("""SELECT
 	repo_id,
@@ -437,20 +437,28 @@ ORDER BY
 	metric_date
     """).to_df()
 
+    is_narrow = screen_width_px < 1200
+    if is_narrow:
+        facet_col_wrap = 1
+        facet_row_spacing = 0.04
+    else:
+        facet_col_wrap = 2
+        facet_row_spacing = 0.10
+
     fig = px.line(
         df,
         x="metric_date",
         y="metric_count",
         color="repo_name",
         facet_col="metric_type",
-        facet_col_wrap=2,
+        facet_col_wrap=facet_col_wrap,
         template="simple_white",
         hover_name="repo_name",
         markers=True,
         color_discrete_map=REPO_PALETTE,
-        height=400 * 6 / 2,
+        height=400 * 6 // facet_col_wrap,
         facet_col_spacing=0.08,
-        facet_row_spacing=0.10,
+        facet_row_spacing=facet_row_spacing,
         category_orders={
             "metric_type": [
                 "stars",
@@ -467,7 +475,23 @@ ORDER BY
     fig.update_yaxes(matches=None, showticklabels=True)
     fig.update_traces(line=dict(width=1.75), marker=dict(size=4))
     fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
-    fig.update_layout(legend=dict(title=None, itemsizing="constant", font=dict(size=14)))
+
+    if is_narrow:
+        fig.update_layout(
+            legend=dict(
+                title=None,
+                itemsizing="constant",
+                font=dict(size=14),
+                orientation="h",
+                yanchor="top",
+                y=1.05,
+            )
+        )
+    else:
+        fig.update_layout(
+            legend=dict(title=None, itemsizing="constant", font=dict(size=14))
+        )
+
     fig.for_each_annotation(
         lambda a: a.update(text="<b>" + a.text.split("=")[-1] + "</b>")
     )

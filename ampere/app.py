@@ -53,10 +53,10 @@ footer = html.Footer(
     style={
         "position": "fixed",
         "bottom": "0",
-        "width": "300px",
+        "width": "99%",
         "backgroundColor": "#3F6DF9",
         "color": "#FFFFFF",
-        "paddingLeft": "50px",
+        "paddingLeft": "2vw",
     },
 )
 app.layout = dbc.Container(
