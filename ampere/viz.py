@@ -212,6 +212,7 @@ def create_star_network_plot(
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             template="none",
+            legend=dict(font=dict(size=14)),
         ),
     )
 
@@ -324,6 +325,7 @@ def create_follower_network_plot(
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             template="none",
+            legend=dict(font=dict(size=14)),
         ),
     )
 
