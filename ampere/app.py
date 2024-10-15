@@ -28,15 +28,20 @@ last_updated = get_last_updated()
 last_updated_str = last_updated.strftime("%Y-%m-%d")
 
 navbar = dbc.NavbarSimple(
-    dbc.Nav(
-        [
-            dbc.NavLink(page["name"], href=page["path"])
-            for page in dash.page_registry.values()
-            if page.get("top_nav")
-        ],
-    ),
-    id="navbar",
+    children=[
+        dbc.DropdownMenu(
+            children=[
+                dbc.DropdownMenuItem("stargazers", href="network-stargazers"),
+                dbc.DropdownMenuItem("followers", href="network-followers"),
+            ],
+            nav=True,
+            in_navbar=True,
+            label="networks",
+        ),
+        dbc.NavItem(dbc.NavLink("about", href="about")),
+    ],
     brand="ampere",
+    brand_href="/",
     color="#3F6DF9",
     className="mb-2",
     dark=True,
