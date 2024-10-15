@@ -54,17 +54,20 @@ footer = html.Footer(
         "position": "fixed",
         "bottom": "0",
         "width": "100%",
-        "left": "0",
-        "right": "0",
         "backgroundColor": "#3F6DF9",
         "color": "#FFFFFF",
         "paddingLeft": "1%",
-        "fontSize": "min(1.1vw, 14px)"
+        "fontSize": "min(1.1vw, 14px)",
+        "left": "0",
     },
 )
 app.layout = dbc.Container(
     [navbar, dash.page_container, footer],
     fluid=True,
+    style={
+        "paddingLeft": "5%",
+        "paddingRight": "5%",
+    },
 )
 
 if __name__ == "__main__":
