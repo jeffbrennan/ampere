@@ -54,7 +54,12 @@ navbar = dbc.NavbarSimple(
 )
 
 footer = html.Footer(
-    children=[html.Div(f"last updated {last_updated_str}", style={"textAlign": "left"})],
+    children=[
+        html.Div(
+            f"last updated {last_updated_str}",
+            style={"textAlign": "left", "fontSize": "14px"},
+        )
+    ],
     style={
         "position": "fixed",
         "bottom": "0",
@@ -62,7 +67,6 @@ footer = html.Footer(
         "backgroundColor": "#3F6DF9",
         "color": "#FFFFFF",
         "paddingLeft": "1%",
-        "fontSize": "min(1.1vw, 14px)",
         "left": "0",
     },
 )

@@ -428,24 +428,43 @@ def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figu
 
 def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
     con = get_db_con()
-    df = con.sql("""SELECT
-	repo_id,
-	metric_type,
-	metric_date,
-	metric_count,
-	repo_name
-FROM main.mart_repo_summary
-ORDER BY
-	metric_date
+    df = con.sql("""
+    SELECT
+        repo_id,
+        metric_type,
+        metric_date,
+        metric_count,
+        repo_name
+    FROM main.mart_repo_summary
+    ORDER BY metric_date
     """).to_df()
 
-    is_narrow = screen_width_px < 1200
-    if is_narrow:
+    metric_type_order = [
+        "stars",
+        "issues",
+        "commits",
+        "lines of code",
+        "forks",
+        "pull requests",
+    ]
+
+    if screen_width_px < 1200:
         facet_col_wrap = 1
         facet_row_spacing = 0.04
-    else:
+    elif screen_width_px < 2560:
         facet_col_wrap = 2
         facet_row_spacing = 0.10
+    else:
+        facet_col_wrap = 3
+        facet_row_spacing = 0.10
+        metric_type_order = [
+            "stars",
+            "forks",
+            "commits",
+            "lines of code",
+            "issues",
+            "pull requests",
+        ]
 
     fig = px.line(
         df,
@@ -458,27 +477,21 @@ ORDER BY
         hover_name="repo_name",
         markers=True,
         color_discrete_map=REPO_PALETTE,
-        height=400 * 6 // facet_col_wrap,
+        height=550 * 6 // facet_col_wrap,
         facet_col_spacing=0.08,
         facet_row_spacing=facet_row_spacing,
         category_orders={
-            "metric_type": [
-                "stars",
-                "issues",
-                "commits",
-                "lines of code",
-                "forks",
-                "pull requests",
-            ],
+            "metric_type": metric_type_order,
             "repo_name": REPO_PALETTE.keys(),
         },
     )
 
     fig.update_yaxes(matches=None, showticklabels=True)
-    fig.update_traces(line=dict(width=1.75), marker=dict(size=4))
-    fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
+    fig.update_traces(
+        line=dict(width=1), marker=dict(size=5), hovertemplate="<b>%{x}</b><br>n=%{y}"
+    )
 
-    if is_narrow:
+    if screen_width_px < 1200:
         fig.update_layout(
             legend=dict(
                 title=None,
@@ -495,10 +508,9 @@ ORDER BY
         )
 
     fig.for_each_annotation(
-        lambda a: a.update(text="<b>" + a.text.split("=")[-1] + "</b>")
+        lambda a: a.update(text="<b>" + a.text.split("=")[-1] + "</b>", font_size=14)
     )
 
-    fig.update_annotations(font_size=14)
     fig.for_each_yaxis(
         lambda y: y.update(
             title="",

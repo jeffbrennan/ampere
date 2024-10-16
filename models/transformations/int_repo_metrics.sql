@@ -192,5 +192,11 @@ with
         select *
         from pr_metrics
     )
-select *
+select
+    repo_id,
+    metric_type,
+    metric_timestamp,
+    metric_id,
+    user_id,
+    metric_count
 from combined
