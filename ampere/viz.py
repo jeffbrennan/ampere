@@ -428,15 +428,15 @@ def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figu
 
 def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
     con = get_db_con()
-    df = con.sql("""SELECT
-	repo_id,
-	metric_type,
-	metric_date,
-	metric_count,
-	repo_name
-FROM main.mart_repo_summary
-ORDER BY
-	metric_date
+    df = con.sql("""
+    SELECT
+        repo_id,
+        metric_type,
+        metric_date,
+        metric_count,
+        repo_name
+    FROM main.mart_repo_summary
+    ORDER BY metric_date
     """).to_df()
 
     is_narrow = screen_width_px < 1200
