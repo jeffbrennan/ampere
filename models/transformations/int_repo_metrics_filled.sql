@@ -31,11 +31,11 @@ with
     ),
     metric_dates as (
         select
-            time_bucket('1 day', metric_timestamp) as metric_date,
+            time_bucket('7 day', metric_timestamp) as metric_date,
             repo_id,
             metric_type,
-            metric_id,
-            user_id,
+            max(metric_id) as metric_id,
+            max(user_id) as user_id,
             max(metric_count) as metric_count
         from {{ ref("int_repo_metrics") }}
         group by all
@@ -82,9 +82,9 @@ with
     ),
     metrics_filled_down as (
         select
-            metric_date,
             repo_id,
             metric_type,
+            metric_date,
             min(metric_id) over (
                 partition by repo_id, metric_type, metric_id_group
             ) as metric_id,
@@ -94,7 +94,7 @@ with
             min(metric_count) over (
                 partition by repo_id, metric_type, metric_count_group
             ) as metric_count
-        from metrics_fill_prep 
+        from metrics_fill_prep
     )
 select *
-from metrics_filled_down 
+from metrics_filled_down
