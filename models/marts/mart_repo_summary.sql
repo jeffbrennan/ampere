@@ -3,7 +3,7 @@ select
 	b.repo_name,
 	c.user_name
 from
-	{{ ref("int_repo_metrics_filled") }} a
+	{{ ref("int_repo_metrics_filled_partial") }} a
 	left join repos b
 	on a.repo_id = b.repo_id
 	left join users c
