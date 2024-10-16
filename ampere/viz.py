@@ -440,11 +440,14 @@ def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
     """).to_df()
 
     is_narrow = screen_width_px < 1200
-    if is_narrow:
+    if screen_width_px < 1200:
         facet_col_wrap = 1
         facet_row_spacing = 0.04
-    else:
+    elif screen_width_px < 2560:
         facet_col_wrap = 2
+        facet_row_spacing = 0.10
+    else:
+        facet_col_wrap = 3
         facet_row_spacing = 0.10
 
     fig = px.line(
@@ -458,7 +461,7 @@ def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
         hover_name="repo_name",
         markers=True,
         color_discrete_map=REPO_PALETTE,
-        height=500 * 6 // facet_col_wrap,
+        height=550 * 6 // facet_col_wrap,
         facet_col_spacing=0.08,
         facet_row_spacing=facet_row_spacing,
         category_orders={
