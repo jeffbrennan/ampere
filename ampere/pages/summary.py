@@ -51,7 +51,6 @@ def handle_summary_widescreen(breakpoint_name: str):
     [Input("load-interval", "n_intervals"), Input("breakpoints", "widthBreakpoint")],
 )
 def show_summary_graph(_: int, breakpoint_name: str) -> Figure:
-    print(breakpoint_name)
     breakpoint_mapping = {"sm": 1199, "md": 1899, "lg": 2559, "xl": 2561}
     return viz_summary(
         show_fig=False, screen_width_px=breakpoint_mapping[breakpoint_name]
