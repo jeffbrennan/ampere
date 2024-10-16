@@ -458,7 +458,7 @@ def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
         hover_name="repo_name",
         markers=True,
         color_discrete_map=REPO_PALETTE,
-        height=400 * 6 // facet_col_wrap,
+        height=500 * 6 // facet_col_wrap,
         facet_col_spacing=0.08,
         facet_row_spacing=facet_row_spacing,
         category_orders={
@@ -475,7 +475,7 @@ def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
     )
 
     fig.update_yaxes(matches=None, showticklabels=True)
-    fig.update_traces(line=dict(width=1.75), marker=dict(size=4))
+    fig.update_traces(line=dict(width=1), marker=dict(size=5))
     fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
 
     if is_narrow:
