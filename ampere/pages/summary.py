@@ -1,6 +1,6 @@
 import dash
 import dash_breakpoints
-from dash import Input, Output, callback, dcc
+from dash import Input, Output, State, callback, dcc
 from plotly.graph_objs import Figure
 
 from ampere.viz import viz_summary
@@ -15,7 +15,11 @@ layout = [
         max_intervals=0,
         interval=1,
     ),
-    dash_breakpoints.WindowBreakpoints(id="breakpoints"),
+    dash_breakpoints.WindowBreakpoints(
+        id="breakpoints",
+        widthBreakpointThresholdsPx=[1200, 1920, 2560],
+        widthBreakpointNames=["sm", "md", "lg", "xl"],
+    ),
     dcc.Loading(
         id="loading-graph",
         type="default",
@@ -24,9 +28,9 @@ layout = [
 ]
 
 
-@callback(Output("summary-graph", "style"), Input("breakpoints", "width"))
-def handle_summary_widescreen(display_width_px: int):
-    is_widescreen = display_width_px > 1920
+@callback(Output("summary-graph", "style"), Input("breakpoints", "widthBreakpoint"))
+def handle_summary_widescreen(breakpoint_name: str):
+    is_widescreen = breakpoint_name == "lg"
 
     if is_widescreen:
         return {
@@ -44,8 +48,11 @@ def handle_summary_widescreen(display_width_px: int):
 
 @callback(
     Output("summary-graph", "figure"),
-    [Input("load-interval", "n_intervals"), Input("breakpoints", "width")],
+    [Input("load-interval", "n_intervals"), Input("breakpoints", "widthBreakpoint")],
 )
-def show_summary_graph(_: int, screen_width_px: int) -> Figure:
-    print(screen_width_px)
-    return viz_summary(show_fig=False, screen_width_px=screen_width_px)
+def show_summary_graph(_: int, breakpoint_name: str) -> Figure:
+    print(breakpoint_name)
+    breakpoint_mapping = {"sm": 1199, "md": 1899, "lg": 2559, "xl": 2561}
+    return viz_summary(
+        show_fig=False, screen_width_px=breakpoint_mapping[breakpoint_name]
+    )
