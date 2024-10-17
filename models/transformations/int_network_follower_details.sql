@@ -1,6 +1,7 @@
 with
     user_stats as (
-        select user_id, user_name, followers_count, following_count from users
+        select user_id, user_name, full_name, followers_count, following_count
+        from users
     ),
     internal_followers as (
         select a.user_id, list(b.user_name) as followers
@@ -18,6 +19,7 @@ with
         select
             a.user_id,
             a.user_name,
+            a.full_name,
             a.followers_count,
             a.following_count,
             b.followers,
