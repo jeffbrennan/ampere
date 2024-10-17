@@ -321,22 +321,22 @@ def create_follower_network_plot(
 
     node_df = pd.DataFrame(node_info)
     node_df["followers_group"] = pd.qcut(
-        node_df["internal_followers_count"],
+        node_df["followers_count"],
         10,
         labels=False,
         duplicates="drop",
     )
 
-    node_df["followers_group"] **= 8
+    node_df["followers_group"] **= 10
 
     node_trace = go.Scatter(
         x=node_df.x,
         y=node_df.y,
         marker=dict(
-            size=6,
+            size=8,
             color=node_df.followers_group,
             colorscale="Greys",
-            line=dict(width=1.1, color="black"),
+            line=dict(width=1, color="black"),
         ),
         mode="markers",
         hoverinfo="text",
