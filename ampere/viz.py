@@ -4,8 +4,10 @@ import random
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 import networkx as nx
+import numpy
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -24,13 +26,23 @@ class StargazerNetworkRecord:
 
 
 @dataclass(slots=True, frozen=True)
-class FollowerInfo:
+class Followers:
+    user_id: str
+    follower_id: int
+
+
+@dataclass(slots=True, frozen=True)
+class FollowerDetails:
+    user_id: int
     user_name: str
     followers_count: int
+    following_count: int
+    followers: Optional[list[str]]
+    following: Optional[list[str]]
     internal_followers_count: int
-    follower_name: str
-    follower_followers_count: int
-    follower_internal_followers_count: int
+    internal_following_count: int
+    internal_followers_pct: float
+    internal_following_pct: float
 
 
 # intended for traces to appear in this order
@@ -49,7 +61,6 @@ REPO_PALETTE = {
 def create_star_network(
     repos: list[str], stargazers: list[StargazerNetworkRecord], out_dir: Path
 ) -> nx.Graph:
-    start_time = time.time()
     print("creating star network...")
     random.seed(42)
     added_repos = []
@@ -93,29 +104,20 @@ def create_star_network(
 
 
 @timeit
-def create_follower_network(follower_info: list[FollowerInfo], out_dir: Path) -> nx.Graph:
+def create_follower_network(follower_info: list[Followers], out_dir: Path) -> nx.Graph:
     random.seed(42)
     added_nodes = []
     graph = nx.Graph()
     for record in follower_info:
-        if record.user_name not in added_nodes:
-            graph.add_node(
-                record.user_name,
-                followers_count=record.followers_count,
-                internal_followers_count=record.internal_followers_count,
-            )
-            added_nodes.append(record.user_name)
+        if record.user_id not in added_nodes:
+            graph.add_node(record.user_id)
+            added_nodes.append(record.user_id)
 
-        if record.follower_name not in added_nodes:
-            graph.add_node(
-                record.follower_name,
-                followers_count=record.follower_followers_count,
-                internal_followers_count=record.follower_internal_followers_count,
-            )
-            added_nodes.append(record.follower_name)
+        if record.follower_id not in added_nodes:
+            graph.add_node(record.follower_id)
+            added_nodes.append(record.follower_id)
 
-        graph.add_edge(record.user_name, record.follower_name, weight=0.03)
-
+        graph.add_edge(record.user_id, record.follower_id, weight=0.03)
     pos = nx.spring_layout(graph)
     nx.set_node_attributes(graph, pos, "pos")
 
@@ -219,11 +221,28 @@ def create_star_network_plot(
     return fig
 
 
+def format_plot_name_list(
+    names: list[str] | float | None, max_names: int = 5
+) -> Optional[str]:
+    if names is None or isinstance(names, float) or isinstance(names, int):
+        return None
+
+    names_clean = names[0 : min(max_names, len(names))]
+
+    names_clean_str = ", ".join(names_clean)
+    if len(names) > max_names:
+        names_clean_str += "..."
+
+    return names_clean_str
+
+
 @timeit
 def create_follower_network_plot(
-    graph: nx.Graph, follower_info: list[FollowerInfo]
+    graph: nx.Graph,
+    follower_info: list[Followers],
+    follower_details: dict[int, FollowerDetails],
 ) -> go.Figure:
-    all_connections = [(i.user_name, i.follower_name) for i in follower_info]
+    all_connections = [(i.user_id, i.follower_id) for i in follower_info]
     solo_edges = {"x": [], "y": []}
     mutual_edges = {"x": [], "y": []}
     for edge in graph.edges():
@@ -260,24 +279,30 @@ def create_follower_network_plot(
 
     node_info = []
     for node in graph.nodes():
-        node_data = graph.nodes.data()[node]
         x, y = graph.nodes[node]["pos"]
-        followers_count = node_data["followers_count"]
-        internal_followers_count = node_data["internal_followers_count"]
-        if followers_count == 0:
-            internal_followers_pct = 0
-        else:
-            internal_followers_pct = (
-                node_data["internal_followers_count"] / followers_count
-            )
-        user_name = node
-
+        node_details = follower_details[node]
         node_text_list = [
-            user_name,
-            f"followers={followers_count}",
-            f"internal_followers={internal_followers_count}",
-            f"internal_followers_pct={internal_followers_pct:.2f}",
+            "<b>" + node_details.user_name + "</b>",
+            f"followers_count={node_details.followers_count}",
+            f"internal_followers_count={node_details.internal_followers_count}",
+            f"internal_followers_pct={node_details.internal_followers_pct}",
+            "",
+            f"following_count={node_details.following_count}",
+            f"internal_following_count={node_details.internal_following_count}",
+            f"internal_following_pct={node_details.internal_following_pct}",
         ]
+
+        internal_followers_clean = format_plot_name_list(node_details.followers)
+        internal_following_clean = format_plot_name_list(node_details.following)
+
+        if internal_followers_clean is not None or internal_following_clean is not None:
+            node_text_list += [""]
+
+        if internal_followers_clean is not None:
+            node_text_list += [f"followers={internal_followers_clean}"]
+
+        if internal_following_clean is not None:
+            node_text_list += [f"following={internal_following_clean}"]
 
         node_text = "<br>".join(node_text_list)
         node_info.append(
@@ -285,9 +310,12 @@ def create_follower_network_plot(
                 "x": x,
                 "y": y,
                 "text": node_text,
-                "followers_count": followers_count,
-                "internal_followers_count": internal_followers_count,
-                "internal_followers_pct": internal_followers_pct,
+                "followers_count": node_details.followers_count,
+                "internal_followers_count": node_details.internal_followers_count,
+                "internal_followers_pct": node_details.internal_followers_pct,
+                "following_count": node_details.following_count,
+                "internal_following_count": node_details.internal_following_count,
+                "internal_following_pct": node_details.internal_following_pct,
             }
         )
 
@@ -299,16 +327,16 @@ def create_follower_network_plot(
         duplicates="drop",
     )
 
-    node_df["followers_group"] **= 8
+    node_df["followers_group"] **= 10
 
     node_trace = go.Scatter(
         x=node_df.x,
         y=node_df.y,
         marker=dict(
-            size=6,
+            size=8,
             color=node_df.followers_group,
             colorscale="Greys",
-            line=dict(width=1.1, color="black"),
+            line=dict(width=1, color="black"),
         ),
         mode="markers",
         hoverinfo="text",
@@ -377,39 +405,35 @@ def viz_star_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
 @timeit
 def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
     con = get_db_con()
-    follower_info = con.sql(
+    followers = (
+        con.sql("SELECT user_id, follower_id FROM int_internal_followers")
+        .to_df()
+        .to_dict(orient="records")
+    )
+    followers = list(Followers(**record) for record in followers)  # type: ignore
+
+    follower_details_dict = (
+        con.sql(
+            """
+        select
+        user_id,
+        user_name,
+        followers_count,
+        following_count,
+        followers,
+        following,
+        internal_followers_count,
+        internal_following_count,
+        internal_followers_pct,
+        internal_following_pct
+        from int_network_follower_details
         """
-        WITH internal_followers AS (
-            SELECT
-                user_id,
-                count(DISTINCT follower_id)  internal_followers_count
-            FROM followers
-            GROUP BY user_id
         )
-        SELECT DISTINCT
-            b.user_name,
-            b.followers_count,
-            d.internal_followers_count,
-            c.user_name  follower_name,
-            c.followers_count  follower_followers_count,
-            e.internal_followers_count  follower_internal_followers_count
-        FROM followers a 
-
-        INNER JOIN users b
-        ON a.user_id = b.user_id
-        INNER JOIN users c
-        ON a.follower_id = c.user_id
-
-        LEFT JOIN internal_followers d
-        ON a.user_id = d.user_id
-        LEFT JOIN internal_followers e
-        ON a.follower_id = e.user_id
-
-        ORDER BY b.user_name 
-        """
-    ).to_df()
-
-    follower_info = list(FollowerInfo(*record) for record in follower_info.values)
+        .to_df()
+        .to_dict(orient="records")
+    )
+    follower_details_dc = [FollowerDetails(**i) for i in follower_details_dict]  # type: ignore
+    follower_details = {i.user_id: i for i in follower_details_dc}
 
     out_dir = Path(__file__).parents[1] / "data" / "viz"
     out_path = out_dir / "follower_network.pkl"
@@ -417,9 +441,11 @@ def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figu
         with out_path.open("rb") as f:
             network = pickle.load(f)
     else:
-        network = create_follower_network(follower_info, out_dir)
+        print("creating follower network...")
+        network = create_follower_network(followers, out_dir)
 
-    fig = create_follower_network_plot(network, follower_info)
+    print("creating plot..")
+    fig = create_follower_network_plot(network, followers, follower_details)
     if show_fig:
         fig.show()
 

@@ -36,10 +36,6 @@ def layout(**kwargs):
 
 
 @callback(
-    Output("network-follower-graph", "style"),
-    Input("network-follower-breakpoints", "width"),
-)
-@callback(
     Output("network-follower-graph", "figure"),
     Input("network-follower-load-interval", "n_intervals"),
 )
