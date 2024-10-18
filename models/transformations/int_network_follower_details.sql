@@ -35,11 +35,11 @@ select
     case
         when followers_count = 0
         then 0
-        else round(coalesce(internal_followers_count, 0) / followers_count, 2)
+        else coalesce(internal_followers_count, 0) / followers_count
     end internal_followers_pct,
     case
         when following_count = 0
         then 0
-        else round(coalesce(internal_following_count, 0) / following_count, 2)
+        else coalesce(internal_following_count, 0) / following_count
     end internal_following_pct
 from combined
