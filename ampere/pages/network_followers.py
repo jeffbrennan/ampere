@@ -87,6 +87,12 @@ def layout(**kwargs):
                 "height": "auto",
                 "font-family": "sans-serif",
             },
+            style_header_conditional=[
+                {"if": {"column_id": "name"}, "textAlign": "center"}
+            ],
+            style_data_conditional=[
+                {"if": {"column_id": "name"}, "textAlign": "center"}
+            ],
             css=[dict(selector="p", rule="margin-bottom: 0; text-align: right;")],
             style_table={
                 "height": "50%",
