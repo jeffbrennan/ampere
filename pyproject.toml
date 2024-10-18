@@ -40,3 +40,7 @@ line-length = 90
 [tool.dagster]
 module_name = "ampere.dagster.definitions"
 code_location_name = "ampere/dagster"
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
