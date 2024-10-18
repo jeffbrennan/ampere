@@ -366,19 +366,13 @@ def viz_star_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
     stargazers = con.sql(
         """
         SELECT
-        DISTINCT
-        a.user_name,
-        a.followers_count,
-        b.starred_at,
-        b.retrieved_at,
-        c.repo_name
-        FROM users a 
-        INNER JOIN stargazers b
-        ON a.user_id = b.user_id
-        INNER JOIN repos c
-        ON b.repo_id = c.repo_id
-        ORDER BY a.user_name 
-        """
+            user_name,
+            followers_count,
+            starred_at,
+            retrieved_at,
+            repo_name
+        from int_network_stargazers
+    """
     ).to_df()
 
     stargazers = list(StargazerNetworkRecord(*record) for record in stargazers.values)
@@ -454,7 +448,8 @@ def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figu
 
 def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
     con = get_db_con()
-    df = con.sql("""
+    df = con.sql(
+        """
     SELECT
         repo_id,
         metric_type,
@@ -463,7 +458,8 @@ def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
         repo_name
     FROM main.mart_repo_summary
     ORDER BY metric_date
-    """).to_df()
+    """
+    ).to_df()
 
     metric_type_order = [
         "stars",
