@@ -37,8 +37,14 @@ page_links_collapsed = dbc.Row(
         dbc.Col(
             dbc.DropdownMenu(
                 children=[
-                    dbc.DropdownMenuItem("stargazers", href="network-stargazers"),
-                    dbc.DropdownMenuItem("followers", href="network-followers"),
+                    dbc.DropdownMenuItem(
+                        "stargazers",
+                        href="network-stargazers",
+                        style={"color": "black"},
+                    ),
+                    dbc.DropdownMenuItem(
+                        "followers", href="network-followers", style={"color": "black"}
+                    ),
                 ],
                 label="networks",
                 toggle_style={
@@ -84,7 +90,7 @@ navbar = dbc.Navbar(
                 style={
                     "marginBottom": "0",
                     "color": Palette.BRAND_TEXT_COLOR_MUTED,
-                    "fontSize": "12px"
+                    "fontSize": "12px",
                 },
             ),
         ],
@@ -93,7 +99,7 @@ navbar = dbc.Navbar(
     color=Palette.PAGE_ACCENT_COLOR,
     dark=True,
     sticky="top",
-    style={"padding": "0"}
+    style={"padding": "0"},
 )
 
 
