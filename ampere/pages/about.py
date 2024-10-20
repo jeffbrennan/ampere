@@ -3,6 +3,7 @@ import pandas as pd
 from dash import html, dash_table
 
 from ampere.common import get_db_con
+from ampere.styling import AmpereDTStyle
 
 dash.register_page(__name__, name="about", top_nav=True, order=2)
 
@@ -27,40 +28,19 @@ def create_repo_table() -> pd.DataFrame:
 def layout(**kwargs):
     df = create_repo_table()
     return [
-        html.H2("Repos"),
+        html.Hr(),
         dash_table.DataTable(
             df.to_dict("records"),
             columns=[
                 (
-                    {"id": x, "name": "", "presentation": "markdown"}
+                    {"id": x, "name": "repo", "presentation": "markdown"}
                     if x == "repo_name"
                     else {"id": x, "name": x}
                 )
                 for x in df.columns
             ],
             id="tbl",
-            sort_action="native",
-            sort_mode="multi",
-            column_selectable="single",
-            row_selectable=False,
-            row_deletable=False,
-            css=[dict(selector="p", rule="margin-bottom: 0; text-align: right;")],
-            style_header={
-                "backgroundColor": "#3F6DF9",
-                "padding": "10px",
-                "color": "#FFFFFF",
-                "fontWeight": "bold",
-            },
-            style_cell={
-                "textAlign": "right",
-                "minWidth": 95,
-                "maxWidth": 95,
-                "width": 95,
-                "font_size": "1em",
-                "whiteSpace": "normal",
-                "height": "auto",
-                "font-family": "sans-serif",
-            },
+            **AmpereDTStyle
         ),
         html.Hr(),
         html.Div(

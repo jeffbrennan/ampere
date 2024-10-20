@@ -29,11 +29,6 @@ class DeltaWriteConfig:
     table_name: str
     pks: list[str]
 
-class Palette(StrEnum):
-    PAGE_ACCENT_COLOR = "#3F6DF9"
-    BRAND_TEXT_COLOR = "#FFFFFF"
-    BRAND_TEXT_COLOR_MUTED = "#CEE5F2"
-
 
 def create_header(header_length: int, title: str, center: bool, spacer: str):
     if center:

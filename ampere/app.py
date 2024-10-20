@@ -1,17 +1,16 @@
 import datetime
-from enum import StrEnum
 
 import dash
 import dash_bootstrap_components as dbc
 from dash import html, Input, Output, State
 
-from ampere.common import get_db_con, Palette
+from ampere.common import get_db_con
+from ampere.styling import AmperePalette
 
 app = dash.Dash(
     use_pages=True,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
 )
-
 
 
 def get_last_updated() -> datetime.datetime:
@@ -43,9 +42,9 @@ page_links_collapsed = dbc.Row(
                 ],
                 label="networks",
                 toggle_style={
-                    "color": Palette.BRAND_TEXT_COLOR_MUTED,
-                    "backgroundColor": Palette.PAGE_ACCENT_COLOR,
-                    "borderColor": Palette.PAGE_ACCENT_COLOR,
+                    "color": AmperePalette.BRAND_TEXT_COLOR_MUTED,
+                    "backgroundColor": AmperePalette.PAGE_ACCENT_COLOR,
+                    "borderColor": AmperePalette.PAGE_ACCENT_COLOR,
                 },
                 class_name="navbar-text",
             ),
@@ -55,7 +54,7 @@ page_links_collapsed = dbc.Row(
                 dbc.NavLink(
                     "about",
                     href="about",
-                    style={"color": Palette.BRAND_TEXT_COLOR_MUTED},
+                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
                     class_name="navbar-text",
                 )
             ),
@@ -84,14 +83,14 @@ navbar = dbc.Navbar(
                 f"last updated {last_updated_str}",
                 style={
                     "marginBottom": "0",
-                    "color": Palette.BRAND_TEXT_COLOR_MUTED,
+                    "color": AmperePalette.BRAND_TEXT_COLOR_MUTED,
                     "fontSize": "12px",
                 },
             ),
         ],
         fluid=True,
     ),
-    color=Palette.PAGE_ACCENT_COLOR,
+    color=AmperePalette.PAGE_ACCENT_COLOR,
     dark=True,
     sticky="top",
     style={"padding": "0"},
