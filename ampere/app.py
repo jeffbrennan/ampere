@@ -81,7 +81,11 @@ navbar = dbc.Navbar(
             ),
             html.P(
                 f"last updated {last_updated_str}",
-                style={"marginBottom": "0", "color": Palette.BRAND_TEXT_COLOR_MUTED},
+                style={
+                    "marginBottom": "0",
+                    "color": Palette.BRAND_TEXT_COLOR_MUTED,
+                    "fontSize": "12px"
+                },
             ),
         ],
         fluid=True,
