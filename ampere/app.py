@@ -93,6 +93,7 @@ navbar = dbc.Navbar(
     color=Palette.PAGE_ACCENT_COLOR,
     dark=True,
     sticky="top",
+    style={"padding": "0"}
 )
 
 
