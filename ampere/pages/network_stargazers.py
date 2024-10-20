@@ -1,11 +1,10 @@
 import dash
 import dash_breakpoints
 import pandas as pd
-
-from dash import Input, Output, callback, dcc, dash_table
+from dash import Input, Output, callback, dash_table, dcc
 from plotly.graph_objects import Figure
 
-from ampere.common import get_db_con
+from ampere.common import Palette, get_db_con
 from ampere.viz import viz_star_network
 
 dash.register_page(__name__, name="network", top_nav=True, order=1)
@@ -63,12 +62,15 @@ def layout(**kwargs):
             row_deletable=False,
             fixed_rows={"headers": True},
             filter_action="native",
+            filter_options={"case": "insensitive"},
+            style_filter={"border": "0"},
             page_size=100,
             style_header={
-                "backgroundColor": "#3F6DF9",
+                "backgroundColor": Palette.PAGE_ACCENT_COLOR,
                 "padding": "10px",
                 "color": "#FFFFFF",
                 "fontWeight": "bold",
+                "border": f"1px solid {Palette.PAGE_ACCENT_COLOR}",
             },
             style_cell={
                 "textAlign": "center",
@@ -79,17 +81,17 @@ def layout(**kwargs):
                 "whiteSpace": "normal",
                 "height": "auto",
                 "font-family": "sans-serif",
+                "borderTop": "0",
+                "borderBottom": "0",
+                "borderLeft": "2px solid black",
+                "borderRight": "2px solid black",
             },
+            style_data={"color": "black", "backgroundColor": "white"},
             style_data_conditional=[
                 {
-                    "if": {
-                        "filter_query": f"{{{i}}} is blank",
-                        "column_id": i,
-                    },
-                    "backgroundColor": "#D3D3D3",
+                    "if": {"row_index": "odd"},
+                    "backgroundColor": "rgb(220, 220, 220)",
                 }
-                for i in df.columns
-                if i not in ["user_name", "name", "followers"]
             ],
             css=[dict(selector="p", rule="margin-bottom: 0; text-align: right;")],
             style_table={
