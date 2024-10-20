@@ -5,18 +5,13 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import html, Input, Output, State
 
-from ampere.common import get_db_con
+from ampere.common import get_db_con, Palette
 
 app = dash.Dash(
     use_pages=True,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
 )
 
-
-class Palette(StrEnum):
-    PAGE_ACCENT_COLOR = "#3F6DF9"
-    BRAND_TEXT_COLOR = "#FFFFFF"
-    BRAND_TEXT_COLOR_MUTED = "#CEE5F2"
 
 
 def get_last_updated() -> datetime.datetime:

@@ -2,6 +2,7 @@ import datetime
 import os
 import time
 from dataclasses import dataclass
+from enum import StrEnum
 from functools import wraps
 from pathlib import Path
 from typing import Callable, Optional
@@ -9,7 +10,7 @@ from typing import Callable, Optional
 import dotenv
 import duckdb
 import pandas as pd
-from deltalake import write_deltalake, DeltaTable
+from deltalake import DeltaTable, write_deltalake
 from duckdb import DuckDBPyConnection
 from sqlmodel.main import SQLModelMetaclass
 
@@ -27,6 +28,11 @@ class DeltaWriteConfig:
     table_dir: str
     table_name: str
     pks: list[str]
+
+class Palette(StrEnum):
+    PAGE_ACCENT_COLOR = "#3F6DF9"
+    BRAND_TEXT_COLOR = "#FFFFFF"
+    BRAND_TEXT_COLOR_MUTED = "#CEE5F2"
 
 
 def create_header(header_length: int, title: str, center: bool, spacer: str):
