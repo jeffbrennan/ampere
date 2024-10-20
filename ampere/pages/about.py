@@ -14,10 +14,10 @@ def create_repo_table() -> pd.DataFrame:
             concat('[', repo_name, ']', '(https://www.github.com/mrpowers-io/', repo_name, ')')   repo_name,
             forks_count  forks,
             stargazers_count  stargazers,
-            open_issues_count  open_issues,
-            round(date_part('day', current_date - created_at)  / 365, 1)  age_years,
-            created_at,
-            updated_at
+            open_issues_count  "open issues",
+            round(date_part('day', current_date - created_at)  / 365, 1)  "age (years)",
+            created_at created,
+            updated_at updated
         FROM main.repos
         ORDER BY stargazers_count DESC
         """
@@ -31,9 +31,11 @@ def layout(**kwargs):
         dash_table.DataTable(
             df.to_dict("records"),
             columns=[
-                {"id": x, "name": "", "presentation": "markdown"}
-                if x == "repo_name"
-                else {"id": x, "name": x}
+                (
+                    {"id": x, "name": "", "presentation": "markdown"}
+                    if x == "repo_name"
+                    else {"id": x, "name": x}
+                )
                 for x in df.columns
             ],
             id="tbl",
@@ -42,6 +44,23 @@ def layout(**kwargs):
             column_selectable="single",
             row_selectable=False,
             row_deletable=False,
+            css=[dict(selector="p", rule="margin-bottom: 0; text-align: right;")],
+            style_header={
+                "backgroundColor": "#3F6DF9",
+                "padding": "10px",
+                "color": "#FFFFFF",
+                "fontWeight": "bold",
+            },
+            style_cell={
+                "textAlign": "right",
+                "minWidth": 95,
+                "maxWidth": 95,
+                "width": 95,
+                "font_size": "1em",
+                "whiteSpace": "normal",
+                "height": "auto",
+                "font-family": "sans-serif",
+            },
         ),
         html.Hr(),
         html.Div(
