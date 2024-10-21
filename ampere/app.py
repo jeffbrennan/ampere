@@ -92,7 +92,7 @@ navbar = dbc.Navbar(
     ),
     color=AmperePalette.PAGE_ACCENT_COLOR,
     dark=True,
-    sticky="top",
+    fixed="top",
     style={"padding": "0"},
 )
 
@@ -110,7 +110,11 @@ def toggle_navbar_collapse(n, is_open):
 
 
 app.layout = dbc.Container(
-    [navbar, dash.page_container],
+    [
+        navbar,
+        html.Br(),
+        dash.page_container,
+    ],
     fluid=True,
     style={
         "paddingLeft": "5%",
