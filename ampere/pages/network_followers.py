@@ -1,6 +1,6 @@
 import dash
 import dash_breakpoints
-from dash import dcc, callback, Output, Input, dash_table
+from dash import dcc, callback, Output, Input, dash_table, html
 import pandas as pd
 from plotly.graph_objects import Figure
 
@@ -34,6 +34,7 @@ def create_followers_table() -> pd.DataFrame:
 def layout(**kwargs):
     df = create_followers_table()
     return [
+        html.Br(),
         dcc.Interval(
             id="network-follower-load-interval",
             n_intervals=0,

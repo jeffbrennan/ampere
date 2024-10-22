@@ -1,7 +1,7 @@
 import dash
 import dash_breakpoints
 import pandas as pd
-from dash import Input, Output, callback, dash_table, dcc
+from dash import Input, Output, callback, dash_table, dcc, html
 from plotly.graph_objects import Figure
 
 from ampere.common import get_db_con
@@ -26,6 +26,7 @@ def create_stargazers_table() -> pd.DataFrame:
 def layout(**kwargs):
     df = create_stargazers_table()
     return [
+        html.Br(),
         dcc.Interval(
             id="network-stargazer-load-interval",
             n_intervals=0,
