@@ -77,9 +77,10 @@ AmpereDTStyle = asdict(
             "borderLeft": "2px solid black",
             "borderRight": "2px solid black",
         },
-        style_header_conditional=[{"if": {"column_id": "name"}, "textAlign": "center"}],
+        style_header_conditional=[
+            {"if": {"column_id": "repo_name"}, "textAlign": "right"},
+        ],
         style_data_conditional=[
-            {"if": {"column_id": "name"}, "textAlign": "center"},
             {
                 "if": {"row_index": "odd"},
                 "backgroundColor": AmperePalette.PAGE_LIGHT_GRAY,

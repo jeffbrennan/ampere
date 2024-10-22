@@ -40,7 +40,7 @@ navbar = dbc.NavbarSimple(
     fixed="top",
     fluid=True,
     style={"height": "5%", "width": "100%"},
-    brand = "ampere",
+    brand="ampere",
     links_left=True,
     brand_href="/",
 )

@@ -8,7 +8,7 @@ select
 concat('[', b.user_name, ']', '(https://www.github.com/', b.user_name, ')')  user_name,
 b.full_name as name,
 b.followers_count as followers,
-coalesce(c.starred_count, 0) as "org stars",
+coalesce(c.starred_count, 0) as "starred repos",
 {{ dbt_utils.star(from=ref('int_network_stargazers_pivoted'), except=['user_id']) }}
 from {{ ref('int_network_stargazers_pivoted') }} a
 join users b

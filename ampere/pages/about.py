@@ -30,8 +30,8 @@ def create_repo_table() -> pd.DataFrame:
             stargazers_count  stargazers,
             open_issues_count  "open issues",
             round(date_part('day', current_date - created_at)  / 365, 1)  "age (years)",
-            created_at created,
-            updated_at updated
+            strftime(created_at, '%Y-%m-%d') created,
+            strftime(updated_at, '%Y-%m-%d') updated,
         FROM main.repos
         ORDER BY stargazers_count DESC
         """
