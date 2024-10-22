@@ -25,12 +25,17 @@ navbar = dbc.NavbarSimple(
             nav=True,
             in_navbar=True,
             label="networks",
+            toggle_style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+            style={"fontWeight": "bold"},
         ),
         dbc.NavItem(
             dbc.NavLink(
                 "about",
                 href="about",
-                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                style={
+                    "color": AmperePalette.BRAND_TEXT_COLOR_MUTED,
+                    "fontWeight": "bold",
+                },
                 class_name="navbar-text",
             )
         ),
@@ -39,7 +44,7 @@ navbar = dbc.NavbarSimple(
     dark=True,
     fixed="top",
     fluid=True,
-    style={"height": "5%", "width": "100%"},
+    style={"width": "100%"},
     brand="ampere",
     links_left=True,
     brand_href="/",
