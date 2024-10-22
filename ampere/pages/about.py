@@ -1,11 +1,24 @@
+import datetime
+
 import dash
 import pandas as pd
-from dash import html, dash_table
+from dash import dash_table, html
 
 from ampere.common import get_db_con
 from ampere.styling import AmpereDTStyle
 
 dash.register_page(__name__, name="about", top_nav=True, order=2)
+
+
+def get_last_updated() -> datetime.datetime:
+    con = get_db_con()
+    max_retrieved_at = (
+        con.sql("SELECT max(retrieved_at) as last_updated FROM main.repos")
+        .to_df()
+        .squeeze()
+    )
+
+    return max_retrieved_at
 
 
 def create_repo_table() -> pd.DataFrame:
@@ -27,8 +40,10 @@ def create_repo_table() -> pd.DataFrame:
 
 def layout(**kwargs):
     df = create_repo_table()
+    last_updated = get_last_updated()
+    last_updated_str = last_updated.strftime("%Y-%m-%d")
     return [
-        html.Hr(),
+        html.Br(),
         dash_table.DataTable(
             df.to_dict("records"),
             columns=[
@@ -40,7 +55,7 @@ def layout(**kwargs):
                 for x in df.columns
             ],
             id="tbl",
-            **AmpereDTStyle
+            **AmpereDTStyle,
         ),
         html.Hr(),
         html.Div(
@@ -60,4 +75,5 @@ def layout(**kwargs):
                 html.Div(" contributors", style={"display": "inline"}),
             ]
         ),
+        html.P(f"last updated: {last_updated_str}"),
     ]
