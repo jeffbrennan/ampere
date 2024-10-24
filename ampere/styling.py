@@ -50,16 +50,10 @@ AmpereDTStyle = asdict(
             "paddingRight": "12px",
             "margin": "0",
             "fontWeight": "bold",
-            "borderTop": f"1px solid {AmperePalette.PAGE_ACCENT_COLOR}",
-            "borderBottom": f"1px solid {AmperePalette.PAGE_ACCENT_COLOR}",
-            "borderLeft": f"2px solid {AmperePalette.BRAND_TEXT_COLOR}",
-            "borderRight": f"2px solid {AmperePalette.BRAND_TEXT_COLOR}",
         },
         style_filter={
             "borderTop": "0",
             "borderBottom": "2px solid black",
-            "borderLeft": "0",
-            "borderRight": "0",
             "backgroundColor": AmperePalette.BRAND_TEXT_COLOR,
         },
         style_cell={
@@ -93,6 +87,9 @@ AmpereDTStyle = asdict(
             "overflowY": "scroll",
             "overflowX": "scroll",
             "margin": {"b": 100},
+            "borderBottom": "2px solid black",
+            "borderTop": "2px solid black",
+            "borderLeft": "1px solid black",
         },
     )
 )
