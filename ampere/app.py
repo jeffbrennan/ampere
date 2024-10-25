@@ -58,6 +58,7 @@ app.layout = dbc.Container(
     style={
         "paddingLeft": "5%",
         "paddingRight": "5%",
+        "paddingBottom": "3%"
     },
 )
 

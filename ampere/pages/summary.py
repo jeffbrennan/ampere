@@ -35,7 +35,10 @@ layout = [
 @callback(Output("summary-graph", "style"), Input("breakpoints", "widthBreakpoint"))
 def handle_summary_sizes(breakpoint_name: str):
     side_margins = {"sm": 0, "md": 2, "lg": 4, "xl": 6}
-    y_axis_width_adjustment_vw = 4
+    y_axis_width_adjustment_vw = 0
+
+    if breakpoint_name == "sm":
+        y_axis_width_adjustment_vw = 4
 
     return {
         "marginTop": "2vw",
