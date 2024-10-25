@@ -41,7 +41,7 @@ AmpereDTStyle = asdict(
         row_deletable=False,
         fixed_rows={"headers": True},
         filter_action="native",
-        filter_options={"case": "insensitive"},
+        filter_options={"case": "insensitive", "placeholder_text": ""},
         page_size=100,
         style_header={
             "backgroundColor": AmperePalette.PAGE_ACCENT_COLOR,
