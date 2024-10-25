@@ -46,7 +46,7 @@ AmpereDTStyle = asdict(
         style_header={
             "backgroundColor": AmperePalette.PAGE_ACCENT_COLOR,
             "color": AmperePalette.BRAND_TEXT_COLOR,
-            # account for hidden filters
+            # account for filters
             "paddingRight": "12px",
             "margin": "0",
             "fontWeight": "bold",
