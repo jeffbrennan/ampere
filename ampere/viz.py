@@ -523,7 +523,7 @@ def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
                 y=1.04,
                 xanchor="center",
                 x=0.5,
-            ),
+            )
         )
     else:
         fig.update_layout(
@@ -531,7 +531,7 @@ def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
         )
 
     fig.for_each_annotation(
-        lambda a: a.update(text="<b>" + a.text.split("=")[-1] + "</b>", font_size=14)
+        lambda a: a.update(text="<b>" + a.text.split("=")[-1] + "</b>", font_size=16)
     )
 
     fig.for_each_yaxis(
