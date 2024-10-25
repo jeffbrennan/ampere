@@ -521,8 +521,10 @@ def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
                 font=dict(size=14),
                 orientation="h",
                 yanchor="top",
-                y=1.05,
-            )
+                y=1.04,
+                xanchor="center",
+                x=0.5,
+            ),
         )
     else:
         fig.update_layout(
@@ -554,6 +556,8 @@ def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
             tickfont_size=14,
         )
     )
+
+    fig.update_layout(margin=dict(l=0, r=0))
     if show_fig:
         fig.show()
 

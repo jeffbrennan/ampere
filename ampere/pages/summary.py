@@ -17,7 +17,11 @@ layout = [
     ),
     dash_breakpoints.WindowBreakpoints(
         id="breakpoints",
-        widthBreakpointThresholdsPx=[1200, 1920, 2560],
+        widthBreakpointThresholdsPx=[
+            1200,
+            1920,
+            2560,
+        ],
         widthBreakpointNames=["sm", "md", "lg", "xl"],
     ),
     dcc.Loading(
@@ -29,29 +33,26 @@ layout = [
 
 
 @callback(Output("summary-graph", "style"), Input("breakpoints", "widthBreakpoint"))
-def handle_summary_widescreen(breakpoint_name: str):
-    is_widescreen = breakpoint_name == "lg"
-
-    if is_widescreen:
-        return {
-            "marginTop": "2vw",
-            "marginLeft": "20vw",
-            "marginRight": "20vw",
-        }
+def handle_summary_sizes(breakpoint_name: str):
+    side_margins = {"sm": 0, "md": 2, "lg": 4, "xl": 6}
+    y_axis_width_adjustment_vw = 4
 
     return {
         "marginTop": "2vw",
-        "marginLeft": "0vw",
-        "marginRight": "0vw",
+        "marginLeft": f"{side_margins[breakpoint_name]}vw",
+        "marginRight": f"{side_margins[breakpoint_name] + y_axis_width_adjustment_vw}vw",
     }
 
 
 @callback(
-    Output("summary-graph", "figure"),
+    [Output("summary-graph", "figure"), Output("summary-graph", "config")],
     [Input("load-interval", "n_intervals"), Input("breakpoints", "widthBreakpoint")],
 )
-def show_summary_graph(_: int, breakpoint_name: str) -> Figure:
+def show_summary_graph(_: int, breakpoint_name: str) -> tuple[Figure, dict[str, bool]]:
     breakpoint_mapping = {"sm": 1199, "md": 1899, "lg": 2559, "xl": 2561}
-    return viz_summary(
+    fig = viz_summary(
         show_fig=False, screen_width_px=breakpoint_mapping[breakpoint_name]
     )
+
+    config = {"displayModeBar": breakpoint_name != "sm"}
+    return fig, config
