@@ -56,6 +56,25 @@ REPO_PALETTE = {
     "community": "#D57DBF",
 }
 
+NETWORK_LAYOUT = go.Layout(
+    showlegend=True,
+    hovermode="closest",
+    margin=dict(b=20, l=0, r=0, t=55),
+    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+    template="none",
+    legend=dict(
+        title=None,
+        itemsizing="constant",
+        font=dict(size=14),
+        orientation="h",
+        yanchor="top",
+        y=1.04,
+        xanchor="center",
+        x=0.5,
+    ),
+)
+
 
 @timeit
 def create_star_network(
@@ -205,18 +224,7 @@ def create_star_network_plot(
         )
         all_node_traces.append(node_trace)
 
-    fig = go.Figure(
-        data=[edge_trace, *all_node_traces],
-        layout=go.Layout(
-            showlegend=True,
-            hovermode="closest",
-            margin=dict(b=20, l=5, r=5, t=55),
-            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            template="none",
-            legend=dict(font=dict(size=14)),
-        ),
-    )
+    fig = go.Figure(data=[edge_trace, *all_node_traces], layout=NETWORK_LAYOUT)
 
     return fig
 
@@ -345,16 +353,7 @@ def create_follower_network_plot(
     )
 
     fig = go.Figure(
-        data=[solo_edge_trace, mutual_edge_trace, node_trace],
-        layout=go.Layout(
-            showlegend=True,
-            hovermode="closest",
-            margin=dict(b=20, l=5, r=5, t=55),
-            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            template="none",
-            legend=dict(font=dict(size=14)),
-        ),
+        data=[solo_edge_trace, mutual_edge_trace, node_trace], layout=NETWORK_LAYOUT
     )
 
     return fig
