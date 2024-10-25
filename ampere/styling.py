@@ -4,10 +4,10 @@ from enum import StrEnum
 
 
 class AmperePalette(StrEnum):
-    PAGE_ACCENT_COLOR = "#3F6DF9"
+    PAGE_ACCENT_COLOR = "#304FFE"
     PAGE_LIGHT_GRAY = "#EEEEEE"
     BRAND_TEXT_COLOR = "#FFFFFF"
-    BRAND_TEXT_COLOR_MUTED = "#CEE5F2"
+    BRAND_TEXT_COLOR_MUTED = "#e3e7fa"
 
 
 @dataclass
