@@ -1,6 +1,6 @@
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
+from enum import StrEnum, auto
 from typing import Any
-from enum import StrEnum
 
 
 class AmperePalette(StrEnum):
@@ -8,6 +8,14 @@ class AmperePalette(StrEnum):
     PAGE_LIGHT_GRAY = "#EEEEEE"
     BRAND_TEXT_COLOR = "#FFFFFF"
     BRAND_TEXT_COLOR_MUTED = "#e3e7fa"
+
+
+class ScreenWidth(StrEnum):
+    xs = auto()
+    sm = auto()
+    md = auto()
+    lg = auto()
+    xl = auto()
 
 
 @dataclass
