@@ -8,27 +8,27 @@ import requests
 from deltalake import DeltaTable
 
 from ampere.common import (
-    create_header,
-    get_token,
-    get_current_time,
-    write_delta_table,
     DeltaWriteConfig,
+    create_header,
+    get_current_time,
     get_model_foreign_key,
+    get_token,
+    write_delta_table,
 )
 from ampere.models import (
-    Repo,
-    Fork,
-    Stargazer,
-    Release,
-    Language,
     Commit,
     CommitStats,
-    PullRequest,
-    Issue,
-    Watcher,
-    View,
-    User,
     Follower,
+    Fork,
+    Issue,
+    Language,
+    PullRequest,
+    Release,
+    Repo,
+    Stargazer,
+    User,
+    View,
+    Watcher,
 )
 
 

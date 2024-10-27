@@ -57,7 +57,7 @@ def layout(**kwargs):
                 for x in df.columns
             ],
             id="tbl",
-            **AmpereDTStyle
+            **AmpereDTStyle,
         ),
     ]
 

@@ -1,7 +1,7 @@
 import dash
 import dash_breakpoints
-from dash import dcc, callback, Output, Input, dash_table, html
 import pandas as pd
+from dash import Input, Output, callback, dash_table, dcc, html
 from plotly.graph_objects import Figure
 
 from ampere.common import get_db_con
@@ -65,7 +65,7 @@ def layout(**kwargs):
                 for x in df.columns
             ],
             id="tbl",
-            **AmpereDTStyle
+            **AmpereDTStyle,
         ),
     ]
 

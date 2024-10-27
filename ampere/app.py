@@ -55,11 +55,7 @@ app.layout = dbc.Container(
         dash.page_container,
     ],
     fluid=True,
-    style={
-        "paddingLeft": "5%",
-        "paddingRight": "5%",
-        "paddingBottom": "3%"
-    },
+    style={"paddingLeft": "5%", "paddingRight": "5%", "paddingBottom": "3%"},
 )
 
 if __name__ == "__main__":

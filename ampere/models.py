@@ -2,7 +2,7 @@ import datetime
 from dataclasses import dataclass
 from typing import Optional, TypeVar
 
-from sqlmodel import SQLModel, Field
+from sqlmodel import Field, SQLModel
 
 SQLModelType = TypeVar("SQLModelType", bound=SQLModel)
 
