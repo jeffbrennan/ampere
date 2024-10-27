@@ -2,6 +2,7 @@ import datetime
 import os
 import time
 from dataclasses import dataclass
+from enum import StrEnum
 from functools import wraps
 from pathlib import Path
 from typing import Callable, Optional
@@ -9,7 +10,7 @@ from typing import Callable, Optional
 import dotenv
 import duckdb
 import pandas as pd
-from deltalake import write_deltalake, DeltaTable
+from deltalake import DeltaTable, write_deltalake
 from duckdb import DuckDBPyConnection
 from sqlmodel.main import SQLModelMetaclass
 

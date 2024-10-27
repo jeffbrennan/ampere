@@ -1,82 +1,61 @@
-import datetime
-
 import dash
 import dash_bootstrap_components as dbc
-from dash import html, callback, Input, Output
+from dash import html
 
-from ampere.common import get_db_con
+from ampere.styling import AmperePalette
 
 app = dash.Dash(
-    __name__,
     use_pages=True,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
 )
-
-
-def get_last_updated() -> datetime.datetime:
-    con = get_db_con()
-    max_retrieved_at = (
-        con.sql("SELECT max(retrieved_at) as last_updated FROM main.repos")
-        .to_df()
-        .squeeze()
-    )
-
-    return max_retrieved_at
-
-
-last_updated = get_last_updated()
-last_updated_str = last_updated.strftime("%Y-%m-%d")
 
 navbar = dbc.NavbarSimple(
     children=[
         dbc.DropdownMenu(
             children=[
-                dbc.DropdownMenuItem("stargazers", href="network-stargazers"),
-                dbc.DropdownMenuItem("followers", href="network-followers"),
+                dbc.DropdownMenuItem(
+                    "stargazers",
+                    href="network-stargazers",
+                    style={"color": "black"},
+                ),
+                dbc.DropdownMenuItem(
+                    "followers", href="network-followers", style={"color": "black"}
+                ),
             ],
             nav=True,
             in_navbar=True,
             label="networks",
+            toggle_style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
         ),
-        dbc.NavItem(dbc.NavLink("about", href="about")),
+        dbc.NavItem(
+            dbc.NavLink(
+                "about",
+                href="about",
+                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                class_name="navbar-text",
+            )
+        ),
     ],
-    brand="ampere",
-    brand_href="/",
-    color="#3F6DF9",
-    className="mb-2",
+    color=AmperePalette.PAGE_ACCENT_COLOR,
     dark=True,
+    fixed="top",
     fluid=True,
+    style={"width": "100%"},
+    brand="ampere",
+    brand_style={"fontWeight": "bold"},
     links_left=True,
-    style={
-        "width": "100%",
-        "color": "#FFFFFF",
-    },
+    brand_href="/",
 )
 
-footer = html.Footer(
-    children=[
-        html.Div(
-            f"last updated {last_updated_str}",
-            style={"textAlign": "left", "fontSize": "14px"},
-        )
-    ],
-    style={
-        "position": "fixed",
-        "bottom": "0",
-        "width": "100%",
-        "backgroundColor": "#3F6DF9",
-        "color": "#FFFFFF",
-        "paddingLeft": "1%",
-        "left": "0",
-    },
-)
 app.layout = dbc.Container(
-    [navbar, dash.page_container, footer],
+    [
+        navbar,
+        html.Br(),
+        html.Br(),
+        dash.page_container,
+    ],
     fluid=True,
-    style={
-        "paddingLeft": "5%",
-        "paddingRight": "5%",
-    },
+    style={"paddingLeft": "5%", "paddingRight": "5%", "paddingBottom": "3%"},
 )
 
 if __name__ == "__main__":

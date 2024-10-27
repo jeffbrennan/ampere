@@ -1,10 +1,24 @@
+import datetime
+
 import dash
 import pandas as pd
-from dash import html, dash_table
+from dash import dash_table, html
 
 from ampere.common import get_db_con
+from ampere.styling import AmpereDTStyle
 
 dash.register_page(__name__, name="about", top_nav=True, order=2)
+
+
+def get_last_updated() -> datetime.datetime:
+    con = get_db_con()
+    max_retrieved_at = (
+        con.sql("SELECT max(retrieved_at) as last_updated FROM main.repos")
+        .to_df()
+        .squeeze()
+    )
+
+    return max_retrieved_at
 
 
 def create_repo_table() -> pd.DataFrame:
@@ -14,10 +28,10 @@ def create_repo_table() -> pd.DataFrame:
             concat('[', repo_name, ']', '(https://www.github.com/mrpowers-io/', repo_name, ')')   repo_name,
             forks_count  forks,
             stargazers_count  stargazers,
-            open_issues_count  open_issues,
-            round(date_part('day', current_date - created_at)  / 365, 1)  age_years,
-            created_at,
-            updated_at
+            open_issues_count  "open issues",
+            round(date_part('day', current_date - created_at)  / 365, 1)  "age (years)",
+            strftime(created_at, '%Y-%m-%d') created,
+            strftime(updated_at, '%Y-%m-%d') updated,
         FROM main.repos
         ORDER BY stargazers_count DESC
         """
@@ -26,22 +40,22 @@ def create_repo_table() -> pd.DataFrame:
 
 def layout(**kwargs):
     df = create_repo_table()
+    last_updated = get_last_updated()
+    last_updated_str = last_updated.strftime("%Y-%m-%d")
     return [
-        html.H2("Repos"),
+        html.Br(),
         dash_table.DataTable(
             df.to_dict("records"),
             columns=[
-                {"id": x, "name": "", "presentation": "markdown"}
-                if x == "repo_name"
-                else {"id": x, "name": x}
+                (
+                    {"id": x, "name": "repo", "presentation": "markdown"}
+                    if x == "repo_name"
+                    else {"id": x, "name": x}
+                )
                 for x in df.columns
             ],
             id="tbl",
-            sort_action="native",
-            sort_mode="multi",
-            column_selectable="single",
-            row_selectable=False,
-            row_deletable=False,
+            **AmpereDTStyle,
         ),
         html.Hr(),
         html.Div(
@@ -61,4 +75,5 @@ def layout(**kwargs):
                 html.Div(" contributors", style={"display": "inline"}),
             ]
         ),
+        html.P(f"last updated: {last_updated_str}"),
     ]

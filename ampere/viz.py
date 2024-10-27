@@ -3,6 +3,7 @@ import pickle
 import random
 import time
 from dataclasses import dataclass
+from enum import StrEnum, auto
 from pathlib import Path
 from typing import Optional
 
@@ -14,6 +15,7 @@ import plotly.graph_objects as go
 from plotly.graph_objs import Figure
 
 from ampere.common import get_db_con, timeit
+from ampere.styling import ScreenWidth
 
 
 @dataclass(slots=True, frozen=True)
@@ -55,6 +57,25 @@ REPO_PALETTE = {
     "falsa": "#19D3F3",
     "community": "#D57DBF",
 }
+
+NETWORK_LAYOUT = go.Layout(
+    showlegend=True,
+    hovermode="closest",
+    margin=dict(b=20, l=0, r=0, t=55),
+    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+    template="none",
+    legend=dict(
+        title=None,
+        itemsizing="constant",
+        font=dict(size=14),
+        orientation="h",
+        yanchor="top",
+        y=1.04,
+        xanchor="center",
+        x=0.5,
+    ),
+)
 
 
 @timeit
@@ -205,18 +226,7 @@ def create_star_network_plot(
         )
         all_node_traces.append(node_trace)
 
-    fig = go.Figure(
-        data=[edge_trace, *all_node_traces],
-        layout=go.Layout(
-            showlegend=True,
-            hovermode="closest",
-            margin=dict(b=20, l=5, r=5, t=55),
-            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            template="none",
-            legend=dict(font=dict(size=14)),
-        ),
-    )
+    fig = go.Figure(data=[edge_trace, *all_node_traces], layout=NETWORK_LAYOUT)
 
     return fig
 
@@ -345,16 +355,7 @@ def create_follower_network_plot(
     )
 
     fig = go.Figure(
-        data=[solo_edge_trace, mutual_edge_trace, node_trace],
-        layout=go.Layout(
-            showlegend=True,
-            hovermode="closest",
-            margin=dict(b=20, l=5, r=5, t=55),
-            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            template="none",
-            legend=dict(font=dict(size=14)),
-        ),
+        data=[solo_edge_trace, mutual_edge_trace, node_trace], layout=NETWORK_LAYOUT
     )
 
     return fig
@@ -446,7 +447,10 @@ def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figu
     return fig
 
 
-def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
+def viz_summary(
+    show_fig: bool = False,
+    screen_width: ScreenWidth = ScreenWidth.lg,
+):
     con = get_db_con()
     df = con.sql(
         """
@@ -470,10 +474,10 @@ def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
         "pull requests",
     ]
 
-    if screen_width_px < 1200:
+    if screen_width in [ScreenWidth.xs, ScreenWidth.sm]:
         facet_col_wrap = 1
         facet_row_spacing = 0.04
-    elif screen_width_px < 2560:
+    elif screen_width in [ScreenWidth.md, ScreenWidth.lg]:
         facet_col_wrap = 2
         facet_row_spacing = 0.10
     else:
@@ -513,7 +517,8 @@ def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
         line=dict(width=1), marker=dict(size=5), hovertemplate="<b>%{x}</b><br>n=%{y}"
     )
 
-    if screen_width_px < 1200:
+    fig_legend_y = {ScreenWidth.xs: 1.04, ScreenWidth.sm: 1.02}
+    if screen_width in [ScreenWidth.xs, ScreenWidth.sm]:
         fig.update_layout(
             legend=dict(
                 title=None,
@@ -521,7 +526,9 @@ def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
                 font=dict(size=14),
                 orientation="h",
                 yanchor="top",
-                y=1.05,
+                y=fig_legend_y[screen_width],
+                xanchor="center",
+                x=0.5,
             )
         )
     else:
@@ -530,7 +537,7 @@ def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
         )
 
     fig.for_each_annotation(
-        lambda a: a.update(text="<b>" + a.text.split("=")[-1] + "</b>", font_size=14)
+        lambda a: a.update(text="<b>" + a.text.split("=")[-1] + "</b>", font_size=16)
     )
 
     fig.for_each_yaxis(
@@ -554,6 +561,8 @@ def viz_summary(show_fig: bool = False, screen_width_px: int = 1920):
             tickfont_size=14,
         )
     )
+
+    fig.update_layout(margin=dict(l=0, r=0))
     if show_fig:
         fig.show()
 

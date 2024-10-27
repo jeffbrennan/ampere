@@ -3,33 +3,34 @@ from typing import Any
 from dagster import AssetExecutionContext, asset
 from dagster_dbt import DbtCliResource, dbt_assets
 
-from ampere.common import write_delta_table, DeltaWriteConfig, get_model_primary_key
+from ampere.common import DeltaWriteConfig, get_model_primary_key, write_delta_table
 from ampere.get_repo_metrics import (
-    get_repos,
-    read_repos,
-    refresh_github_table,
-    get_stargazers,
-    get_pull_requests,
-    get_releases,
+    get_commits,
     get_forks,
     get_issues,
-    get_watchers,
+    get_pull_requests,
+    get_releases,
+    get_repos,
+    get_stargazers,
     get_user_ids,
-    refresh_users,
-    get_commits,
+    get_watchers,
+    read_repos,
     refresh_followers,
+    refresh_github_table,
+    refresh_users,
 )
 from ampere.models import (
-    Stargazer,
-    Fork,
-    Release,
-    PullRequest,
-    Issue,
-    Watcher,
-    User,
     Commit,
     Follower,
+    Fork,
+    Issue,
+    PullRequest,
+    Release,
+    Stargazer,
+    User,
+    Watcher,
 )
+
 from .project import ampere_project
 
 db_path = ampere_project.project_dir.joinpath("data/ampere.duckdb")

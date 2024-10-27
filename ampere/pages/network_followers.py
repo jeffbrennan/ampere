@@ -1,10 +1,11 @@
 import dash
 import dash_breakpoints
-from dash import dcc, callback, Output, Input, dash_table
 import pandas as pd
+from dash import Input, Output, callback, dash_table, dcc, html
 from plotly.graph_objects import Figure
 
 from ampere.common import get_db_con
+from ampere.styling import AmpereDTStyle
 from ampere.viz import viz_follower_network
 
 dash.register_page(__name__)
@@ -33,6 +34,7 @@ def create_followers_table() -> pd.DataFrame:
 def layout(**kwargs):
     df = create_followers_table()
     return [
+        html.Br(),
         dcc.Interval(
             id="network-follower-load-interval",
             n_intervals=0,
@@ -63,43 +65,7 @@ def layout(**kwargs):
                 for x in df.columns
             ],
             id="tbl",
-            sort_action="native",
-            sort_mode="multi",
-            column_selectable="single",
-            row_selectable=False,
-            row_deletable=False,
-            fixed_rows={"headers": True},
-            filter_action="native",
-            page_size=100,
-            style_header={
-                "backgroundColor": "#3F6DF9",
-                "padding": "10px",
-                "color": "#FFFFFF",
-                "fontWeight": "bold",
-            },
-            style_cell={
-                "textAlign": "right",
-                "minWidth": 95,
-                "maxWidth": 95,
-                "width": 95,
-                "font_size": "1em",
-                "whiteSpace": "normal",
-                "height": "auto",
-                "font-family": "sans-serif",
-            },
-            style_header_conditional=[
-                {"if": {"column_id": "name"}, "textAlign": "center"}
-            ],
-            style_data_conditional=[
-                {"if": {"column_id": "name"}, "textAlign": "center"}
-            ],
-            css=[dict(selector="p", rule="margin-bottom: 0; text-align: right;")],
-            style_table={
-                "height": "50%",
-                "overflowY": "scroll",
-                "overflowX": "scroll",
-                "margin": {"b": 100},
-            },
+            **AmpereDTStyle,
         ),
     ]
 
