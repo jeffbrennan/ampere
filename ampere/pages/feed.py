@@ -30,6 +30,10 @@ def create_feed_table() -> pd.DataFrame:
 
 def layout(**kwargs):
     df = create_feed_table()
+    feed_style = AmpereDTStyle
+    feed_style["css"] = [
+        dict(selector="p", rule="margin-bottom: 0; text-align: center;")
+    ]
     return [
         html.Br(),
         dash_table.DataTable(
@@ -43,6 +47,6 @@ def layout(**kwargs):
                 for x in df.columns
             ],
             id="tbl",
-            **AmpereDTStyle,
+            **feed_style,
         ),
     ]
