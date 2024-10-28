@@ -20,7 +20,7 @@ def create_feed_table() -> pd.DataFrame:
             event_type "type",
             event_action "action",
             event_data "description",
-            event_id "id"
+            concat('[', replace(event_link, 'https://github.com/', ''), ']', '(', event_link, ')') "link"
 
         from main.mart_feed_events
         order by event_timestamp desc
@@ -36,8 +36,8 @@ def layout(**kwargs):
             df.to_dict("records"),
             columns=[
                 (
-                    {"id": x, "name": "user name", "presentation": "markdown"}
-                    if x == "user"
+                    {"id": x, "name": x, "presentation": "markdown"}
+                    if x in ["user", "link"]
                     else {"id": x, "name": x}
                 )
                 for x in df.columns
