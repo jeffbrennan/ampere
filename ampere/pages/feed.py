@@ -4,6 +4,7 @@ from dash import dash_table, html
 
 from ampere.common import get_db_con
 from ampere.styling import AmpereDTStyle
+from copy import deepcopy
 
 dash.register_page(__name__, name="feed", top_nav=True, order=3)
 
@@ -30,11 +31,12 @@ def create_feed_table() -> pd.DataFrame:
 
 def layout(**kwargs):
     df = create_feed_table()
-    feed_style = AmpereDTStyle
+    feed_style = deepcopy(AmpereDTStyle)
     feed_style["css"] = [
-        dict(selector="p", rule="margin-bottom: 0; text-align: center;")
+        dict(selector="p", rule="margin-bottom: 0; text-align: center;"),
     ]
     return [
+        html.Br(),
         html.Br(),
         dash_table.DataTable(
             df.to_dict("records"),
