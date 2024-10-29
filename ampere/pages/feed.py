@@ -15,24 +15,15 @@ def create_feed_table() -> pd.DataFrame:
         """
         select
             strftime(event_timestamp, '%Y-%m-%d %H:%M:%S') "event time",
-            event_type "type",
-            event_action "action",
-            repo_name "repo",
             concat('[', user_name, ']', '(https://www.github.com/', user_name, ')')  "user",
-            coalesce(event_data, '') "description",
+            event_action "action",
+            event_type "type",
             date_part('day', current_date - event_timestamp)  "days ago",
-            concat('[',
-                replace(
-                    replace(
-                        event_link, 'https://github.com/', ''
-                    ),
-                    'mrpowers-io/', ''
-                ),
-                ']', '(', event_link, ')'
-            ) "link"
-
+            repo_name "repo",
+            coalesce(event_data, '') "description",
+            event_link
         from main.mart_feed_events
-        order by event_timestamp desc
+        order by "event time" desc
         """
     ).to_df()
 
@@ -53,7 +44,7 @@ def style_feed_table() -> dict:
 
     color_styles = [
         {
-            "if": {"filter_query": f"{{type}} = '{k}'", "column_id": "type"},
+            "if": {"filter_query": f"{{event}} contains '{k}'", "column_id": "event"},
             "backgroundColor": v,
             "color": "black",
             "borderBottom": "1px rgb(237, 237, 237) solid",
@@ -66,8 +57,39 @@ def style_feed_table() -> dict:
     return feed_style
 
 
+def format_feed_table(df: pd.DataFrame) -> pd.DataFrame:
+    df["type_link"] = "[" + df["type"] + "]" + "(" + df["event_link"] + ")"
+    df["repo_link"] = (
+        "[" + df["repo"] + "]" + "(https://github.com/mrpowers-io/" + df["repo"] + ")"
+    )
+    df["type_link"] = df["type_link"].fillna("star")
+
+    df["event"] = (
+        df["user"]
+        + " "
+        + df["action"]
+        + " a "
+        + df["type_link"]
+        + " in "
+        + df["repo_link"]
+        + " "
+        + df["days ago"].astype(str)
+        + " days ago"
+    )
+    df["event"] = df["event"].str.replace("created a star in", "starred")
+    df["event"] = df["event"].str.replace("a [issue", "an [issue")
+    print(df["event"][28])
+    df_final = df[["event", "event time", "description"]]
+    if not isinstance(df_final, pd.DataFrame):
+        raise TypeError()
+
+    return df_final
+
+
 def layout(**kwargs):
-    df = create_feed_table()
+    raw_df = create_feed_table()
+    df = format_feed_table(raw_df)
+
     feed_style = style_feed_table()
     return [
         html.Br(),
@@ -77,7 +99,7 @@ def layout(**kwargs):
             columns=[
                 (
                     {"id": x, "name": x, "presentation": "markdown"}
-                    if x in ["user", "link", "description"]
+                    if x in ["event", "description"]
                     else {"id": x, "name": x}
                 )
                 for x in df.columns
