@@ -48,7 +48,6 @@ def style_feed_table() -> dict:
             "if": {"filter_query": f"{{type}} = '{k}'", "column_id": "type"},
             "backgroundColor": v,
             "color": "black",
-            "borderTop": "1px rgb(237, 237, 237) solid",
             "borderBottom": "1px rgb(237, 237, 237) solid",
         }
         for k, v in colors.items()
