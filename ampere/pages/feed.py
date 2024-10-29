@@ -14,7 +14,7 @@ def create_feed_table() -> pd.DataFrame:
     return con.sql(
         """
         select
-            strftime(event_timestamp, '%Y-%m-%d %H:%M:%S') "event time",
+            strftime(event_timestamp, '%Y-%m-%d %H:%M:%S') "time",
             concat('[', user_name, ']', '(https://www.github.com/', user_name, ')')  "user",
             event_action "action",
             event_type "type",
@@ -23,7 +23,7 @@ def create_feed_table() -> pd.DataFrame:
             coalesce(event_data, '') "description",
             event_link
         from main.mart_feed_events
-        order by "event time" desc
+        order by "time" desc
         """
     ).to_df()
 
@@ -31,7 +31,7 @@ def create_feed_table() -> pd.DataFrame:
 def style_feed_table() -> dict:
     feed_style = deepcopy(AmpereDTStyle)
     feed_style["css"] = [
-        dict(selector="p", rule="margin-bottom: 0; text-align: center;"),
+        dict(selector="p", rule="margin-bottom: 0; text-align: left;"),
     ]
 
     colors = {
@@ -51,9 +51,13 @@ def style_feed_table() -> dict:
         }
         for k, v in colors.items()
     ]
-
     feed_style["style_data_conditional"].extend(color_styles)
-
+    feed_style["style_data_conditional"].extend(
+        [
+            {"if": {"column_id": "time"}, "minWidth": 25, "maxWidth": 25},
+            {"if": {"column_id": "event"}, "minWidth": 50, "maxWidth": 75},
+        ]
+    )
     return feed_style
 
 
@@ -77,12 +81,13 @@ def format_feed_table(df: pd.DataFrame) -> pd.DataFrame:
         + " days ago"
     )
     df["event"] = df["event"].str.replace("created a star in", "starred")
+    df["event"] = df["event"].str.replace("created a [fork", "[forked")
     df["event"] = df["event"].str.replace("a [issue", "an [issue")
     df["event"] = df["event"].str.replace(" 0 days ago", " today")
     df["event"] = df["event"].str.replace(" 1 days ago", " yesterday")
+    df.loc[df["type"] == "fork", "event"] = df["event"].str.replace(" in ", " ")
 
-    print(df["event"][28])
-    df_final = df[["event", "event time", "description"]]
+    df_final = df[["time", "event", "description"]]
     if not isinstance(df_final, pd.DataFrame):
         raise TypeError()
 
