@@ -91,7 +91,8 @@ AmpereDTStyle = asdict(
         style_data={"color": "black", "backgroundColor": "white"},
         css=[dict(selector="p", rule="margin-bottom: 0; text-align: right;")],
         style_table={
-            "height": "50%",
+            "height": "85vh",
+            "maxHeight": "85vh",
             "overflowY": "scroll",
             "overflowX": "scroll",
             "margin": {"b": 100},
