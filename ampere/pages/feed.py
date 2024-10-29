@@ -21,7 +21,15 @@ def create_feed_table() -> pd.DataFrame:
             concat('[', user_name, ']', '(https://www.github.com/', user_name, ')')  "user",
             coalesce(event_data, '') "description",
             date_part('day', current_date - event_timestamp)  "days ago",
-            concat('[', replace(event_link, 'https://github.com/', ''), ']', '(', event_link, ')') "link"
+            concat('[',
+                replace(
+                    replace(
+                        event_link, 'https://github.com/', ''
+                    ),
+                    'mrpowers-io/', ''
+                ),
+                ']', '(', event_link, ')'
+            ) "link"
 
         from main.mart_feed_events
         order by event_timestamp desc
