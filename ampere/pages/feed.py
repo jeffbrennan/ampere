@@ -54,10 +54,15 @@ def style_feed_table() -> dict:
     feed_style["style_data_conditional"].extend(color_styles)
     feed_style["style_data_conditional"].extend(
         [
-            {"if": {"column_id": "time"}, "minWidth": 25, "maxWidth": 25},
-            {"if": {"column_id": "event"}, "minWidth": 50, "maxWidth": 75},
+            {"if": {"column_id": "time"}, "minWidth": 40, "maxWidth": 40},
+            {"if": {"column_id": "event"}, "minWidth": 125, "maxWidth": 125},
         ]
     )
+
+    feed_style["style_table"]['maxWidth'] = "65vw"
+    feed_style["style_table"]['width'] = "65vw"
+    feed_style["style_table"]['marginLeft'] = "10vw"
+
     return feed_style
 
 
