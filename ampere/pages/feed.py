@@ -78,6 +78,9 @@ def format_feed_table(df: pd.DataFrame) -> pd.DataFrame:
     )
     df["event"] = df["event"].str.replace("created a star in", "starred")
     df["event"] = df["event"].str.replace("a [issue", "an [issue")
+    df["event"] = df["event"].str.replace(" 0 days ago", " today")
+    df["event"] = df["event"].str.replace(" 1 days ago", " yesterday")
+
     print(df["event"][28])
     df_final = df[["event", "event time", "description"]]
     if not isinstance(df_final, pd.DataFrame):
