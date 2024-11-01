@@ -1,10 +1,12 @@
+import copy
+
 import dash
+import dash_breakpoints
 import pandas as pd
-from dash import dash_table, html
+from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_db_con
-from ampere.styling import AmpereDTStyle
-from copy import deepcopy
+from ampere.styling import AmpereDTStyle, ScreenWidth
 
 dash.register_page(__name__, name="feed", top_nav=True, order=3)
 
@@ -28,8 +30,52 @@ def create_feed_table() -> pd.DataFrame:
     ).to_df()
 
 
+@callback(
+    [
+        Output("tbl", "style_table"),
+        Output("tbl", "style_data_conditional"),
+    ],
+    [
+        Input("tbl", "style_table"),
+        Input("tbl", "style_data_conditional"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
+)
+def handle_table_margins(
+    style_table_incoming: dict,
+    style_data_conditional_incoming: list[dict],
+    breakpoint_name: str,
+) -> tuple[dict, list[dict]]:
+    style_table = copy.deepcopy(style_table_incoming)
+    style_data_conditional = copy.deepcopy(style_data_conditional_incoming)
+    style_data_conditional = [
+        i for i in style_data_conditional if "minWidth" not in str(i)
+    ]
+
+    if breakpoint_name in ["lg", "xl"]:
+        style_table["maxWidth"] = "65vw"
+        style_table["width"] = "65vw"
+        style_table["marginLeft"] = "10vw"
+
+    else:
+        style_table = style_feed_table()["style_table"]
+
+    width_lookup = {"time": 100, "event": 300, "description": 300}
+    margin_adjustment = [
+        {
+            "if": {"column_id": i},
+            "minWidth": width_lookup[i],
+            "maxWidth": width_lookup[i],
+        }
+        for i in ["time", "event", "description"]
+    ]
+
+    style_data_conditional.extend(margin_adjustment)
+    return style_table, style_data_conditional
+
+
 def style_feed_table() -> dict:
-    feed_style = deepcopy(AmpereDTStyle)
+    feed_style = copy.deepcopy(AmpereDTStyle)
     feed_style["css"] = [
         dict(selector="p", rule="margin-bottom: 0; text-align: left;"),
     ]
@@ -52,16 +98,6 @@ def style_feed_table() -> dict:
         for k, v in colors.items()
     ]
     feed_style["style_data_conditional"].extend(color_styles)
-    feed_style["style_data_conditional"].extend(
-        [
-            {"if": {"column_id": "time"}, "minWidth": 40, "maxWidth": 40},
-            {"if": {"column_id": "event"}, "minWidth": 125, "maxWidth": 125},
-        ]
-    )
-
-    feed_style["style_table"]['maxWidth'] = "65vw"
-    feed_style["style_table"]['width'] = "65vw"
-    feed_style["style_table"]['marginLeft'] = "10vw"
 
     return feed_style
 
@@ -102,11 +138,20 @@ def format_feed_table(df: pd.DataFrame) -> pd.DataFrame:
 def layout(**kwargs):
     raw_df = create_feed_table()
     df = format_feed_table(raw_df)
-
     feed_style = style_feed_table()
     return [
         html.Br(),
         html.Br(),
+        dash_breakpoints.WindowBreakpoints(
+            id="breakpoints",
+            widthBreakpointThresholdsPx=[
+                500,
+                1200,
+                1920,
+                2560,
+            ],
+            widthBreakpointNames=[i.value for i in ScreenWidth],
+        ),
         dash_table.DataTable(
             df.to_dict("records"),
             columns=[
