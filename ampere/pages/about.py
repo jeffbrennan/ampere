@@ -1,9 +1,10 @@
 import datetime
+from copy import deepcopy
 
 import dash
 import pandas as pd
 from dash import dash_table, html
-from copy import deepcopy
+
 from ampere.common import get_db_con
 from ampere.styling import AmpereDTStyle
 
