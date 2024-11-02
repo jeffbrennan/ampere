@@ -45,6 +45,10 @@ def layout(**kwargs):
     last_updated_str = last_updated.strftime("%Y-%m-%d")
     about_style = deepcopy(AmpereDTStyle)
     about_style["style_table"]["height"] = "50%"
+    about_style["style_header_conditional"] = [
+        {"if": {"column_id": "repo_name"}, "textAlign": "right"},
+    ]
+
     return [
         html.Br(),
         dash_table.DataTable(
