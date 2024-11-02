@@ -89,7 +89,17 @@ def handle_table_margins(
 def style_feed_table() -> dict:
     feed_style = copy.deepcopy(AmpereDTStyle)
     feed_style["css"] = [
-        dict(selector="p", rule="margin-bottom: 0; padding: 10px; text-align: left;"),
+        dict(
+            selector="p",
+            rule="""
+                margin-bottom: 0;
+                padding-bottom: 15px;
+                padding-top: 15px;
+                padding-left: 5px;
+                padding-right: 5px;
+                text-align: left;
+            """,
+        ),
     ]
 
     colors = {
