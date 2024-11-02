@@ -33,6 +33,7 @@ class DTStyle:
     filter_action: str
     style_filter: dict[str, str]
     style_cell: dict[str, Any]
+    style_cell_conditional: list[dict[str, Any]]
     style_header_conditional: list[dict[str, Any]]
     style_data_conditional: list[dict[str, Any]]
     style_data: dict[str, str]
@@ -79,6 +80,7 @@ AmpereDTStyle = asdict(
             "borderLeft": "2px solid black",
             "borderRight": "2px solid black",
         },
+        style_cell_conditional=[],
         style_header_conditional=[
             {"if": {"column_id": "repo_name"}, "textAlign": "right"},
         ],
