@@ -29,6 +29,14 @@ navbar = dbc.NavbarSimple(
         ),
         dbc.NavItem(
             dbc.NavLink(
+                "feed",
+                href="feed",
+                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                class_name="navbar-text",
+            )
+        ),
+        dbc.NavItem(
+            dbc.NavLink(
                 "about",
                 href="about",
                 style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},

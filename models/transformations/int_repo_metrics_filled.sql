@@ -1,19 +1,5 @@
 with
-    date_spine as (
-        {{
-            dbt_utils.date_spine(
-                datepart="day",
-                start_date="(select min(metric_timestamp) from "
-                + ref("int_repo_metrics")
-                | string + ")",
-                end_date="(select max(metric_timestamp) from "
-                + ref("int_repo_metrics")
-                | string + ")",
-            )
-        }}
-    ),
-    date_spine_clean as (select cast(date_day as date) as metric_date from date_spine),
-    metric_list as (
+   metric_list as (
         select distinct metric_type
         from {{ ref("int_repo_metrics") }}
         where metric_type is not null
@@ -24,8 +10,11 @@ with
         where repo_id is not null
     ),
     date_spine_full as (
-        select distinct *
-        from date_spine_clean
+        select distinct
+        spine_date as metric_date,
+        repo_id,
+        metric_type
+        from {{ ref("helper_date_spine") }}
         cross join metric_list
         cross join repo_list
     ),

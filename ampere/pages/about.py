@@ -1,4 +1,5 @@
 import datetime
+from copy import deepcopy
 
 import dash
 import pandas as pd
@@ -42,6 +43,12 @@ def layout(**kwargs):
     df = create_repo_table()
     last_updated = get_last_updated()
     last_updated_str = last_updated.strftime("%Y-%m-%d")
+    about_style = deepcopy(AmpereDTStyle)
+    about_style["style_table"]["height"] = "50%"
+    about_style["style_header_conditional"] = [
+        {"if": {"column_id": "repo_name"}, "textAlign": "right"},
+    ]
+
     return [
         html.Br(),
         dash_table.DataTable(
@@ -55,7 +62,7 @@ def layout(**kwargs):
                 for x in df.columns
             ],
             id="tbl",
-            **AmpereDTStyle,
+            **about_style,
         ),
         html.Hr(),
         html.Div(
