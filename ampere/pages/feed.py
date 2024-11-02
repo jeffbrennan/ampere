@@ -16,7 +16,8 @@ def create_feed_table() -> pd.DataFrame:
     return con.sql(
         """
         select
-            strftime(event_timestamp, '%Y-%m-%d %H:%M:%S') "time",
+            strftime(event_timestamp, '%Y-%m-%d') "date",
+            strftime(event_timestamp, '%H:%M') "time",
             concat('[', user_name, ']', '(https://www.github.com/', user_name, ')')  "user",
             event_action "action",
             event_type "type",
@@ -25,59 +26,70 @@ def create_feed_table() -> pd.DataFrame:
             coalesce(event_data, '') "description",
             event_link
         from main.mart_feed_events
-        order by "time" desc
+        order by "date" desc, "time" desc
         """
     ).to_df()
 
 
 @callback(
     [
-        Output("tbl", "style_table"),
-        Output("tbl", "style_data_conditional"),
+        Output("feed-table", "style_table"),
+        Output("feed-table", "style_cell_conditional"),
     ],
     [
-        Input("tbl", "style_table"),
-        Input("tbl", "style_data_conditional"),
+        Input("feed-table", "style_table"),
+        Input("feed-table", "style_cell_conditional"),
         Input("breakpoints", "widthBreakpoint"),
     ],
 )
 def handle_table_margins(
     style_table_incoming: dict,
-    style_data_conditional_incoming: list[dict],
+    style_cell_conditional_incoming: list[dict],
     breakpoint_name: str,
 ) -> tuple[dict, list[dict]]:
     style_table = copy.deepcopy(style_table_incoming)
-    style_data_conditional = copy.deepcopy(style_data_conditional_incoming)
-    style_data_conditional = [
-        i for i in style_data_conditional if "minWidth" not in str(i)
+    style_cell_conditional = copy.deepcopy(style_cell_conditional_incoming)
+    style_cell_conditional = [
+        i for i in style_cell_conditional if "minWidth" not in str(i)
     ]
 
     if breakpoint_name in ["lg", "xl"]:
+        width_lookup = {"date": 80, "time": 45, "event": 400, "description": 400}
         style_table["maxWidth"] = "65vw"
         style_table["width"] = "65vw"
-        style_table["marginLeft"] = "10vw"
+        style_table["marginLeft"] = "12vw"
 
-    else:
+    elif breakpoint_name == "md":
+        width_lookup = {"date": 100, "time": 60, "event": 400, "description": 400}
         style_table = style_feed_table()["style_table"]
 
-    width_lookup = {"time": 100, "event": 300, "description": 300}
+    elif breakpoint_name == "sm":
+        width_lookup = {"date": 100, "time": 60, "event": 250, "description": 250}
+        style_table = style_feed_table()["style_table"]
+
+    elif breakpoint_name == "xs":
+        width_lookup = {"date": 100, "time": 60, "event": 200, "description": 200}
+        style_table = style_feed_table()["style_table"]
+    else:
+        raise ValueError(f"unhandled breakpoint name: {breakpoint_name}")
+
     margin_adjustment = [
         {
             "if": {"column_id": i},
             "minWidth": width_lookup[i],
             "maxWidth": width_lookup[i],
         }
-        for i in ["time", "event", "description"]
+        for i in ["date", "time", "event", "description"]
     ]
 
-    style_data_conditional.extend(margin_adjustment)
-    return style_table, style_data_conditional
+    style_cell_conditional.extend(margin_adjustment)
+    return style_table, style_cell_conditional
 
 
 def style_feed_table() -> dict:
     feed_style = copy.deepcopy(AmpereDTStyle)
     feed_style["css"] = [
-        dict(selector="p", rule="margin-bottom: 0; text-align: left;"),
+        dict(selector="p", rule="margin-bottom: 0; padding: 10px; text-align: left;"),
     ]
 
     colors = {
@@ -128,7 +140,7 @@ def format_feed_table(df: pd.DataFrame) -> pd.DataFrame:
     df["event"] = df["event"].str.replace(" 1 days ago", " yesterday")
     df.loc[df["type"] == "fork", "event"] = df["event"].str.replace(" in ", " ")
 
-    df_final = df[["time", "event", "description"]]
+    df_final = df[["date", "time", "event", "description"]]
     if not isinstance(df_final, pd.DataFrame):
         raise TypeError()
 
@@ -162,7 +174,7 @@ def layout(**kwargs):
                 )
                 for x in df.columns
             ],
-            id="tbl",
+            id="feed-table",
             **feed_style,
         ),
     ]
