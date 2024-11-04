@@ -25,16 +25,17 @@ def get_last_updated() -> datetime.datetime:
 def create_repo_table() -> pd.DataFrame:
     con = get_db_con()
     return con.sql(
-        """SELECT
-            concat('[', repo_name, ']', '(https://www.github.com/mrpowers-io/', repo_name, ')')   repo_name,
-            forks_count  forks,
-            stargazers_count  stargazers,
-            open_issues_count  "open issues",
-            round(date_part('day', current_date - created_at)  / 365, 1)  "age (years)",
-            strftime(created_at, '%Y-%m-%d') created,
-            strftime(updated_at, '%Y-%m-%d') updated,
-        FROM main.repos
-        ORDER BY stargazers_count DESC
+        """
+        select
+            concat('[', repo_name, ']', '(https://www.github.com/mrpowers-io/', repo_name, ')') as repo_name,
+            forks_count                                                                         as forks,
+            stargazers_count                                                                    as stargazers,
+            open_issues_count                                                                   as "open issues",
+            round(date_part('day', current_date - created_at) / 365, 1)                         as "age (years)",
+            strftime(created_at, '%Y-%m-%d')                                                    as created,
+            strftime(updated_at, '%Y-%m-%d')                                                    as updated,
+        from main.repos
+        order by stargazers_count desc
         """
     ).to_df()
 

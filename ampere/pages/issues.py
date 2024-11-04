@@ -1,15 +1,11 @@
-# table of open issues across all repos, opened date, days open, type, description table
-
 import copy
-from cgitb import small
 
 import dash
-import dash_breakpoints
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_db_con
-from ampere.styling import AmpereDTStyle, ScreenWidth
+from ampere.styling import AmpereDTStyle
 
 dash.register_page(__name__, name="feed", top_nav=True, order=3)
 
@@ -17,28 +13,25 @@ dash.register_page(__name__, name="feed", top_nav=True, order=3)
 def create_issues_table() -> pd.DataFrame:
     con = get_db_con()
     return con.sql(
-        """
-        SELECT
-            concat('[', repo_name, ']', '(https://www.github.com/mrpowers-io/', repo_name, ')') "repo",
-            concat('[', user_name, ']', '(https://www.github.com/', user_name, ')') "author",
-            concat('[', a.issue_title, ']', '(https://github.com/mrpowers-io/', c.repo_name, '/issues/', a.issue_number,
-                   ')') "title",
-            coalesce(a.issue_body, '') "body",
-            strftime(a.created_at, '%Y-%m-%d') "date",
-            date_part('day', current_date - a.created_at) "days old",
-            a.comments_count "comments"
-        FROM
-            issues a
-            JOIN users b
-            ON a.author_id = b.user_id
-            JOIN repos C
-            ON a.repo_id = C.repo_id
-        WHERE
-            a.state = 'open'
-
-        ORDER BY
-            repo_name,
-            a.created_at
+        """        
+        select
+            concat('[', repo_name, ']', '(https://www.github.com/mrpowers-io/', repo_name, ')') as "repo",
+            concat('[', user_name, ']', '(https://www.github.com/', user_name, ')')             as "author",
+            concat('[', a.issue_title, ']',
+                   '(https://github.com/mrpowers-io/', c.repo_name,
+                   '/issues/', a.issue_number, ')'
+            )                                                                                   as "title",
+            coalesce(a.issue_body, '')                                                          as "body",
+            strftime(a.created_at, '%Y-%m-%d')                                                  as "date",
+            date_part('day', current_date - a.created_at)                                       as "days old",
+            a.comments_count                                                                    as "comments"
+        from issues a
+        join users b
+             on a.author_id = b.user_id
+        join repos c
+             on a.repo_id = c.repo_id
+        where a.state = 'open'
+        order by repo_name, a.created_at
         """
     ).to_df()
 
@@ -120,7 +113,7 @@ def handle_table_margins(
     return style_table, style_cell_conditional
 
 
-def layout(**kwargs):
+def layout():
     df = create_issues_table()
     issues_style = copy.deepcopy(AmpereDTStyle)
     issues_style["css"] = [
@@ -140,16 +133,6 @@ def layout(**kwargs):
     return [
         html.Br(),
         html.Br(),
-        dash_breakpoints.WindowBreakpoints(
-            id="breakpoints",
-            widthBreakpointThresholdsPx=[
-                500,
-                1200,
-                1920,
-                2560,
-            ],
-            widthBreakpointNames=[i.value for i in ScreenWidth],
-        ),
         dash_table.DataTable(
             df.to_dict("records"),
             columns=[

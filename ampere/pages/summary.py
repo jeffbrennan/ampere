@@ -1,5 +1,4 @@
 import dash
-import dash_breakpoints
 from dash import Input, Output, callback, dcc
 from plotly.graph_objs import Figure
 
@@ -15,16 +14,6 @@ layout = [
         n_intervals=0,
         max_intervals=0,
         interval=1,
-    ),
-    dash_breakpoints.WindowBreakpoints(
-        id="breakpoints",
-        widthBreakpointThresholdsPx=[
-            500,
-            1200,
-            1920,
-            2560,
-        ],
-        widthBreakpointNames=[i.value for i in ScreenWidth],
     ),
     dcc.Loading(
         id="loading-graph",

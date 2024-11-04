@@ -1,5 +1,4 @@
 import dash
-import dash_breakpoints
 import pandas as pd
 from dash import Input, Output, callback, dash_table, dcc, html
 from plotly.graph_objects import Figure
@@ -13,14 +12,23 @@ dash.register_page(__name__, name="network", top_nav=True, order=1)
 
 def create_stargazers_table() -> pd.DataFrame:
     con = get_db_con()
-    df = con.sql(
+    return con.sql(
         """
-        SELECT *
-        FROM mart_stargazers_pivoted
+        select
+            user_name,
+            name,
+            followers,
+            "starred repos",
+            "spark-daria",
+            quinn,
+            "spark-fast-tests",
+            jodie,
+            levi,
+            falsa
+        from mart_stargazers_pivoted
         order by followers desc
         """
     ).to_df()
-    return df
 
 
 def layout(**kwargs):
@@ -33,7 +41,6 @@ def layout(**kwargs):
             max_intervals=0,
             interval=1,
         ),
-        dash_breakpoints.WindowBreakpoints(id="network-stargazer-breakpoints"),
         dcc.Loading(
             dcc.Graph(
                 id="network-stargazer-graph",
