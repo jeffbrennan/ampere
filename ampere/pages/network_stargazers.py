@@ -31,7 +31,7 @@ def create_stargazers_table() -> pd.DataFrame:
     ).to_df()
 
 
-def layout(**kwargs):
+def layout():
     df = create_stargazers_table()
     return [
         html.Br(),

@@ -40,7 +40,7 @@ def create_repo_table() -> pd.DataFrame:
     ).to_df()
 
 
-def layout(**kwargs):
+def layout():
     df = create_repo_table()
     last_updated = get_last_updated()
     last_updated_str = last_updated.strftime("%Y-%m-%d")

@@ -1,14 +1,11 @@
 import datetime
 import pickle
 import random
-import time
 from dataclasses import dataclass
-from enum import StrEnum, auto
 from pathlib import Path
 from typing import Optional
 
 import networkx as nx
-import numpy
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -366,7 +363,7 @@ def viz_star_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
     con = get_db_con()
     stargazers = con.sql(
         """
-        SELECT
+        select
             user_name,
             followers_count,
             starred_at,
@@ -401,7 +398,7 @@ def viz_star_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
 def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
     con = get_db_con()
     followers = (
-        con.sql("SELECT user_id, follower_id FROM int_internal_followers")
+        con.sql("select user_id, follower_id from int_internal_followers")
         .to_df()
         .to_dict(orient="records")
     )
@@ -454,14 +451,14 @@ def viz_summary(
     con = get_db_con()
     df = con.sql(
         """
-    SELECT
+    select
         repo_id,
         metric_type,
         metric_date,
         metric_count,
         repo_name
-    FROM main.mart_repo_summary
-    ORDER BY metric_date
+    from main.mart_repo_summary
+    order by metric_date
     """
     ).to_df()
 

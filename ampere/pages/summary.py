@@ -43,7 +43,7 @@ def handle_summary_sizes(breakpoint_name: str):
     [Input("load-interval", "n_intervals"), Input("breakpoints", "widthBreakpoint")],
 )
 def show_summary_graph(_: int, breakpoint_name: str) -> tuple[Figure, dict[str, bool]]:
-    fig = viz_summary(show_fig=False, screen_width=ScreenWidth(breakpoint_name))
+    fig = viz_summary(screen_width=ScreenWidth(breakpoint_name))
 
     config = {"displayModeBar": breakpoint_name != "sm"}
     return fig, config

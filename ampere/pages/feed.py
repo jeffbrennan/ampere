@@ -156,7 +156,7 @@ def format_feed_table(df: pd.DataFrame) -> pd.DataFrame:
     return df_final
 
 
-def layout(**kwargs):
+def layout():
     raw_df = create_feed_table()
     df = format_feed_table(raw_df)
     feed_style = style_feed_table()

@@ -30,7 +30,7 @@ def create_followers_table() -> pd.DataFrame:
     return df
 
 
-def layout(**kwargs):
+def layout():
     df = create_followers_table()
     return [
         html.Br(),
