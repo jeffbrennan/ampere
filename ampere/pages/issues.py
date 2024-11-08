@@ -1,12 +1,11 @@
 import copy
 
-import colorlover
 import dash
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_db_con
-from ampere.styling import AmpereDTStyle
+from ampere.styling import AmpereDTStyle, ColumnInfo, style_dt_background_colors_by_rank
 
 dash.register_page(__name__, name="feed", top_nav=True, order=3)
 
@@ -86,8 +85,8 @@ select
     concat('[', a.repo_name, ']', '(https://www.github.com/mrpowers-io/', a.repo_name, ')') as "repo",
     coalesce(b.open_issues_count, 0) as "open issues",
     ceil(coalesce(b.avg_age_days, 0))     as "avg issue age (days)",
-    coalesce(c.closed_issues, 0)     as "closed issues (this month)",
     coalesce(d.new_issues_count, 0) as "new issues (this month)",
+    coalesce(c.closed_issues, 0)     as "closed issues (this month)",
 from repo_spine a
 left join open_issues b
     on a.repo_id = b.repo_id
@@ -177,60 +176,48 @@ def handle_table_margins(
     return style_table, style_cell_conditional
 
 
-def discrete_background_color_bins(df: pd.DataFrame, n_bins: int) -> list[dict]:
-    # https://dash.plotly.com/datatable/conditional-formatting
-    colors = colorlover.scales[str(n_bins)]["seq"]["Blues"]
-    df_numeric_columns = df.select_dtypes("number")
-    styles = []
+def style_issues_summary_table(summary_df: pd.DataFrame) -> dict:
+    summary_style = copy.deepcopy(AmpereDTStyle)
+    del summary_style["style_table"]["maxHeight"]
+    del summary_style["style_table"]["height"]
+    n_repos = summary_df.shape[0]
 
-    for column in df_numeric_columns:
-        ranks = df[column].rank(ascending=False, method="max").astype("int") - 1
-        ranks = ranks.squeeze().tolist()
-        print(ranks)
-        for row in range(n_bins):
-            row_val = df[column].iloc[row]
-            rank_val = ranks[row]
-            styles.append(
-                {
-                    "if": {
-                        "filter_query": f"{{{column}}} = {row_val}",
-                        "column_id": column,
-                    },
-                    "backgroundColor": colors[rank_val],
-                }
-            )
+    formatting_cols = [
+        ColumnInfo(name="open issues", ascending=True, palette="Oranges"),
+        ColumnInfo(name="avg issue age (days)", ascending=True, palette="Oranges"),
+        ColumnInfo(name="new issues (this month)", ascending=True, palette="Oranges"),
+        ColumnInfo(name="closed issues (this month)", ascending=True, palette="Greens"),
+    ]
 
-    return styles
+    summary_style["style_data_conditional"] = style_dt_background_colors_by_rank(
+        df=summary_df, n_bins=n_repos, cols=formatting_cols
+    )
+    return summary_style
 
 
 def layout():
-    df = create_issues_table()
-    summary_df = create_issues_summary_table()
-    summary_df.head()
-    issues_style = copy.deepcopy(AmpereDTStyle)
     cell_padding = [
         dict(
             selector="p",
             rule="""
-                    margin-bottom: 0;
-                    padding-bottom: 15px;
-                    padding-top: 15px;
-                    padding-left: 5px;
-                    padding-right: 5px;
-                    text-align: left;
-                """,
+                        margin-bottom: 0;
+                        padding-bottom: 15px;
+                        padding-top: 15px;
+                        padding-left: 5px;
+                        padding-right: 5px;
+                        text-align: left;
+                    """,
         ),
     ]
-    issues_style["css"] = cell_padding
 
-    summary_style = copy.deepcopy(AmpereDTStyle)
-    del summary_style["style_table"]["maxHeight"]
-    del summary_style["style_table"]["height"]
+    df = create_issues_table()
+
+    issues_style = copy.deepcopy(AmpereDTStyle)
+    issues_style["css"] = cell_padding
+    summary_df = create_issues_summary_table()
+
+    summary_style = style_issues_summary_table(summary_df)
     summary_style["css"] = cell_padding
-    n_repos = summary_df.shape[0]
-    summary_style["style_data_conditional"] = discrete_background_color_bins(
-        df=summary_df, n_bins=n_repos
-    )
 
     return [
         html.Br(),
