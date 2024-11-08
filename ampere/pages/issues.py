@@ -1,5 +1,6 @@
 import copy
 
+import colorlover
 import dash
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
@@ -32,6 +33,69 @@ def create_issues_table() -> pd.DataFrame:
              on a.repo_id = c.repo_id
         where a.state = 'open'
         order by repo_name, a.created_at
+        """
+    ).to_df()
+
+
+def create_issues_summary_table() -> pd.DataFrame:
+    con = get_db_con()
+    return con.sql(
+        """with
+    closed_issues_past_month as (
+        select
+            repo_id,
+            count(issue_id) as closed_issues
+        from issues
+        where
+            state = 'closed'
+            and closed_at >= current_date - 120
+        group by repo_id
+    ),
+    open_issues_base as (
+        select
+            repo_id,
+            issue_id,
+            date_part('day', current_date - created_at) as age_days
+        from issues
+        where
+            state = 'open'
+    ),
+    open_issues as (
+        select
+            repo_id,
+            count(issue_id) as open_issues_count,
+            avg(age_days)   as avg_age_days
+        from open_issues_base
+        group by repo_id
+    ),
+    new_issues as (
+        select repo_id,
+        count(issue_id) as new_issues_count,
+        from issues
+        where state = 'open'
+        and created_at >= current_date - 120
+        group by repo_id
+    ),
+    repo_spine as (
+        select
+            repo_id,
+            repo_name
+        from repos
+    )
+select
+    concat('[', a.repo_name, ']', '(https://www.github.com/mrpowers-io/', a.repo_name, ')') as "repo",
+    coalesce(b.open_issues_count, 0) as "open issues",
+    ceil(coalesce(b.avg_age_days, 0))     as "avg issue age (days)",
+    coalesce(c.closed_issues, 0)     as "closed issues (this month)",
+    coalesce(d.new_issues_count, 0) as "new issues (this month)",
+from repo_spine a
+left join open_issues b
+    on a.repo_id = b.repo_id
+left join closed_issues_past_month c
+    on a.repo_id = c.repo_id
+left join new_issues d
+on a.repo_id = d.repo_id
+    order by open_issues_count desc
         """
     ).to_df()
 
@@ -113,10 +177,38 @@ def handle_table_margins(
     return style_table, style_cell_conditional
 
 
+def discrete_background_color_bins(df: pd.DataFrame, n_bins: int) -> list[dict]:
+    # https://dash.plotly.com/datatable/conditional-formatting
+    colors = colorlover.scales[str(n_bins)]["seq"]["Blues"]
+    df_numeric_columns = df.select_dtypes("number")
+    styles = []
+
+    for column in df_numeric_columns:
+        ranks = df[column].rank(ascending=False, method="max").astype("int") - 1
+        ranks = ranks.squeeze().tolist()
+        print(ranks)
+        for row in range(n_bins):
+            row_val = df[column].iloc[row]
+            rank_val = ranks[row]
+            styles.append(
+                {
+                    "if": {
+                        "filter_query": f"{{{column}}} = {row_val}",
+                        "column_id": column,
+                    },
+                    "backgroundColor": colors[rank_val],
+                }
+            )
+
+    return styles
+
+
 def layout():
     df = create_issues_table()
+    summary_df = create_issues_summary_table()
+    summary_df.head()
     issues_style = copy.deepcopy(AmpereDTStyle)
-    issues_style["css"] = [
+    cell_padding = [
         dict(
             selector="p",
             rule="""
@@ -129,18 +221,39 @@ def layout():
                 """,
         ),
     ]
+    issues_style["css"] = cell_padding
+
+    summary_style = copy.deepcopy(AmpereDTStyle)
+    del summary_style["style_table"]["maxHeight"]
+    del summary_style["style_table"]["height"]
+    summary_style["css"] = cell_padding
+    n_repos = summary_df.shape[0]
+    summary_style["style_data_conditional"] = discrete_background_color_bins(
+        df=summary_df, n_bins=n_repos
+    )
 
     return [
         html.Br(),
+        html.H2("summary"),
+        dash_table.DataTable(
+            summary_df.to_dict("records"),
+            columns=[
+                {"id": x, "name": x, "presentation": "markdown"}
+                if x in ["repo"]
+                else {"id": x, "name": x}
+                for x in summary_df.columns
+            ],
+            id="issues-summary-table",
+            **summary_style,
+        ),
         html.Br(),
+        html.H2("issues"),
         dash_table.DataTable(
             df.to_dict("records"),
             columns=[
-                (
-                    {"id": x, "name": x, "presentation": "markdown"}
-                    if x in ["repo", "author", "title", "body"]
-                    else {"id": x, "name": x}
-                )
+                {"id": x, "name": x, "presentation": "markdown"}
+                if x in ["repo", "author", "title", "body"]
+                else {"id": x, "name": x}
                 for x in df.columns
             ],
             id="issues-table",
