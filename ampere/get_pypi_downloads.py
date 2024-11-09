@@ -8,6 +8,7 @@ from ampere.common import (
     DeltaWriteConfig,
     get_model_primary_key,
     get_current_time,
+    get_db_con,
 )
 from ampere.models import PyPIDownload
 
@@ -67,6 +68,36 @@ def refresh_pypi_minor_version_downloads(package_name: str, config: DeltaWriteCo
     write_delta_table(parsed_results, config.table_dir, config.table_name, config.pks)
 
 
+def get_repos_with_releases() -> list[str]:
+    con = get_db_con()
+    records = con.sql(
+        """
+        with
+            release_repos as (
+                select distinct
+                    repo_id
+                from releases
+            ),
+            repo_details as (
+                select
+                    a.repo_id,
+                    a.repo_name,
+                    unnest(a.language) as "language"
+                from repos               a
+                inner join release_repos b
+                on a.repo_id = b.repo_id
+            )
+        select
+            repo_name
+        from repo_details
+        where
+            language.name = 'Python'   
+        """
+    ).fetchall()
+
+    return [i[0] for i in records]
+
+
 def main():
     downloads_minor_config = DeltaWriteConfig(
         table_dir="bronze",
@@ -74,11 +105,11 @@ def main():
         pks=get_model_primary_key((PyPIDownload)),
     )
 
-    repos_with_releases = [
-        "quinn",
-        "falsa",
-        "levi",
-    ]
+    repos_with_releases = get_repos_with_releases()
+    if len(repos_with_releases) == 0:
+        print("no repos to collect stats for! exiting early")
+        return
+
     for repo in repos_with_releases:
         refresh_pypi_minor_version_downloads(
             repo,
