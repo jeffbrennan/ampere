@@ -1,7 +1,7 @@
 select
     concat('[', repo_name, ']', '(https://www.github.com/mrpowers-io/', repo_name, ')') as "repo",
     concat('[', user_name, ']', '(https://www.github.com/', user_name, ')')             as "author",
-    concat('[', a.issue_title, ']',
+    concat('[#', a.issue_number, ' ',  a.issue_title, ']',
            '(https://github.com/mrpowers-io/', c.repo_name,
            '/issues/', a.issue_number, ')'
     )                                                                                   as "title",
