@@ -1,12 +1,11 @@
 import copy
 
 import dash
-import dash_breakpoints
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_db_con
-from ampere.styling import AmpereDTStyle, ScreenWidth
+from ampere.styling import AmpereDTStyle
 
 dash.register_page(__name__, name="feed", top_nav=True, order=3)
 
@@ -14,16 +13,16 @@ dash.register_page(__name__, name="feed", top_nav=True, order=3)
 def create_feed_table() -> pd.DataFrame:
     con = get_db_con()
     return con.sql(
-        """
+        """    
         select
-            strftime(event_timestamp, '%Y-%m-%d') "date",
-            strftime(event_timestamp, '%H:%M') "time",
-            concat('[', user_name, ']', '(https://www.github.com/', user_name, ')')  "user",
-            event_action "action",
-            event_type "type",
-            date_part('day', current_date - event_timestamp)  "days ago",
-            repo_name "repo",
-            coalesce(event_data, '') "description",
+            strftime(event_timestamp, '%Y-%m-%d')                                   as "date",
+            strftime(event_timestamp, '%H:%M')                                      as "time",
+            concat('[', user_name, ']', '(https://www.github.com/', user_name, ')') as "user",
+            event_action                                                            as "action",
+            event_type                                                              as "type",
+            date_part('day', current_date - event_timestamp)                        as "days ago",
+            repo_name                                                               as "repo",
+            coalesce(event_data, '')                                                as "description",
             event_link
         from main.mart_feed_events
         order by "date" desc, "time" desc
@@ -157,23 +156,13 @@ def format_feed_table(df: pd.DataFrame) -> pd.DataFrame:
     return df_final
 
 
-def layout(**kwargs):
+def layout():
     raw_df = create_feed_table()
     df = format_feed_table(raw_df)
     feed_style = style_feed_table()
     return [
         html.Br(),
         html.Br(),
-        dash_breakpoints.WindowBreakpoints(
-            id="breakpoints",
-            widthBreakpointThresholdsPx=[
-                500,
-                1200,
-                1920,
-                2560,
-            ],
-            widthBreakpointNames=[i.value for i in ScreenWidth],
-        ),
         dash_table.DataTable(
             df.to_dict("records"),
             columns=[

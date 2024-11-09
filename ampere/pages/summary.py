@@ -1,5 +1,4 @@
 import dash
-import dash_breakpoints
 from dash import Input, Output, callback, dcc
 from plotly.graph_objs import Figure
 
@@ -15,16 +14,6 @@ layout = [
         n_intervals=0,
         max_intervals=0,
         interval=1,
-    ),
-    dash_breakpoints.WindowBreakpoints(
-        id="breakpoints",
-        widthBreakpointThresholdsPx=[
-            500,
-            1200,
-            1920,
-            2560,
-        ],
-        widthBreakpointNames=[i.value for i in ScreenWidth],
     ),
     dcc.Loading(
         id="loading-graph",
@@ -54,7 +43,7 @@ def handle_summary_sizes(breakpoint_name: str):
     [Input("load-interval", "n_intervals"), Input("breakpoints", "widthBreakpoint")],
 )
 def show_summary_graph(_: int, breakpoint_name: str) -> tuple[Figure, dict[str, bool]]:
-    fig = viz_summary(show_fig=False, screen_width=ScreenWidth(breakpoint_name))
+    fig = viz_summary(screen_width=ScreenWidth(breakpoint_name))
 
     config = {"displayModeBar": breakpoint_name != "sm"}
     return fig, config

@@ -1,12 +1,14 @@
 import dash
 import dash_bootstrap_components as dbc
+import dash_breakpoints
 from dash import html
 
-from ampere.styling import AmperePalette
+from ampere.styling import AmperePalette, ScreenWidth
 
 app = dash.Dash(
     use_pages=True,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
+    suppress_callback_exceptions=True,
 )
 
 navbar = dbc.NavbarSimple(
@@ -37,6 +39,14 @@ navbar = dbc.NavbarSimple(
         ),
         dbc.NavItem(
             dbc.NavLink(
+                "issues",
+                href="issues",
+                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                class_name="navbar-text",
+            )
+        ),
+        dbc.NavItem(
+            dbc.NavLink(
                 "about",
                 href="about",
                 style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
@@ -60,6 +70,16 @@ app.layout = dbc.Container(
         navbar,
         html.Br(),
         html.Br(),
+        dash_breakpoints.WindowBreakpoints(
+            id="breakpoints",
+            widthBreakpointThresholdsPx=[
+                500,
+                1200,
+                1920,
+                2560,
+            ],
+            widthBreakpointNames=[i.value for i in ScreenWidth],
+        ),
         dash.page_container,
     ],
     fluid=True,

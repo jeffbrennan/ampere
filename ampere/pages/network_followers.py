@@ -1,5 +1,4 @@
 import dash
-import dash_breakpoints
 import pandas as pd
 from dash import Input, Output, callback, dash_table, dcc, html
 from plotly.graph_objects import Figure
@@ -15,23 +14,23 @@ def create_followers_table() -> pd.DataFrame:
     con = get_db_con()
     df = con.sql(
         """
-        SELECT
-            concat('[', user_name, ']', '(https://www.github.com/', user_name, ')')  user_name,
-            full_name as name,
-            followers_count as followers,
-            internal_followers_count as "org followers",
-            round(internal_followers_pct * 100.0, 2) as "org followers %",
-            following_count as following,
-            internal_following_count as "org following",
-            round(internal_following_pct * 100.0, 2) as "org following %"
-        FROM int_network_follower_details
+        select
+            concat('[', user_name, ']', '(https://www.github.com/', user_name, ')') as user_name,
+            full_name                                                               as name,
+            followers_count                                                         as followers,
+            internal_followers_count                                                as "org followers",
+            round(internal_followers_pct * 100.0, 2)                                as "org followers %",
+            following_count                                                         as following,
+            internal_following_count                                                as "org following",
+            round(internal_following_pct * 100.0, 2)                                as "org following %"
+        from int_network_follower_details
         order by followers_count desc
         """
     ).to_df()
     return df
 
 
-def layout(**kwargs):
+def layout():
     df = create_followers_table()
     return [
         html.Br(),
@@ -41,7 +40,6 @@ def layout(**kwargs):
             max_intervals=0,
             interval=1,
         ),
-        dash_breakpoints.WindowBreakpoints(id="network-follower-breakpoints"),
         dcc.Loading(
             dcc.Graph(
                 id="network-follower-graph",

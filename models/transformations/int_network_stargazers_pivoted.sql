@@ -11,7 +11,7 @@ select
       dbt_utils.get_column_values(ref('int_network_stargazers'), 'repo_name'),
       agg='max',
       then_value='starred_at_date',
-      else_value='null',
+      else_value='null'
   ) }}
   from base
   group by user_id

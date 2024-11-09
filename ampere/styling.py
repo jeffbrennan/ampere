@@ -2,6 +2,9 @@ from dataclasses import asdict, dataclass
 from enum import StrEnum, auto
 from typing import Any
 
+import colorlover
+import pandas as pd
+
 
 class AmperePalette(StrEnum):
     PAGE_ACCENT_COLOR = "#304FFE"
@@ -38,6 +41,43 @@ class DTStyle:
     style_data: dict[str, str]
     style_table: dict[str, Any]
     css: list[dict[str, Any]]
+
+
+@dataclass
+class ColumnInfo:
+    name: str
+    ascending: bool
+    palette: str
+
+
+def style_dt_background_colors_by_rank(
+    df: pd.DataFrame, n_bins: int, cols: list[ColumnInfo]
+) -> list[dict]:
+    # https://dash.plotly.com/datatable/conditional-formatting
+    styles = []
+
+    for col in cols:
+        colors = colorlover.scales[str(n_bins)]["seq"][col.palette]
+        ranks = (
+            (df[col.name].rank(ascending=col.ascending, method="max").astype("int") - 1)
+            .squeeze()
+            .tolist() # type: ignore
+        )
+        for row in range(n_bins):
+            row_val = df[col.name].iloc[row]
+            rank_val = ranks[row]
+            styles.append(
+                {
+                    "if": {
+                        "filter_query": f"{{{col.name}}} = {row_val}",
+                        "column_id": col.name,
+                    },
+                    "backgroundColor": colors[rank_val],
+                    "color": "white" if rank_val > 4 else "inherit",
+                }
+            )
+
+    return styles
 
 
 AmpereDTStyle = asdict(
@@ -100,3 +140,15 @@ AmpereDTStyle = asdict(
         },
     )
 )
+
+table_title_style = {
+    "color": AmperePalette.BRAND_TEXT_COLOR,
+    "backgroundColor": AmperePalette.PAGE_ACCENT_COLOR,
+    "paddingBottom": "0",
+    "paddingLeft": "10px",
+    "paddingRight": "10px",
+    "fontSize": "1.5rem",
+    "fontWeight": "bold",
+    "marginBottom": "0",
+    "border": "none",
+}
