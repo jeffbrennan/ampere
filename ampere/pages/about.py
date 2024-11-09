@@ -3,7 +3,7 @@ from copy import deepcopy
 
 import dash
 import pandas as pd
-from dash import dash_table, html
+from dash import dash_table, html, dcc
 
 from ampere.common import get_db_con
 from ampere.styling import AmpereDTStyle
@@ -61,37 +61,44 @@ def layout():
     ]
 
     return [
-        html.Br(),
-        dash_table.DataTable(
-            df.to_dict("records"),
-            columns=[
-                (
-                    {"id": x, "name": "repo", "presentation": "markdown"}
-                    if x == "repo_name"
-                    else {"id": x, "name": x}
-                )
-                for x in df.columns
+        dcc.Loading(
+            children=[
+                html.Br(),
+                dash_table.DataTable(
+                    df.to_dict("records"),
+                    columns=[
+                        (
+                            {"id": x, "name": "repo", "presentation": "markdown"}
+                            if x == "repo_name"
+                            else {"id": x, "name": x}
+                        )
+                        for x in df.columns
+                    ],
+                    id="tbl",
+                    **about_style,
+                ),
+                html.Hr(),
+                html.Div(
+                    [
+                        html.Div("made with ❤️ by ", style={"display": "inline"}),
+                        html.A(
+                            "Jeff Brennan",
+                            href="https://github.com/jeffbrennan",
+                            target="_blank",
+                        ),
+                        html.Div(" and ", style={"display": "inline"}),
+                        html.A(
+                            "mrpowers-io",
+                            href="https://github.com/mrpowers-io",
+                            target="_blank",
+                        ),
+                        html.Div(" contributors", style={"display": "inline"}),
+                    ]
+                ),
+                html.P(f"last updated: {last_updated_str}"),
             ],
-            id="tbl",
-            **about_style,
-        ),
-        html.Hr(),
-        html.Div(
-            [
-                html.Div("made with ❤️ by ", style={"display": "inline"}),
-                html.A(
-                    "Jeff Brennan",
-                    href="https://github.com/jeffbrennan",
-                    target="_blank",
-                ),
-                html.Div(" and ", style={"display": "inline"}),
-                html.A(
-                    "mrpowers-io",
-                    href="https://github.com/mrpowers-io",
-                    target="_blank",
-                ),
-                html.Div(" contributors", style={"display": "inline"}),
-            ]
-        ),
-        html.P(f"last updated: {last_updated_str}"),
+            delay_hide=400,
+            delay_show=0,
+            fullscreen=True,
+        )
     ]
