@@ -257,13 +257,6 @@ def layout():
                     id="summary-table",
                     **summary_style,
                 ),
-            ],
-            delay_hide=100,
-            delay_show=0,
-            fullscreen=True,
-        ),
-        dcc.Loading(
-            children=[
                 html.Br(),
                 html.Label("issues", style=table_title_style, id="issues-title"),
                 dash_table.DataTable(
@@ -278,7 +271,7 @@ def layout():
                     **issues_style,
                 ),
             ],
-            delay_hide=100,
+            delay_hide=400,
             delay_show=0,
             fullscreen=True,
         ),
