@@ -13,6 +13,27 @@ app = dash.Dash(
 
 navbar = dbc.NavbarSimple(
     children=[
+        dbc.NavItem(
+            dbc.NavLink(
+                "downloads",
+                href="downloads",
+                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+            )
+        ),
+        dbc.NavItem(
+            dbc.NavLink(
+                "feed",
+                href="feed",
+                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+            )
+        ),
+        dbc.NavItem(
+            dbc.NavLink(
+                "issues",
+                href="issues",
+                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+            )
+        ),
         dbc.DropdownMenu(
             children=[
                 dbc.DropdownMenuItem(
@@ -31,26 +52,9 @@ navbar = dbc.NavbarSimple(
         ),
         dbc.NavItem(
             dbc.NavLink(
-                "feed",
-                href="feed",
-                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-                class_name="navbar-text",
-            )
-        ),
-        dbc.NavItem(
-            dbc.NavLink(
-                "issues",
-                href="issues",
-                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-                class_name="navbar-text",
-            )
-        ),
-        dbc.NavItem(
-            dbc.NavLink(
                 "about",
                 href="about",
                 style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-                class_name="navbar-text",
             )
         ),
     ],
