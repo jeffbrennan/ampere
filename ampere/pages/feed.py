@@ -2,7 +2,7 @@ import copy
 
 import dash
 import pandas as pd
-from dash import Input, Output, callback, dash_table, html
+from dash import Input, Output, callback, dash_table, html, dcc
 
 from ampere.common import get_db_con
 from ampere.styling import AmpereDTStyle
@@ -161,19 +161,26 @@ def layout():
     df = format_feed_table(raw_df)
     feed_style = style_feed_table()
     return [
-        html.Br(),
-        html.Br(),
-        dash_table.DataTable(
-            df.to_dict("records"),
-            columns=[
-                (
-                    {"id": x, "name": x, "presentation": "markdown"}
-                    if x in ["event", "description"]
-                    else {"id": x, "name": x}
-                )
-                for x in df.columns
+        dcc.Loading(
+            children=[
+                html.Br(),
+                html.Br(),
+                dash_table.DataTable(
+                    df.to_dict("records"),
+                    columns=[
+                        (
+                            {"id": x, "name": x, "presentation": "markdown"}
+                            if x in ["event", "description"]
+                            else {"id": x, "name": x}
+                        )
+                        for x in df.columns
+                    ],
+                    id="feed-table",
+                    **feed_style,
+                ),
             ],
-            id="feed-table",
-            **feed_style,
-        ),
+            delay_hide=400,
+            delay_show=0,
+            fullscreen=True,
+        )
     ]
