@@ -39,7 +39,7 @@ def create_issues_summary_table() -> pd.DataFrame:
         """
         select repo,
             "open issues",
-            "avg issue age (days)",
+            "median issue age (days)",
             "new issues (this month)",
             "closed issues (this month)"
         from mart_issues_summary
@@ -180,7 +180,7 @@ def style_issues_summary_table(summary_df: pd.DataFrame) -> dict:
 
     formatting_cols = [
         ColumnInfo(name="open issues", ascending=True, palette="Oranges"),
-        ColumnInfo(name="avg issue age (days)", ascending=True, palette="Oranges"),
+        ColumnInfo(name="median issue age (days)", ascending=True, palette="Oranges"),
         ColumnInfo(name="new issues (this month)", ascending=True, palette="Oranges"),
         ColumnInfo(name="closed issues (this month)", ascending=True, palette="Greens"),
     ]

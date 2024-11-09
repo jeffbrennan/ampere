@@ -21,8 +21,8 @@ with
     open_issues as (
         select
             repo_id,
-            count(issue_id) as open_issues_count,
-            avg(age_days)   as avg_age_days
+            count(issue_id)  as open_issues_count,
+            median(age_days) as median_age_days
         from open_issues_base
         group by repo_id
     ),
@@ -45,7 +45,7 @@ with
 select
     concat('[', a.repo_name, ']', '(https://www.github.com/mrpowers-io/', a.repo_name, ')') as "repo",
     coalesce(b.open_issues_count, 0)                                                        as "open issues",
-    ceil(coalesce(b.avg_age_days, 0))                                                       as "avg issue age (days)",
+    ceil(coalesce(b.median_age_days, 0))                                                    as "median issue age (days)",
     coalesce(d.new_issues_count, 0)                                                         as "new issues (this month)",
     coalesce(c.closed_issues, 0)                                                            as "closed issues (this month)",
 from repo_spine a
