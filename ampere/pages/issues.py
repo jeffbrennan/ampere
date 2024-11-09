@@ -111,6 +111,31 @@ def handle_col_widths(
     return style_cell_conditional
 
 
+@callback(
+    Output("summary-table", "style_cell_conditional"),
+    [
+        Input("summary-table", "style_cell_conditional"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
+)
+def handle_summary_col_widths(
+    style_cell_conditional_incoming: list[dict], breakpoint_name: str
+) -> list[dict]:
+    style_cell_conditional = copy.deepcopy(style_cell_conditional_incoming)
+    style_cell_conditional = [
+        i for i in style_cell_conditional if "minWidth" not in str(i)
+    ]
+    if breakpoint_name in ["lg", "xl"]:
+        col_width = 50
+    else:
+        col_width = 60
+
+    style_cell_conditional.append(
+        {"if": {"column_id": "repo"}, "minWidth": col_width, "maxWidth": col_width}
+    )
+    return style_cell_conditional
+
+
 def handle_table_margins(style_table_incoming: dict, breakpoint_name: str) -> dict:
     style_table = copy.deepcopy(style_table_incoming)
     if breakpoint_name != "xl":
@@ -185,8 +210,10 @@ def style_issues_summary_table(summary_df: pd.DataFrame) -> dict:
         ColumnInfo(name="closed issues (this month)", ascending=True, palette="Greens"),
     ]
 
-    summary_style["style_data_conditional"] = style_dt_background_colors_by_rank(
-        df=summary_df, n_bins=n_repos, cols=formatting_cols
+    summary_style["style_data_conditional"].extend(
+        style_dt_background_colors_by_rank(
+            df=summary_df, n_bins=n_repos, cols=formatting_cols
+        )
     )
     return summary_style
 
