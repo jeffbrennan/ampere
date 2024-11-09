@@ -14,7 +14,7 @@ dash.register_page(__name__, name="about", top_nav=True, order=2)
 def get_last_updated() -> datetime.datetime:
     con = get_db_con()
     max_retrieved_at = (
-        con.sql("SELECT max(retrieved_at) as last_updated FROM main.repos")
+        con.sql("select max(retrieved_at) as last_updated from main.repos")
         .to_df()
         .squeeze()
     )
@@ -46,8 +46,18 @@ def layout():
     last_updated_str = last_updated.strftime("%Y-%m-%d")
     about_style = deepcopy(AmpereDTStyle)
     about_style["style_table"]["height"] = "50%"
-    about_style["style_header_conditional"] = [
-        {"if": {"column_id": "repo_name"}, "textAlign": "right"},
+    about_style["css"] = [
+        dict(
+            selector="p",
+            rule="""
+                   margin-bottom: 0;
+                   padding-bottom: 15px;
+                   padding-top: 15px;
+                   padding-left: 5px;
+                   padding-right: 5px;
+                   text-align: center;
+               """,
+        ),
     ]
 
     return [
