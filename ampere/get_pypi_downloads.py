@@ -1,120 +1,109 @@
-from enum import StrEnum, auto
-from typing import Any
+import time
+from dataclasses import dataclass
+from typing import Optional
 
-import requests
+import pandas as pd
+from dotenv import load_dotenv
+from google.cloud import bigquery
 
 from ampere.common import (
-    write_delta_table,
     DeltaWriteConfig,
     get_model_primary_key,
+    write_delta_table,
     get_current_time,
-    get_db_con,
 )
 from ampere.models import PyPIDownload
 
 
-class PyPIEndpoint(StrEnum):
-    system = auto()
-    python_minor = auto()
-    overall = auto()
+@dataclass
+class PyPIQueryConfig:
+    repo_list: list[str]
+    min_date: str
+    max_date: Optional[str] = None
+    dry_run: bool = True
 
 
-def get_pypi_downloads(
-    package: str, endpoints: list[PyPIEndpoint], assert_success: bool
-) -> list[dict[str, Any]]:
-    base_url = f"https://pypistats.org/api/packages/{package}"
+def get_pypi_downloads_from_bigquery(config: PyPIQueryConfig) -> Optional[pd.DataFrame]:
+    max_date_where = ""
+    if config.max_date is not None:
+        max_date_where = (
+            f"and TIMESTAMP_TRUNC(timestamp, day) <= timestamp ('{config.max_date}')"
+        )
 
-    print(f"getting for {package}")
-    results = []
-    for endpoint in endpoints:
-        url = f"{base_url}/{endpoint.value}"
-        print(url)
-        response = requests.get(url)
-        if response.status_code != 200 and assert_success:
-            raise ValueError(f"{response.status_code}")
+    repo_list_formatted = "'" + "', '".join(config.repo_list) + "'"
+    cmd = f"""
+        select
+            project,
+            timestamp_trunc(`timestamp`, hour)          as `timestamp`,
+            coalesce(country_code, 'unknown')           as `country_code`,
+            coalesce(file.version, 'unknown')           as `package_version`,
+            coalesce(details.python, 'unknown')         as `python_version`,
+            coalesce(details.distro.name, 'unknown')    as `system_distro_name`,
+            coalesce(details.distro.version, 'unknown') as `system_distro_version`,
+            coalesce(details.system.name, 'unknown')    as `system_name`,
+            coalesce(details.system.release, 'unknown') as `system_release`,
+            count(*)                                    as download_count
+        from `bigquery-public-data.pypi.file_downloads`
+        where 
+            TIMESTAMP_TRUNC(timestamp, day) >= timestamp ('{config.min_date}') 
+            {max_date_where} 
+            and project in ({repo_list_formatted})
+        group by all
+        """
 
-        response_json = response.json()
-        results.append(response_json)
+    print(cmd)
+    if config.dry_run:
+        return
 
+    client = bigquery.Client()
+    query_job = client.query_and_wait(cmd)
+    start_time = time.time()
+    results = query_job.to_dataframe()
+
+    elapsed_time = time.time() - start_time
+    print(f"query finished in {elapsed_time:.2f} seconds")
     return results
 
 
-def parse_pypi_downloads(results: list[dict[str, Any]]) -> list[PyPIDownload]:
-    parsed_results: list[PyPIDownload] = []
-    for endpoint in results:
-        for result in endpoint["data"]:
-            parsed_results.append(
-                PyPIDownload(
-                    package=endpoint["package"],
-                    type=endpoint["type"],
-                    category=result["category"],
-                    date=result["date"],
-                    downloads=result["downloads"],
-                    retrieved_at=get_current_time(),
-                )
-            )
-
+def parse_pypi_downloads(results: pd.DataFrame) -> list[PyPIDownload]:
+    results["retrieved_at"] = get_current_time()
+    parsed_results = [PyPIDownload(**row) for row in results.to_dict(orient="records")]
     return parsed_results
 
 
-def refresh_pypi_minor_version_downloads(package_name: str, config: DeltaWriteConfig):
-    endpoints_to_get = [
-        PyPIEndpoint.system,
-        PyPIEndpoint.python_minor,
-        PyPIEndpoint.overall,
-    ]
-    results = get_pypi_downloads(package_name, endpoints_to_get, True)
+def refresh_pypi_downloads_from_bigquery(
+    query_config: PyPIQueryConfig, write_config: DeltaWriteConfig
+) -> None:
+    results = get_pypi_downloads_from_bigquery(query_config)
+    if results is None:
+        print("no results to write!")
+        return
+
     parsed_results = parse_pypi_downloads(results)
-    write_delta_table(parsed_results, config.table_dir, config.table_name, config.pks)
-
-
-def get_repos_with_releases() -> list[str]:
-    con = get_db_con()
-    records = con.sql(
-        """
-        with
-            release_repos as (
-                select distinct
-                    repo_id
-                from releases
-            ),
-            repo_details as (
-                select
-                    a.repo_id,
-                    a.repo_name,
-                    unnest(a.language) as "language"
-                from repos               a
-                inner join release_repos b
-                on a.repo_id = b.repo_id
-            )
-        select
-            repo_name
-        from repo_details
-        where
-            language.name = 'Python'   
-        """
-    ).fetchall()
-
-    return [i[0] for i in records]
+    write_delta_table(
+        parsed_results,
+        write_config.table_dir,
+        write_config.table_name,
+        write_config.pks,
+    )
 
 
 def main():
-    downloads_minor_config = DeltaWriteConfig(
-        table_dir="bronze",
-        table_name=PyPIDownload.__tablename__,  # pyright: ignore [reportArgumentType]
-        pks=get_model_primary_key((PyPIDownload)),
+    load_dotenv()
+    query_config = PyPIQueryConfig(
+        repo_list=["quinn"],
+        min_date="2017-09-15",
+        max_date="2018-03-06",
+        dry_run=False,
     )
 
-    repos_with_releases = get_repos_with_releases()
-    if len(repos_with_releases) == 0:
-        print("no repos to collect stats for! exiting early")
-        return
+    write_config = DeltaWriteConfig(
+        table_dir="bronze",
+        table_name=PyPIDownload.__tablename__,  # pyright: ignore [reportArgumentType]
+        pks=get_model_primary_key(PyPIDownload),
+    )
 
-    for repo in repos_with_releases:
-        refresh_pypi_minor_version_downloads(
-            repo,
-            downloads_minor_config,
-        )
+    refresh_pypi_downloads_from_bigquery(query_config, write_config)
 
 
 if __name__ == "__main__":
