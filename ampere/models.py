@@ -171,7 +171,7 @@ class Follower(SQLModel):
 class PyPIDownload(SQLModel):
     __tablename__ = "pypi_downloads"  # pyright: ignore [reportAssignmentType]
     project: str = Field(primary_key=True, foreign_key="repo.repo_name")
-    timestamp: str = Field(primary_key=True)
+    timestamp: datetime.datetime = Field(primary_key=True)
     country_code: str = Field(primary_key=True)
     package_version: str = Field(primary_key=True)
     python_version: str = Field(primary_key=True)
