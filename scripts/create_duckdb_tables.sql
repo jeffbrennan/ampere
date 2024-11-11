@@ -38,3 +38,6 @@ create table followers as
 select *
 from delta_scan("/Users/jeffb/Desktop/Life/personal-projects/ampere/data/bronze/followers");
 
+create table pypi_downloads as
+select *
+from delta_scan("/Users/jeffb/Desktop/Life/personal-projects/ampere/data/bronze/pypi_downloads");
