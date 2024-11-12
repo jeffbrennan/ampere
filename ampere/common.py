@@ -84,7 +84,6 @@ def write_delta_table(
         )
         .when_matched_update_all()
         .when_not_matched_insert_all()
-        .when_not_matched_by_source_delete()
         .execute()
     )
     print(merge_results)
