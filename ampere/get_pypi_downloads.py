@@ -108,10 +108,9 @@ def get_pypi_download_query_dates() -> list[PyPIQueryConfig]:
 
     con = get_db_con()
 
-    # preferred data source when possible
     query_dates = con.sql(
         """
-        select repo, max(min_date) as min_date
+        select repo, max(max_date) as data_copied_through_date
         from pypi_download_queries
         group by repo
         """
@@ -123,17 +122,23 @@ def get_pypi_download_query_dates() -> list[PyPIQueryConfig]:
 
     queries = []
     for record in query_dates:
+        repo = record[0]
         min_date_str = record[1]
         min_date = datetime.datetime.strptime(min_date_str, "%Y-%m-%d")
         days_to_query = yesterday - min_date
+
         if days_to_query.days > max_query_days:
             raise ValueError(
                 f"check `pypi_download_queries` table for {record[0]} - newest date: {min_date_str}"
             )
 
+        if days_to_query.days < 1:
+            print(f"{repo} has data through {min_date_str}. skipping")
+            continue
+
         queries.append(
             PyPIQueryConfig(
-                repo=record[0],
+                repo=repo,
                 min_date=min_date_str,
                 max_date=max_date,
                 retrieved_at=get_current_time(),
@@ -183,8 +188,13 @@ def main():
     )
 
     queries = get_pypi_download_query_dates()
+
+    if len(queries) == 0:
+        print("nothing to write! exiting early")
+        return
+
     for query in queries:
-        refresh_pypi_downloads_from_bigquery(query, write_config, False)
+        refresh_pypi_downloads_from_bigquery(query, write_config, True)
 
 
 if __name__ == "__main__":
