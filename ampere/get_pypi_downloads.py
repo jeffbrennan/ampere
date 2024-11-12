@@ -1,5 +1,5 @@
+import datetime
 import time
-from dataclasses import dataclass
 from typing import Optional
 
 import pandas as pd
@@ -11,26 +11,39 @@ from ampere.common import (
     get_model_primary_key,
     write_delta_table,
     get_current_time,
+    get_db_con,
 )
-from ampere.models import PyPIDownload
+from ampere.models import PyPIDownload, PyPIQueryConfig
 
 
-@dataclass
-class PyPIQueryConfig:
-    repo_list: list[str]
-    min_date: str
-    max_date: Optional[str] = None
-    dry_run: bool = True
+def format_list_sql_query(input_list: list[str]) -> str:
+    return "'" + "', '".join(input_list) + "'"
 
 
-def get_pypi_downloads_from_bigquery(config: PyPIQueryConfig) -> Optional[pd.DataFrame]:
+def record_pypi_query(query: PyPIQueryConfig) -> None:
+    config = DeltaWriteConfig(
+        table_dir="bronze",
+        table_name=PyPIQueryConfig.__tablename__,  # pyright: ignore [reportArgumentType]
+        pks=get_model_primary_key(PyPIQueryConfig),
+    )
+
+    write_delta_table(
+        [query],
+        config.table_dir,
+        config.table_name,
+        config.pks,
+    )
+
+
+def get_pypi_downloads_from_bigquery(
+    config: PyPIQueryConfig, dry_run: bool = True
+) -> Optional[pd.DataFrame]:
     max_date_where = ""
     if config.max_date is not None:
         max_date_where = (
             f"and TIMESTAMP_TRUNC(timestamp, day) <= timestamp ('{config.max_date}')"
         )
 
-    repo_list_formatted = "'" + "', '".join(config.repo_list) + "'"
     cmd = f"""
         select
             project,
@@ -47,12 +60,12 @@ def get_pypi_downloads_from_bigquery(config: PyPIQueryConfig) -> Optional[pd.Dat
         where 
             TIMESTAMP_TRUNC(timestamp, day) >= timestamp ('{config.min_date}') 
             {max_date_where} 
-            and project in ({repo_list_formatted})
+            and project = '{config.repo}'
         group by all
         """
 
     print(cmd)
-    if config.dry_run:
+    if dry_run:
         return
 
     client = bigquery.Client()
@@ -62,6 +75,8 @@ def get_pypi_downloads_from_bigquery(config: PyPIQueryConfig) -> Optional[pd.Dat
 
     elapsed_time = time.time() - start_time
     print(f"query finished in {elapsed_time:.2f} seconds")
+
+    record_pypi_query(config)
     return results
 
 
@@ -72,9 +87,9 @@ def parse_pypi_downloads(results: pd.DataFrame) -> list[PyPIDownload]:
 
 
 def refresh_pypi_downloads_from_bigquery(
-    query_config: PyPIQueryConfig, write_config: DeltaWriteConfig
+    query_config: PyPIQueryConfig, write_config: DeltaWriteConfig, dry_run: bool = True
 ) -> None:
-    results = get_pypi_downloads_from_bigquery(query_config)
+    results = get_pypi_downloads_from_bigquery(query_config, dry_run)
     if results is None:
         print("no results to write!")
         return
@@ -88,14 +103,78 @@ def refresh_pypi_downloads_from_bigquery(
     )
 
 
+def get_pypi_download_query_dates() -> list[PyPIQueryConfig]:
+    max_query_days = 30
+
+    con = get_db_con()
+
+    # preferred data source when possible
+    query_dates = con.sql(
+        """
+        select repo, max(min_date) as min_date
+        from pypi_download_queries
+        group by repo
+        """
+    ).fetchall()
+
+    # inconsistent bigquery data usage when querying current day data
+    yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
+    max_date = datetime.datetime.strftime(yesterday, "%Y-%m-%d")
+
+    queries = []
+    for record in query_dates:
+        min_date_str = record[1]
+        min_date = datetime.datetime.strptime(min_date_str, "%Y-%m-%d")
+        days_to_query = yesterday - min_date
+        if days_to_query.days > max_query_days:
+            raise ValueError(
+                f"check `pypi_download_queries` table for {record[0]} - newest date: {min_date_str}"
+            )
+
+        queries.append(
+            PyPIQueryConfig(
+                repo=record[0],
+                min_date=min_date_str,
+                max_date=max_date,
+                retrieved_at=get_current_time(),
+            )
+        )
+    return queries
+
+
+def get_repos_with_releases() -> list[str]:
+    con = get_db_con()
+    records = con.sql(
+        """
+        with
+            release_repos as (
+                select distinct
+                    repo_id
+                from releases
+            ),
+            repo_details as (
+                select
+                    a.repo_id,
+                    a.repo_name,
+                    unnest(a.language) as "language"
+                from repos               a
+                inner join release_repos b
+                on a.repo_id = b.repo_id
+            )
+        select
+            repo_name
+        from repo_details
+        where
+            language.name = 'Python'   
+        """
+    ).fetchall()
+    print(records)
+
+    return [i[0] for i in records]
+
+
 def main():
     load_dotenv()
-    query_config = PyPIQueryConfig(
-        repo_list=["quinn"],
-        min_date="2017-09-15",
-        max_date="2018-03-06",
-        dry_run=False,
-    )
 
     write_config = DeltaWriteConfig(
         table_dir="bronze",
@@ -103,7 +182,9 @@ def main():
         pks=get_model_primary_key(PyPIDownload),
     )
 
-    refresh_pypi_downloads_from_bigquery(query_config, write_config)
+    queries = get_pypi_download_query_dates()
+    for query in queries:
+        refresh_pypi_downloads_from_bigquery(query, write_config, False)
 
 
 if __name__ == "__main__":
