@@ -41,3 +41,7 @@ from delta_scan("/Users/jeffb/Desktop/Life/personal-projects/ampere/data/bronze/
 create table pypi_downloads as
 select *
 from delta_scan("/Users/jeffb/Desktop/Life/personal-projects/ampere/data/bronze/pypi_downloads");
+
+create table pypi_download_queries as
+select *
+from delta_scan("/Users/jeffb/Desktop/Life/personal-projects/ampere/data/bronze/pypi_download_queries");
