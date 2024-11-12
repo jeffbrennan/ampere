@@ -181,3 +181,13 @@ class PyPIDownload(SQLModel):
     system_release: str = Field(primary_key=True)
     download_count: int
     retrieved_at: datetime.datetime
+
+
+# used to track which repos have been queried to prevent repeated date range queries on repos with no downloads
+@dataclass
+class PyPIQueryConfig(SQLModel):
+    __tablename__ = "pypi_download_queries"  # pyright: ignore [reportAssignmentType]
+    repo: str = Field(primary_key=True, foreign_key="repo.repo_name")
+    retrieved_at: datetime.datetime = Field(primary_key=True)
+    min_date: str
+    max_date: Optional[str]
