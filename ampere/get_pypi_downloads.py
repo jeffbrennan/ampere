@@ -181,7 +181,7 @@ def get_repos_with_releases() -> list[str]:
 
 def get_backfill_queries(repo: str, min_date: datetime.datetime) -> list[PyPIQueryConfig]:
     n_days_to_fill = get_current_time() - min_date.replace(tzinfo=None)
-    max_days_per_chunk = 365
+    max_days_per_chunk = 90
     chunks = n_days_to_fill.days // max_days_per_chunk + 1
 
     queries = []
@@ -196,7 +196,6 @@ def get_backfill_queries(repo: str, min_date: datetime.datetime) -> list[PyPIQue
             )
         )
         min_date = max_date
-        print(queries)
 
     yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
     max_date = datetime.datetime.strftime(yesterday, "%Y-%m-%d")
@@ -214,6 +213,11 @@ def get_backfill_queries(repo: str, min_date: datetime.datetime) -> list[PyPIQue
 
 def add_backfill_to_table(repo: str, min_date: datetime.datetime, dry_run: bool = True):
     queries = get_backfill_queries(repo, min_date)
+
+    print(f"backfilling {repo} {'-' * 20}")
+    for query in queries:
+        print(query.min_date, "->", query.max_date)
+
     refresh_all_pypi_downloads(queries, dry_run)
 
 
