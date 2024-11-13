@@ -4,6 +4,9 @@ from dagster import AssetExecutionContext, asset
 from dagster_dbt import DbtCliResource, dbt_assets
 
 from ampere.common import DeltaWriteConfig, get_model_primary_key, write_delta_table
+from ampere.get_pypi_downloads import (
+    refresh_all_pypi_downloads,
+)
 from ampere.get_repo_metrics import (
     get_commits,
     get_forks,
@@ -30,7 +33,6 @@ from ampere.models import (
     User,
     Watcher,
 )
-
 from .project import ampere_project
 
 db_path = ampere_project.project_dir.joinpath("data/ampere.duckdb")
@@ -194,3 +196,9 @@ def dagster_get_followers(context: AssetExecutionContext) -> None:
     )
 
     context.add_output_metadata({"n_records": n})
+
+
+@asset(compute_kind="python", key=["pypi_downloads"])
+def dagster_get_pypi_downloads(context: AssetExecutionContext) -> None:
+    records_added = refresh_all_pypi_downloads(dry_run=False)
+    context.add_output_metadata({"n_records": records_added})
