@@ -40,10 +40,9 @@ build-backend = "poetry.core.masonry.api"
 [tool.ruff]
 line-length = 90
 
-[tool.dagster]
-module_name = "ampere.dagster.definitions"
-code_location_name = "ampere/dagster"
+[tool.ruff.lint]
+select = ["I"]
 
-[tool.pyright]
-venvPath = "."
-venv = ".venv"
+[tool.dagster]
+code_location_name = "ampere/dagster"
+module_name = "ampere.dagster.definitions"
