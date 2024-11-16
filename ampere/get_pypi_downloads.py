@@ -16,10 +16,6 @@ from ampere.common import (
 from ampere.models import PyPIDownload, PyPIQueryConfig
 
 
-def format_list_sql_query(input_list: list[str]) -> str:
-    return "'" + "', '".join(input_list) + "'"
-
-
 def record_pypi_query(query: PyPIQueryConfig) -> None:
     config = DeltaWriteConfig(
         table_dir="bronze",

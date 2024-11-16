@@ -29,6 +29,10 @@ class DeltaWriteConfig:
     pks: list[str]
 
 
+def format_list_sql_query(input_list: list[str]) -> str:
+    return "'" + "', '".join(input_list) + "'"
+
+
 def create_header(header_length: int, title: str, center: bool, spacer: str):
     if center:
         spacer_len = (header_length - len(title)) // 2
