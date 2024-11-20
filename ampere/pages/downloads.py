@@ -64,15 +64,15 @@ def viz_line(df: pd.DataFrame, group_name: str) -> Figure:
     return fig
 
 
-def viz_area(df: pd.DataFrame, group_name: str) -> Figure:
-    df_filtered = df.query(f"group_name=='{group_name}'")
+def viz_area(df: pd.DataFrame, repo_name: str, group_name: str) -> Figure:
+    df_filtered = df.query(f"group_name=='{group_name}'").query(f"repo=='{repo_name}'")
     print(df_filtered.shape)
     fig = px.area(
         df_filtered,
         x="download_date",
         y="download_count",
         color="group_value",
-        title=group_name,
+        title=f"{repo_name} - {group_name}",
         template="simple_white",
     )
     fig.for_each_yaxis(
@@ -110,8 +110,7 @@ def viz_downloads_overall(breakpoint_name: str) -> Figure:
     print(breakpoint_name)
 
     df = create_downloads_summary()
-    df_filtered = df.query(f"repo == 'quinn'")
-    fig = viz_area(df_filtered, "overall")
+    fig = viz_area(df, "quinn", "overall")
     return fig
 
 
@@ -123,9 +122,7 @@ def viz_downloads_by_cloud_provider(breakpoint_name: str) -> Figure:
     print(breakpoint_name)
 
     df = create_downloads_summary()
-    print(df["group_name"].unique())
-    df_filtered = df.query(f"repo == 'quinn'")
-    fig = viz_area(df_filtered, "system_release")
+    fig = viz_area(df, "quinn", "system_release")
     return fig
 
 
@@ -137,9 +134,7 @@ def viz_downloads_by_python_version(breakpoint_name: str) -> Figure:
     print(breakpoint_name)
 
     df = create_downloads_summary()
-    print(df["group_name"].unique())
-    df_filtered = df.query(f"repo == 'quinn'")
-    fig = viz_area(df_filtered, "python_version")
+    fig = viz_area(df, "quinn", "python_version")
     return fig
 
 
@@ -151,9 +146,7 @@ def viz_downloads_by_package_version(breakpoint_name: str) -> Figure:
     print(breakpoint_name)
 
     df = create_downloads_summary()
-    print(df["group_name"].unique())
-    df_filtered = df.query(f"repo == 'quinn'")
-    fig = viz_area(df_filtered, "package_version")
+    fig = viz_area(df, "quinn", "package_version")
     return fig
 
 
