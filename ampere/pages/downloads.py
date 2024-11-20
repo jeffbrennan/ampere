@@ -102,56 +102,72 @@ def viz_area(df: pd.DataFrame, repo_name: str, group_name: str) -> Figure:
     return fig
 
 
+def get_valid_repos() -> list[str]:
+    con = get_db_con()
+    result = con.sql("select distinct repo from mart_downloads_summary").to_df()
+    return result.squeeze().tolist()
+
+
 @callback(
     Output("downloads-overall", "figure"),
-    Input("breakpoints", "widthBreakpoint"),
+    [
+        Input("repo-selection", "value"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
 )
-def viz_downloads_overall(breakpoint_name: str) -> Figure:
-    print(breakpoint_name)
-
+def viz_downloads_overall(repo_name: str, breakpoint_name: str) -> Figure:
     df = create_downloads_summary()
-    fig = viz_area(df, "quinn", "overall")
+    fig = viz_area(df, repo_name, "overall")
     return fig
 
 
 @callback(
     Output("downloads-cloud", "figure"),
-    Input("breakpoints", "widthBreakpoint"),
+    [
+        Input("repo-selection", "value"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
 )
-def viz_downloads_by_cloud_provider(breakpoint_name: str) -> Figure:
-    print(breakpoint_name)
-
+def viz_downloads_by_cloud_provider(repo_name: str, breakpoint_name: str) -> Figure:
     df = create_downloads_summary()
-    fig = viz_area(df, "quinn", "system_release")
+    fig = viz_area(df, repo_name, "system_release")
     return fig
 
 
 @callback(
     Output("downloads-python-version", "figure"),
-    Input("breakpoints", "widthBreakpoint"),
+    [
+        Input("repo-selection", "value"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
 )
-def viz_downloads_by_python_version(breakpoint_name: str) -> Figure:
-    print(breakpoint_name)
-
+def viz_downloads_by_python_version(repo_name: str, breakpoint_name: str) -> Figure:
     df = create_downloads_summary()
-    fig = viz_area(df, "quinn", "python_version")
+    fig = viz_area(df, repo_name, "python_version")
     return fig
 
 
 @callback(
     Output("downloads-package-version", "figure"),
-    Input("breakpoints", "widthBreakpoint"),
+    [
+        Input("repo-selection", "value"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
 )
-def viz_downloads_by_package_version(breakpoint_name: str) -> Figure:
-    print(breakpoint_name)
-
+def viz_downloads_by_package_version(repo_name: str, breakpoint_name: str) -> Figure:
     df = create_downloads_summary()
-    fig = viz_area(df, "quinn", "package_version")
+    fig = viz_area(df, repo_name, "package_version")
     return fig
 
 
 layout = [
-    # dummy input for reload on refresh
+    html.Br(),
+    dcc.Dropdown(
+        get_valid_repos(),
+        placeholder="quinn",
+        value="quinn",
+        id="repo-selection",
+    ),
     dcc.Loading(
         id="loading-graph",
         type="default",
