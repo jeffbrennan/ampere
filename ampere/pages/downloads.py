@@ -66,7 +66,13 @@ def viz_line(df: pd.DataFrame, group_name: str) -> Figure:
 
 def viz_area(df: pd.DataFrame, repo_name: str, group_name: str) -> Figure:
     df_filtered = df.query(f"group_name=='{group_name}'").query(f"repo=='{repo_name}'")
-    print(df_filtered.shape)
+    max_date = df_filtered["download_date"].max()
+    categories = (
+        df_filtered[(df_filtered["download_date"] == max_date)]
+        .sort_values("download_count", ascending=False)["group_value"]
+        .tolist()
+    )
+
     fig = px.area(
         df_filtered,
         x="download_date",
@@ -74,6 +80,7 @@ def viz_area(df: pd.DataFrame, repo_name: str, group_name: str) -> Figure:
         color="group_value",
         title=f"{repo_name} - {group_name}",
         template="simple_white",
+        category_orders={"group_value": categories},
     )
     fig.for_each_yaxis(
         lambda y: y.update(
@@ -97,8 +104,8 @@ def viz_area(df: pd.DataFrame, repo_name: str, group_name: str) -> Figure:
         )
     )
     fig.update_yaxes(matches=None, showticklabels=True)
-
     fig.update_layout(margin=dict(l=0, r=0))
+
     return fig
 
 
