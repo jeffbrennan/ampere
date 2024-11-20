@@ -106,6 +106,11 @@ def viz_area(df: pd.DataFrame, repo_name: str, group_name: str) -> Figure:
     fig.update_yaxes(matches=None, showticklabels=True)
     fig.update_layout(margin=dict(l=0, r=0))
 
+    if len(categories) == 1:
+        fig.update_layout(showlegend=False)
+    else:
+        fig.update_layout(legend_title_text="")
+
     return fig
 
 
