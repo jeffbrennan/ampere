@@ -1,5 +1,5 @@
 with
-    melted as ( {{
+melted as ({{
     dbt_utils.unpivot(
         ref('stg_downloads'),
         exclude=['project','timestamp', 'download_count'],
@@ -8,9 +8,10 @@ with
         value_name='group_value'
     )
 }} )
+
 select
-    project             as repo,
-    "timestamp"         as download_timestamp,
+    project as repo,
+    timestamp as download_timestamp,
     group_name,
     group_value,
     sum(download_count) as download_count

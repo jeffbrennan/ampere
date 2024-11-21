@@ -1,1 +1,1 @@
-select * from {{source('main', 'stargazers')}}
+select * from {{ source('main', 'stargazers') }}
