@@ -9,6 +9,7 @@ with star_events as (
         null as event_data
     from stargazers
 ),
+
 commit_events as (
     select
         'commit' as event_type,
@@ -20,6 +21,7 @@ commit_events as (
         message as event_data
     from commits
 ),
+
 fork_events as (
     select
         'fork' as event_type,
@@ -31,6 +33,7 @@ fork_events as (
         null as event_data
     from forks
 ),
+
 issue_created_events as (
     select
         'issue' as event_type,
@@ -43,6 +46,7 @@ issue_created_events as (
     from issues
     where created_at is not null
 ),
+
 issue_updated_events as (
     select
         'issue' as event_type,
@@ -55,6 +59,7 @@ issue_updated_events as (
     from issues
     where updated_at is not null
 ),
+
 issue_closed_events as (
     select
         'issue' as event_type,
@@ -80,6 +85,7 @@ pr_created_events as (
     from pull_requests
     where created_at is not null
 ),
+
 pr_updated_events as (
     select
         'pull request' as event_type,
@@ -92,6 +98,7 @@ pr_updated_events as (
     from pull_requests
     where updated_at is not null
 ),
+
 pr_closed_events as (
     select
         'pull request' as event_type,
@@ -104,6 +111,7 @@ pr_closed_events as (
     from pull_requests
     where closed_at is not null
 ),
+
 pr_merged_events as (
     select
         'pull request' as event_type,
@@ -116,6 +124,7 @@ pr_merged_events as (
     from pull_requests
     where merged_at is not null
 ),
+
 combined as (
     select * from star_events
     union all
@@ -139,6 +148,7 @@ combined as (
     union all
     select * from pr_merged_events
 )
+
 select
     event_type,
     event_action,

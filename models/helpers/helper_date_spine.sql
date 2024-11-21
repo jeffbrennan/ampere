@@ -1,5 +1,5 @@
 with
-    date_spine as (
+date_spine as (
         {{
             dbt_utils.date_spine(
                 datepart="day",
@@ -11,7 +11,10 @@ with
                 | string + ")",
             )
         }}
-    ),
-    date_spine_clean as (select cast(date_day as date) as spine_date from date_spine)
-    select *
-    from date_spine_clean
+),
+
+date_spine_clean as (select cast(date_day as date) as spine_date from date_spine
+)
+
+select *
+from date_spine_clean
