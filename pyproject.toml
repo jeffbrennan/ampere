@@ -29,6 +29,8 @@ dash = "^2.18.1"
 dash-bootstrap-components = "^1.6.0"
 dash-breakpoints = "^0.1.0"
 colorlover = "^0.3.0"
+google-cloud-bigquery = "^3.26.0"
+db-dtypes = "^1.3.0"
 
 
 [build-system]
@@ -38,10 +40,9 @@ build-backend = "poetry.core.masonry.api"
 [tool.ruff]
 line-length = 90
 
-[tool.dagster]
-module_name = "ampere.dagster.definitions"
-code_location_name = "ampere/dagster"
+[tool.ruff.lint]
+select = ["I"]
 
-[tool.pyright]
-venvPath = "."
-venv = ".venv"
+[tool.dagster]
+code_location_name = "ampere/dagster"
+module_name = "ampere.dagster.definitions"

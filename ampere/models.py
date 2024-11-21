@@ -155,3 +155,39 @@ class Follower(SQLModel):
     user_id: int = Field(primary_key=True, foreign_key="users.user_id")
     follower_id: int = Field(primary_key=True, foreign_key="users.user_id")
     retrieved_at: datetime.datetime
+
+
+# https://pypistats.org/api
+# class PyPIDownload(SQLModel):
+#     __tablename__ = "pypi_downloads"  # pyright: ignore [reportAssignmentType]
+#     package: str = Field(primary_key=True, foreign_key="repo.repo_name")
+#     type: str = Field(primary_key=True)
+#     category: str = Field(primary_key=True)
+#     date: str = Field(primary_key=True)
+#     downloads: int
+#     retrieved_at: datetime.datetime
+
+
+class PyPIDownload(SQLModel):
+    __tablename__ = "pypi_downloads"  # pyright: ignore [reportAssignmentType]
+    project: str = Field(primary_key=True, foreign_key="repo.repo_name")
+    timestamp: datetime.datetime = Field(primary_key=True)
+    country_code: str = Field(primary_key=True)
+    package_version: str = Field(primary_key=True)
+    python_version: str = Field(primary_key=True)
+    system_distro_name: str = Field(primary_key=True)
+    system_distro_version: str = Field(primary_key=True)
+    system_name: str = Field(primary_key=True)
+    system_release: str = Field(primary_key=True)
+    download_count: int
+    retrieved_at: datetime.datetime
+
+
+# used to track which repos have been queried to prevent repeated date range queries on repos with no downloads
+@dataclass
+class PyPIQueryConfig(SQLModel):
+    __tablename__ = "pypi_download_queries"  # pyright: ignore [reportAssignmentType]
+    repo: str = Field(primary_key=True, foreign_key="repo.repo_name")
+    retrieved_at: datetime.datetime = Field(primary_key=True)
+    min_date: str
+    max_date: Optional[str]

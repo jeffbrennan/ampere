@@ -2,7 +2,7 @@ import copy
 
 import dash
 import pandas as pd
-from dash import Input, Output, callback, dash_table, html, dcc
+from dash import Input, Output, callback, dash_table, dcc, html
 
 from ampere.common import get_db_con
 from ampere.styling import (

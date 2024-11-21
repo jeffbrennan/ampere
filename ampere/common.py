@@ -29,6 +29,10 @@ class DeltaWriteConfig:
     pks: list[str]
 
 
+def format_list_sql_query(input_list: list[str]) -> str:
+    return "'" + "', '".join(input_list) + "'"
+
+
 def create_header(header_length: int, title: str, center: bool, spacer: str):
     if center:
         spacer_len = (header_length - len(title)) // 2
@@ -84,7 +88,6 @@ def write_delta_table(
         )
         .when_matched_update_all()
         .when_not_matched_insert_all()
-        .when_not_matched_by_source_delete()
         .execute()
     )
     print(merge_results)
