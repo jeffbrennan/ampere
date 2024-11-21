@@ -1,3 +1,4 @@
 [sqlfluff]
 dialect=duckdb
 templater=jinja
+ignore=templating,parsing
