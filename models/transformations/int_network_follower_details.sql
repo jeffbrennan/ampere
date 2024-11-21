@@ -21,7 +21,7 @@ internal_followers as (
 internal_following as (
     select
         a.follower_id as user_id,
-        list(b.user_name) as following
+        list(b.user_name) as following --noqa
     from {{ ref("stg_followers") }} as a
     inner join users as b on a.user_id = b.user_id
     group by a.follower_id

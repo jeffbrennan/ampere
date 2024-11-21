@@ -1,23 +1,23 @@
 select
-    a.comments_count as comments,
+    a.comments_count as comments, --noqa
     concat(
         '[',
-        repo_name,
+        c.repo_name,
         ']',
         '(https://www.github.com/mrpowers-io/',
-        repo_name,
+        c.repo_name,
         ')'
     ) as repo,
-    concat('[', user_name, ']', '(https://www.github.com/', user_name, ')')
+    concat('[', b.user_name, ']', '(https://www.github.com/', b.user_name, ')')
         as author,
     concat(
         '[#', a.issue_number, ' ', a.issue_title, ']',
         '(https://github.com/mrpowers-io/', c.repo_name,
         '/issues/', a.issue_number, ')'
     ) as title,
-    coalesce(a.issue_body, '') as body,
-    strftime(a.created_at, '%Y-%m-%d') as date,
-    date_part('day', current_date - a.created_at) as "days old"
+    coalesce(a.issue_body, '') as body, --noqa
+    strftime(a.created_at, '%Y-%m-%d') as date, --noqa
+    date_part('day', current_date - a.created_at) as "days old" --noqa
 from issues as a
 inner join users as b
     on a.author_id = b.user_id

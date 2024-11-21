@@ -13,12 +13,12 @@ repo_list as (
 
 date_spine_full as (
     select distinct
-        spine_date as metric_date,
-        repo_id,
-        metric_type
-    from {{ ref("helper_date_spine") }}
-    cross join metric_list
-    cross join repo_list
+        a.spine_date as metric_date,
+        c.repo_id,
+        b.metric_type
+    from {{ ref("helper_date_spine") }} as a
+    cross join metric_list as b
+    cross join repo_list as c
 ),
 
 metric_dates as (

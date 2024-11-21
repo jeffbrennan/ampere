@@ -56,10 +56,10 @@ select
         a.repo_name,
         ')'
     ) as repo,
-    coalesce(b.open_issues_count, 0) as "open issues",
-    ceil(coalesce(b.median_age_days, 0)) as "median issue age (days)",
-    coalesce(d.new_issues_count, 0) as "new issues (this month)",
-    coalesce(c.closed_issues, 0) as "closed issues (this month)"
+    coalesce(b.open_issues_count, 0) as "open issues", --noqa
+    ceil(coalesce(b.median_age_days, 0)) as "median issue age (days)", --noqa
+    coalesce(d.new_issues_count, 0) as "new issues (this month)", --noqa
+    coalesce(c.closed_issues, 0) as "closed issues (this month)" --noqa
 from repo_spine as a
 left join open_issues as b
     on a.repo_id = b.repo_id

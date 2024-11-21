@@ -7,7 +7,8 @@ melted as ({{
         field_name='group_name',
         value_name='group_value'
     )
-}} )
+  }}
+)
 
 select
     project as repo,

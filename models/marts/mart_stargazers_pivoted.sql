@@ -9,10 +9,15 @@ select
     concat(
         '[', b.user_name, ']', '(https://www.github.com/', b.user_name, ')'
     ) as user_name,
-    b.full_name as name,
+    b.full_name as name, --noqa
     b.followers_count as followers,
-    coalesce(c.starred_count, 0) as "starred repos",
-    {{ dbt_utils.star(from=ref('int_network_stargazers_pivoted'), except=['user_id']) }}
+    coalesce(c.starred_count, 0) as "starred repos", --noqa
+    {{
+        dbt_utils.star(
+          from=ref('int_network_stargazers_pivoted'),
+          except=['user_id']
+        )
+    }}
 from {{ ref('int_network_stargazers_pivoted') }} as a
 inner join users as b
     on a.user_id = b.user_id

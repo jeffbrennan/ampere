@@ -4,7 +4,10 @@ max_filled_vals as (
     from {{ ref("int_repo_metrics_filled") }}
     where
         metric_date
-        = (select max(metric_date) from {{ ref("int_repo_metrics_filled") }})
+        = (
+            select max(b.metric_date)
+            from {{ ref("int_repo_metrics_filled") }} as b
+        )
 ),
 
 combined as (
@@ -12,7 +15,10 @@ combined as (
     from {{ ref("int_repo_metrics_changes") }}
     where
         metric_date
-        != (select max(metric_date) from {{ ref("int_repo_metrics_filled") }})
+        != (
+            select max(b.metric_date)
+            from {{ ref("int_repo_metrics_filled") }} as b
+        )
     union distinct
     select *
     from max_filled_vals
