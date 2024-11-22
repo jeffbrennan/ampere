@@ -1,6 +1,11 @@
 with
 unknown_python as (
-    select *
+    select
+        repo,
+        download_date,
+        group_name,
+        group_value,
+        download_count
     from {{ ref('int_downloads_melted_weekly') }}
     where
         repo not in ('pyspark', 'deltalake')
@@ -46,14 +51,24 @@ clouds as (
 ),
 
 package_versions as (
-    select *
+    select
+        repo,
+        download_date,
+        group_name,
+        group_value,
+        download_count
     from {{ ref('int_downloads_melted_weekly') }}
     where
         repo not in ('pyspark', 'deltalake') and group_name = 'package_version'
 ),
 
 operating_systems as (
-    select *
+    select
+        repo,
+        download_date,
+        group_name,
+        group_value,
+        download_count
     from {{ ref('int_downloads_melted_weekly') }}
     where repo not in ('pyspark', 'deltalake') and group_name = 'system_name'
 ),
