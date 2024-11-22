@@ -11,3 +11,5 @@ models:
             +materialized: table
 flags:
     send_anonymous_usage_stats: False
+
+test-paths: ["data-tests"]
