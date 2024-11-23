@@ -13,6 +13,7 @@ from deltalake import DeltaTable, write_deltalake
 from duckdb import DuckDBPyConnection
 from sqlmodel.main import SQLModelMetaclass
 
+from ampere.maintenance import cleanup_delta_table
 from ampere.models import SQLModelType
 
 
@@ -64,7 +65,11 @@ def get_current_time() -> datetime.datetime:
 
 
 def write_delta_table(
-    records: list[SQLModelType], table_dir: str, table_name: str, pks: list[str]
+    records: list[SQLModelType],
+    table_dir: str,
+    table_name: str,
+    pks: list[str],
+    cleanup: bool = True,
 ) -> None:
     data_dir = Path(__file__).parents[1] / "data" / table_dir
     table_path = data_dir / table_name
@@ -91,6 +96,9 @@ def write_delta_table(
         .execute()
     )
     print(merge_results)
+
+    if cleanup:
+        cleanup_delta_table(table_path)
 
 
 def get_model_primary_key(model: SQLModelMetaclass) -> list[str]:
