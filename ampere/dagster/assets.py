@@ -33,6 +33,7 @@ from ampere.models import (
     User,
     Watcher,
 )
+
 from .project import ampere_project
 
 db_path = ampere_project.project_dir.joinpath("data/ampere.duckdb")
