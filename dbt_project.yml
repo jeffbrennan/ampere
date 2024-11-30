@@ -2,14 +2,14 @@ name: ampere
 
 profile: ampere
 models:
-    ampere:
-        staging:
-            +materialized: view
-        transformations:
-            +materialized: view
-        marts:
-            +materialized: table
+  ampere:
+    staging:
+      +materialized: view
+    transformations:
+      +materialized: table
+    marts:
+      +materialized: table
 flags:
-    send_anonymous_usage_stats: False
+  send_anonymous_usage_stats: False
 
 test-paths: ["data-tests"]

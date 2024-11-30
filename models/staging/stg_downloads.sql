@@ -10,4 +10,4 @@ select
     system_release,
     download_count,
     retrieved_at
-from pypi_downloads
+from {{ source('main', 'pypi_downloads') }}
