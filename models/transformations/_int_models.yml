@@ -1,0 +1,64 @@
+models:
+  - name: int_downloads_melted
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [repo, download_timestamp, group_name, group_value]
+    columns:
+      - name: repo
+        tests:
+          - not_null
+        data_type: string
+      - name: download_timestamp
+        data_type: timestamp with time zone
+      - name: group_name
+        data_type: string
+      - name: group_value
+        data_type: string
+      - name: download_count
+        data_type: bigint
+  - name: int_downloads_melted_weekly
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [repo, download_date, group_name, group_value]
+    columns:
+      - name: repo
+        tests:
+          - not_null
+        data_type: string
+      - name: download_date
+        data_type: timestamp with time zone
+      - name: group_name
+        data_type: string
+      - name: group_value
+        data_type: string
+      - name: download_count
+        data_type: bigint
+  - name: int_downloads_summary
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [repo, download_date, group_name, group_value]
+    columns:
+      - name: repo
+        tests:
+          - not_null
+        data_type: string
+      - name: download_date
+        data_type: timestamp with time zone
+      - name: group_name
+        data_type: string
+      - name: group_value
+        data_type: string
+      - name: download_count
+        data_type: bigint

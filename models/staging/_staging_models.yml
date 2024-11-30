@@ -1,0 +1,51 @@
+models:
+  - name: stg_downloads_inc
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    columns:
+      - name: project
+        data_type: string
+        constraints:
+          - type: not_null
+      - name: timestamp
+        data_type: timestamp with time zone
+        constraints:
+          - type: not_null
+      - name: country_code
+        data_type: string
+        constraints:
+          - type: not_null
+      - name: package_version
+        data_type: string
+        constraints:
+          - type: not_null
+      - name: python_version
+        data_type: string
+        constraints:
+          - type: not_null
+      - name: system_distro_name
+        data_type: string
+        constraints:
+          - type: not_null
+      - name: system_distro_version
+        data_type: string
+        constraints:
+          - type: not_null
+      - name: system_name
+        data_type: string
+        constraints:
+          - type: not_null
+      - name: system_release
+        data_type: string
+        constraints:
+          - type: not_null
+      - name: download_count
+        data_type: bigint
+        constraints:
+          - type: not_null
+      - name: retrieved_at
+        data_type: timestamp
+        constraints:
+          - type: not_null
