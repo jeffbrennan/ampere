@@ -83,22 +83,32 @@ overall as (
     from {{ ref('int_downloads_melted_weekly') }}
     where repo not in ('pyspark', 'deltalake') and group_name = 'system_name'
     group by all
+),
+
+combined as (
+    select *
+    from unknown_python
+    union all
+    select *
+    from python_major_minor
+    union all
+    select *
+    from clouds
+    union all
+    select *
+    from package_versions
+    union all
+    select *
+    from operating_systems
+    union all
+    select *
+    from overall
 )
 
-select *
-from unknown_python
-union all
-select *
-from python_major_minor
-union all
-select *
-from clouds
-union all
-select *
-from package_versions
-union all
-select *
-from operating_systems
-union all
-select *
-from overall
+select
+    repo,
+    download_date,
+    group_name,
+    group_value,
+    download_count::bigint as download_count
+from combined

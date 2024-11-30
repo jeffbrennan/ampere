@@ -87,6 +87,6 @@ select
     timestamp as download_timestamp,
     group_name,
     group_value,
-    sum(download_count) as download_count
+    sum(download_count)::bigint as download_count
 from melted
 group by all

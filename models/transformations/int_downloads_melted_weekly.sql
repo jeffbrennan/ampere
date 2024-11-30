@@ -33,7 +33,7 @@ select
     download_date,
     group_name,
     group_value,
-    sum(download_count) as download_count
+    sum(download_count)::bigint as download_count
 from downloads
 --  exclude incomplete week
 where download_date < (select max(b.download_date) from downloads as b)
