@@ -2,6 +2,10 @@ version: 2
 sources:
   - name: main
     tables:
+      - name: pypi_downloads
+        meta:
+          dagster:
+            asset_key: ["pypi_downloads"]
       - name: commits
         meta:
           dagster:
