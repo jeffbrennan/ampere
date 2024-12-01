@@ -36,5 +36,7 @@ select
     sum(download_count)::bigint as download_count
 from downloads
 --  exclude incomplete week
-where download_date < (select max(b.download_date) from downloads as b)
+where
+    download_date
+    < (select coalesce(max(b.download_date), '1900-01-01') from downloads as b)
 group by all
