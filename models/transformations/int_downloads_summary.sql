@@ -28,7 +28,7 @@ python_major_minor as (
     where
         repo not in ('pyspark', 'deltalake')
         and group_name = 'python_version'
-        and group_value = 'unknown'
+        and group_value != 'unknown'
     group by all
 ),
 
