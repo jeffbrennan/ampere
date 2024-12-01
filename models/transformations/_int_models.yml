@@ -9,7 +9,7 @@ models:
         columns: [repo, download_timestamp, group_name, group_value]
     columns:
       - name: repo
-        tests:
+        data_tests:
           - not_null
         data_type: string
       - name: download_timestamp
@@ -30,7 +30,7 @@ models:
         columns: [repo, download_date, group_name, group_value]
     columns:
       - name: repo
-        tests:
+        data_tests:
           - not_null
         data_type: string
       - name: download_date
@@ -51,7 +51,7 @@ models:
         columns: [repo, download_date, group_name, group_value]
     columns:
       - name: repo
-        tests:
+        data_tests:
           - not_null
         data_type: string
       - name: download_date
