@@ -62,3 +62,180 @@ models:
         data_type: string
       - name: download_count
         data_type: bigint
+        columns: [repo, download_date, group_name, group_value]
+  - name: int_feed_events
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [event_type, event_action, event_timestamp, repo_id, event_id]
+    columns:
+      - name: event_type
+        data_type: string
+      - name: event_action
+        data_type: string
+      - name: event_timestamp
+        data_type: timestamp with time zone
+      - name: repo_id
+        data_type: bigint
+      - name: user_id
+        data_type: bigint
+      - name: event_id
+        data_type: string
+      - name: event_data
+        data_type: string
+  - name: int_internal_followers
+    config:
+      contract:
+        enforced: true
+    on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [user_id, follower_id]
+    columns:
+      - name: user_id
+        data_type: bigint
+      - name: follower_id
+        data_type: bigint
+  - name: int_network_follower_details
+    config:
+      contract:
+        enforced: true
+    on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [user_id]
+    columns:
+      - name: user_id
+        data_type: bigint
+      - name: user_name
+        data_type: string
+      - name: full_name
+        data_type: string
+      - name: followers_count
+        data_type: bigint
+      - name: following_count
+        data_type: bigint
+      - name: followers
+        data_type: string[]
+      - name: following
+        data_type: string[]
+      - name: internal_followers_count
+        data_type: bigint
+      - name: internal_following_count
+        data_type: bigint
+      - name: internal_followers_pct
+        data_type: double
+      - name: internal_following_pct
+        data_type: double
+  - name: int_network_stargazers
+    config:
+      contract:
+        enforced: true
+    on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [user_id, repo_name]
+    columns:
+      - name: user_id
+        data_type: bigint
+      - name: user_name
+        data_type: string
+      - name: full_name
+        data_type: string
+      - name: followers_count
+        data_type: bigint
+      - name: starred_at
+        data_type: timestamp with time zone
+      - name: retrieved_at
+        data_type: timestamp with time zone
+      - name: repo_name
+        data_type: string
+      - name: repo_name_list
+        data_type: string[]
+  - name: int_repo_metrics
+    config:
+      contract:
+        enforced: true
+    on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [repo_id, metric_type, metric_timestamp, metric_id]
+    columns:
+      - name: repo_id
+        data_type: bigint
+      - name: metric_type
+        data_type: string
+      - name: metric_timestamp
+        data_type: timestamp with time zone
+      - name: metric_id
+        data_type: string
+      - name: user_id
+        data_type: bigint
+      - name: metric_count
+        data_type: bigint
+  - name: int_repo_metrics_changes
+    config:
+      contract:
+        enforced: true
+    on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [repo_id, metric_type, metric_date, metric_id]
+    columns:
+      - name: repo_id
+        data_type: bigint
+      - name: metric_type
+        data_type: string
+      - name: metric_date
+        data_type: date
+      - name: metric_id
+        data_type: string
+      - name: user_id
+        data_type: bigint
+      - name: metric_count
+        data_type: bigint
+  - name: int_repo_metrics_filled
+    config:
+      contract:
+        enforced: true
+    on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [repo_id, metric_type, metric_date, metric_id]
+    columns:
+      - name: repo_id
+        data_type: bigint
+      - name: metric_type
+        data_type: string
+      - name: metric_date
+        data_type: date
+      - name: metric_id
+        data_type: string
+      - name: user_id
+        data_type: bigint
+      - name: metric_count
+        data_type: bigint
+  - name: int_repo_metrics_filled_partial
+    config:
+      contract:
+        enforced: true
+    on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [repo_id, metric_type, metric_date, metric_id]
+    columns:
+      - name: repo_id
+        data_type: bigint
+      - name: metric_type
+        data_type: string
+      - name: metric_date
+        data_type: date
+      - name: metric_id
+        data_type: string
+      - name: user_id
+        data_type: bigint
+      - name: metric_count
+        data_type: bigint
