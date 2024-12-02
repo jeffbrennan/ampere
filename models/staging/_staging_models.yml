@@ -49,3 +49,22 @@ models:
         data_type: timestamp
         constraints:
           - type: not_null
+  - name: stg_followers
+    columns:
+      - name: user_id
+        data_tests:
+          - not_null
+      - name: follower_id
+        data_tests:
+          - not_null
+  - name: stg_stargazers
+    columns:
+      - name: repo_id
+        data_tests:
+          - not_null
+      - name: user_id
+        data_tests:
+          - not_null
+      - name: starred_at
+        data_tests:
+          - not_null
