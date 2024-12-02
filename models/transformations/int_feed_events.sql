@@ -134,8 +134,6 @@ combined as (
     union all
     select * from issue_created_events
     union all
-    select * from issue_created_events
-    union all
     select * from issue_updated_events
     union all
     select * from issue_closed_events
@@ -154,7 +152,7 @@ select
     event_action,
     event_timestamp,
     repo_id,
-    user_id,
+    user_id::bigint as user_id,
     event_id,
     event_data
 from combined
