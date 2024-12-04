@@ -78,7 +78,7 @@ def viz_area(df: pd.DataFrame, repo_name: str, group_name: str) -> Figure:
         x="download_date",
         y="download_count",
         color="group_value",
-        title=f"{repo_name} - {group_name}",
+        title=f"<b>{group_name.replace('_', ' ')}</b>",
         template="simple_white",
         category_orders={"group_value": categories},
     )
@@ -106,6 +106,15 @@ def viz_area(df: pd.DataFrame, repo_name: str, group_name: str) -> Figure:
     fig.update_yaxes(matches=None, showticklabels=True)
     fig.update_layout(margin=dict(l=0, r=0))
 
+    fig.update_layout(
+        title={
+            "y": 0.95,  # Adjust this value to move the title closer or further
+            "x": 0.5,  # Center the title horizontally
+            "xanchor": "center",
+            "yanchor": "top",
+        },
+        margin=dict(t=50),  # Adjust top margin to avoid overlap with title
+    )
     if len(categories) == 1:
         fig.update_layout(showlegend=False)
     else:
