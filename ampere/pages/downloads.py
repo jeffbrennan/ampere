@@ -178,7 +178,14 @@ layout = [
         get_valid_repos(),
         placeholder="quinn",
         value="quinn",
+        clearable=False,
         id="repo-selection",
+        style={
+            "position": "sticky",
+            "top": "60px",
+            "width": "25%",
+            "z-index": "100",
+        },
     ),
     dcc.Loading(
         id="loading-graph",
