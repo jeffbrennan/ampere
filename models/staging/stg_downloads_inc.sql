@@ -25,7 +25,7 @@ select
     system_distro_version,
     system_name,
     system_release,
-    download_count,
+    download_count::bigint as download_count,
     retrieved_at
 from {{ ref('stg_downloads') }}
 

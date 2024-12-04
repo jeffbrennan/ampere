@@ -10,12 +10,12 @@ diffs as (
 
 )
 
-select
+select --noqa
     repo_id,
     metric_type,
     metric_date,
-    metric_id,
-    user_id,
-    metric_count
+    coalesce(metric_id, 'N/A') as metric_id,
+    user_id::bigint as user_id,
+    metric_count::bigint as metric_count
 from diffs
 where metric_count != prev_metric_count or metric_count is null

@@ -24,5 +24,11 @@ combined as (
     from max_filled_vals
 )
 
-select *
+select --noqa
+    repo_id,
+    metric_type,
+    metric_date,
+    coalesce(metric_id, 'N/A') as metric_id,
+    user_id::bigint as user_id,
+    metric_count::bigint as metric_count
 from combined
