@@ -93,7 +93,7 @@ metrics_filled_down as (
     from metrics_fill_prep
 )
 
-select
+select --noqa
     repo_id,
     metric_type,
     metric_date,
