@@ -246,8 +246,14 @@ layout = [
                         value=[min_timestamp, max_timestamp],
                         step=date_slider_step_seconds,
                         marks={
-                            int(min_timestamp): min_timestamp_ymd,
-                            int(max_timestamp): max_timestamp_ymd,
+                            min_timestamp: {
+                                "label": min_timestamp_ymd,
+                                "style": {"fontSize": 0},
+                            },
+                            max_timestamp: {
+                                "label": max_timestamp_ymd,
+                                "style": {"fontSize": 0},
+                            },
                         },
                         allowCross=False,
                         tooltip={
