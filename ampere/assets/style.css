@@ -1,3 +1,29 @@
 .rc-slider-tooltip-inner {
-  background: #304FFE !important;
+  background: #5560FA !important;
+}
+
+.rc-slider-track {
+  background-color: #C3C7E6;
+  height: 5px
+}
+
+.rc-slider-handle {
+  background-color: #5560FA;
+  border: solid 2px #5560FA;
+}
+
+.rc-slider-handle:hover,
+.rc-slider-handle:focus,
+.rc-slider-handle:hover {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.Select input {
+  color: #E3E7FA;
+}
+
+.Select-value-label {
+  color: #E3E7FA !important;
 }
