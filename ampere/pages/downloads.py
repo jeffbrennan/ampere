@@ -215,7 +215,14 @@ def viz_downloads_by_package_version(
 
 
 df = create_downloads_summary()
-date_slider_step_seconds = 60 * 60 * 24 * 7 * 6
+min_timestamp = df["download_date"].min().timestamp()
+max_timestamp = df["download_date"].max().timestamp()
+
+min_timestamp_ymd = datetime.datetime.fromtimestamp(min_timestamp).strftime("%Y-%m-%d")
+max_timestamp_ymd = datetime.datetime.fromtimestamp(max_timestamp).strftime("%Y-%m-%d")
+
+date_slider_step_seconds = 60 * 60 * 24 * 7
+
 layout = [
     html.Br(),
     dcc.Dropdown(
@@ -233,21 +240,19 @@ layout = [
     ),
     dcc.RangeSlider(
         id="date-slider",
-        min=df["download_date"].min().timestamp(),
-        max=df["download_date"].max().timestamp(),
-        value=[
-            df["download_date"].min().timestamp(),
-            df["download_date"].max().timestamp(),
-        ],
-        marks={
-            int(date.timestamp()): date.strftime("%Y-%m-%d")
-            for date in pd.date_range(
-                df["download_date"].min(),
-                df["download_date"].max(),
-                freq="YE",
-            )
-        },
+        min=min_timestamp,
+        value=[min_timestamp, max_timestamp],
         step=date_slider_step_seconds,
+        marks={
+            int(min_timestamp): min_timestamp_ymd,
+            int(max_timestamp): max_timestamp_ymd,
+        },
+        allowCross=False,
+        tooltip={
+            "placement": "bottom",
+            "always_visible": True,
+            "transform": "secondsToYMD",
+        },
     ),
     dcc.Loading(
         id="loading-graph",
