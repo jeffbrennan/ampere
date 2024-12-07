@@ -1,6 +1,10 @@
+import datetime
+from typing import Optional
+
 import dash
 import pandas as pd
 import plotly.express as px
+import pytz
 from dash import Input, Output, callback, dcc, html
 from plotly.graph_objects import Figure
 
@@ -64,8 +68,25 @@ def viz_line(df: pd.DataFrame, group_name: str) -> Figure:
     return fig
 
 
-def viz_area(df: pd.DataFrame, repo_name: str, group_name: str) -> Figure:
+def viz_area(
+    df: pd.DataFrame,
+    repo_name: str,
+    group_name: str,
+    date_range: Optional[list[int]] = None,
+) -> Figure:
     df_filtered = df.query(f"group_name=='{group_name}'").query(f"repo=='{repo_name}'")
+    if date_range is not None:
+        filter_date_min = datetime.datetime.fromtimestamp(
+            date_range[0], tz=pytz.timezone("America/New_York")
+        )
+        filter_date_max = datetime.datetime.fromtimestamp(
+            date_range[1], tz=pytz.timezone("America/New_York")
+        )
+
+        df_filtered = df_filtered.query(f"download_date >= '{filter_date_min}'").query(
+            f"download_date <= '{filter_date_max}'"
+        )
+
     max_date = df_filtered["download_date"].max()
     categories = (
         df_filtered[(df_filtered["download_date"] == max_date)]
@@ -134,11 +155,14 @@ def get_valid_repos() -> list[str]:
     [
         Input("repo-selection", "value"),
         Input("breakpoints", "widthBreakpoint"),
+        Input("date-slider", "value"),
     ],
 )
-def viz_downloads_overall(repo_name: str, breakpoint_name: str) -> Figure:
+def viz_downloads_overall(
+    repo_name: str, breakpoint_name: str, date_range: list[int]
+) -> Figure:
     df = create_downloads_summary()
-    fig = viz_area(df, repo_name, "overall")
+    fig = viz_area(df, repo_name, "overall", date_range)
     return fig
 
 
@@ -147,11 +171,14 @@ def viz_downloads_overall(repo_name: str, breakpoint_name: str) -> Figure:
     [
         Input("repo-selection", "value"),
         Input("breakpoints", "widthBreakpoint"),
+        Input("date-slider", "value"),
     ],
 )
-def viz_downloads_by_cloud_provider(repo_name: str, breakpoint_name: str) -> Figure:
+def viz_downloads_by_cloud_provider(
+    repo_name: str, breakpoint_name: str, date_range: list[int]
+) -> Figure:
     df = create_downloads_summary()
-    fig = viz_area(df, repo_name, "system_release")
+    fig = viz_area(df, repo_name, "system_release", date_range)
     return fig
 
 
@@ -160,11 +187,14 @@ def viz_downloads_by_cloud_provider(repo_name: str, breakpoint_name: str) -> Fig
     [
         Input("repo-selection", "value"),
         Input("breakpoints", "widthBreakpoint"),
+        Input("date-slider", "value"),
     ],
 )
-def viz_downloads_by_python_version(repo_name: str, breakpoint_name: str) -> Figure:
+def viz_downloads_by_python_version(
+    repo_name: str, breakpoint_name: str, date_range: list[int]
+) -> Figure:
     df = create_downloads_summary()
-    fig = viz_area(df, repo_name, "python_version")
+    fig = viz_area(df, repo_name, "python_version", date_range)
     return fig
 
 
@@ -173,14 +203,19 @@ def viz_downloads_by_python_version(repo_name: str, breakpoint_name: str) -> Fig
     [
         Input("repo-selection", "value"),
         Input("breakpoints", "widthBreakpoint"),
+        Input("date-slider", "value"),
     ],
 )
-def viz_downloads_by_package_version(repo_name: str, breakpoint_name: str) -> Figure:
+def viz_downloads_by_package_version(
+    repo_name: str, breakpoint_name: str, date_range: list[int]
+) -> Figure:
     df = create_downloads_summary()
-    fig = viz_area(df, repo_name, "package_version")
+    fig = viz_area(df, repo_name, "package_version", date_range)
     return fig
 
 
+df = create_downloads_summary()
+date_slider_step_seconds = 60 * 60 * 24 * 7 * 6
 layout = [
     html.Br(),
     dcc.Dropdown(
@@ -195,6 +230,24 @@ layout = [
             "width": "25%",
             "z-index": "100",
         },
+    ),
+    dcc.RangeSlider(
+        id="date-slider",
+        min=df["download_date"].min().timestamp(),
+        max=df["download_date"].max().timestamp(),
+        value=[
+            df["download_date"].min().timestamp(),
+            df["download_date"].max().timestamp(),
+        ],
+        marks={
+            int(date.timestamp()): date.strftime("%Y-%m-%d")
+            for date in pd.date_range(
+                df["download_date"].min(),
+                df["download_date"].max(),
+                freq="YE",
+            )
+        },
+        step=date_slider_step_seconds,
     ),
     dcc.Loading(
         id="loading-graph",
