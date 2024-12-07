@@ -2,6 +2,7 @@ import datetime
 from typing import Optional
 
 import dash
+import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.express as px
 import pytz
@@ -225,33 +226,46 @@ date_slider_step_seconds = 60 * 60 * 24 * 7
 
 layout = [
     html.Br(),
-    dcc.Dropdown(
-        get_valid_repos(),
-        placeholder="quinn",
-        value="quinn",
-        clearable=False,
-        id="repo-selection",
+    dbc.Row(
+        [
+            dbc.Col(
+                dcc.Dropdown(
+                    get_valid_repos(),
+                    placeholder="quinn",
+                    value="quinn",
+                    clearable=False,
+                    id="repo-selection",
+                ),
+                width=2,
+            ),
+            dbc.Col(
+                html.Div(
+                    dcc.RangeSlider(
+                        id="date-slider",
+                        min=min_timestamp,
+                        value=[min_timestamp, max_timestamp],
+                        step=date_slider_step_seconds,
+                        marks={
+                            int(min_timestamp): min_timestamp_ymd,
+                            int(max_timestamp): max_timestamp_ymd,
+                        },
+                        allowCross=False,
+                        tooltip={
+                            "placement": "bottom",
+                            "always_visible": True,
+                            "transform": "secondsToYMD",
+                        },
+                    ),
+                    style={"whiteSpace": "nowrap"},
+                ),
+                width=3,
+            ),
+            dbc.Col(width=7),
+        ],
         style={
             "position": "sticky",
-            "top": "60px",
-            "width": "25%",
             "z-index": "100",
-        },
-    ),
-    dcc.RangeSlider(
-        id="date-slider",
-        min=min_timestamp,
-        value=[min_timestamp, max_timestamp],
-        step=date_slider_step_seconds,
-        marks={
-            int(min_timestamp): min_timestamp_ymd,
-            int(max_timestamp): max_timestamp_ymd,
-        },
-        allowCross=False,
-        tooltip={
-            "placement": "bottom",
-            "always_visible": True,
-            "transform": "secondsToYMD",
+            "top": "60px",
         },
     ),
     dcc.Loading(
