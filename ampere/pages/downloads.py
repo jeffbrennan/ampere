@@ -10,6 +10,7 @@ from dash import Input, Output, callback, dcc, html
 from plotly.graph_objects import Figure
 
 from ampere.common import get_db_con
+from ampere.styling import AmperePalette
 
 dash.register_page(__name__, name="downloads", top_nav=True, order=1)
 
@@ -260,6 +261,10 @@ layout = [
                             "placement": "bottom",
                             "always_visible": True,
                             "transform": "secondsToYMD",
+                            "style": {
+                                "background": AmperePalette.PAGE_ACCENT_COLOR,
+                                "border": AmperePalette.PAGE_ACCENT_COLOR,
+                            },
                         },
                     ),
                     style={"whiteSpace": "nowrap"},
