@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional
+from typing import Any, Optional
 
 import dash
 import dash_bootstrap_components as dbc
@@ -72,11 +72,10 @@ def viz_line(df: pd.DataFrame, group_name: str) -> Figure:
 
 def viz_area(
     df: pd.DataFrame,
-    repo_name: str,
     group_name: str,
     date_range: Optional[list[int]] = None,
 ) -> Figure:
-    df_filtered = df.query(f"group_name=='{group_name}'").query(f"repo=='{repo_name}'")
+    df_filtered = df.query(f"group_name=='{group_name}'")
     if date_range is not None:
         filter_date_min = datetime.datetime.fromtimestamp(
             date_range[0], tz=pytz.timezone("America/New_York")
@@ -155,78 +154,116 @@ def get_valid_repos() -> list[str]:
 @callback(
     Output("downloads-overall", "figure"),
     [
-        Input("repo-selection", "value"),
+        Input("downloads-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
         Input("date-slider", "value"),
     ],
 )
 def viz_downloads_overall(
-    repo_name: str, breakpoint_name: str, date_range: list[int]
+    df_data: list[dict], breakpoint_name: str, date_range: list[int]
 ) -> Figure:
-    df = create_downloads_summary()
-    fig = viz_area(df, repo_name, "overall", date_range)
+    df = pd.DataFrame(df_data)
+    fig = viz_area(df, "overall", date_range)
     return fig
 
 
 @callback(
     Output("downloads-cloud", "figure"),
     [
-        Input("repo-selection", "value"),
+        Input("downloads-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
         Input("date-slider", "value"),
     ],
 )
 def viz_downloads_by_cloud_provider(
-    repo_name: str, breakpoint_name: str, date_range: list[int]
+    df_data: list[dict], breakpoint_name: str, date_range: list[int]
 ) -> Figure:
-    df = create_downloads_summary()
-    fig = viz_area(df, repo_name, "system_release", date_range)
+    df = pd.DataFrame(df_data)
+    fig = viz_area(df, "system_release", date_range)
     return fig
 
 
 @callback(
     Output("downloads-python-version", "figure"),
     [
-        Input("repo-selection", "value"),
+        Input("downloads-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
         Input("date-slider", "value"),
     ],
 )
 def viz_downloads_by_python_version(
-    repo_name: str, breakpoint_name: str, date_range: list[int]
+    df_data: list[dict], breakpoint_name: str, date_range: list[int]
 ) -> Figure:
-    df = create_downloads_summary()
-    fig = viz_area(df, repo_name, "python_version", date_range)
+    df = pd.DataFrame(df_data)
+    fig = viz_area(df, "python_version", date_range)
     return fig
 
 
 @callback(
     Output("downloads-package-version", "figure"),
     [
-        Input("repo-selection", "value"),
+        Input("downloads-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
         Input("date-slider", "value"),
     ],
 )
 def viz_downloads_by_package_version(
-    repo_name: str, breakpoint_name: str, date_range: list[int]
+    df_data: list[dict], breakpoint_name: str, date_range: list[int]
 ) -> Figure:
-    df = create_downloads_summary()
-    fig = viz_area(df, repo_name, "package_version", date_range)
+    df = pd.DataFrame(df_data)
+    fig = viz_area(df, "package_version", date_range)
     return fig
 
 
-df = create_downloads_summary()
-min_timestamp = df["download_date"].min().timestamp()
-max_timestamp = df["download_date"].max().timestamp()
+@callback(
+    Output("downloads-df", "data"),
+    Input("repo-selection", "value"),
+)
+def get_downloads_summary(repo_name: str) -> list[dict]:
+    df = create_downloads_summary()
+    return df.query(f"repo=='{repo_name}'").to_dict("records")
 
-min_timestamp_ymd = datetime.datetime.fromtimestamp(min_timestamp).strftime("%Y-%m-%d")
-max_timestamp_ymd = datetime.datetime.fromtimestamp(max_timestamp).strftime("%Y-%m-%d")
+
+@callback(
+    [
+        Output("date-slider", "min"),
+        Output("date-slider", "value"),
+        Output("date-slider", "marks"),
+    ],
+    [
+        Input("downloads-df", "data"),
+    ],
+)
+def get_downloads_summary_date_ranges(
+    df_data: list[dict],
+) -> tuple[int, list[int], dict[Any, dict[str, Any]]]:
+    df = pd.DataFrame(df_data)
+    df["download_date"] = pd.to_datetime(df["download_date"], utc=True)
+    min_timestamp = df["download_date"].min().timestamp()
+    max_timestamp = df["download_date"].max().timestamp()
+
+    min_timestamp_ymd = datetime.datetime.fromtimestamp(min_timestamp).strftime(
+        "%Y-%m-%d"
+    )
+    max_timestamp_ymd = datetime.datetime.fromtimestamp(max_timestamp).strftime(
+        "%Y-%m-%d"
+    )
+
+    date_slider_min = min_timestamp
+    date_slider_value = [min_timestamp, max_timestamp]
+    date_slider_marks = {
+        min_timestamp: {"label": min_timestamp_ymd, "style": {"fontSize": 0}},
+        max_timestamp: {"label": max_timestamp_ymd, "style": {"fontSize": 0}},
+    }
+
+    return date_slider_min, date_slider_value, date_slider_marks
+
 
 date_slider_step_seconds = 60 * 60 * 24 * 7
 
 layout = [
     html.Br(),
+    dcc.Store("downloads-df"),
     dbc.Row(
         [
             dbc.Col(
@@ -252,19 +289,7 @@ layout = [
                 html.Div(
                     dcc.RangeSlider(
                         id="date-slider",
-                        min=min_timestamp,
-                        value=[min_timestamp, max_timestamp],
                         step=date_slider_step_seconds,
-                        marks={
-                            min_timestamp: {
-                                "label": min_timestamp_ymd,
-                                "style": {"fontSize": 0},
-                            },
-                            max_timestamp: {
-                                "label": max_timestamp_ymd,
-                                "style": {"fontSize": 0},
-                            },
-                        },
                         allowCross=False,
                         tooltip={
                             "placement": "bottom",
