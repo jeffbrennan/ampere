@@ -8,9 +8,10 @@ import pandas as pd
 
 class AmperePalette(StrEnum):
     PAGE_ACCENT_COLOR = "#304FFE"
+    PAGE_ACCENT_COLOR2 = "#5560fa"
     PAGE_LIGHT_GRAY = "#EEEEEE"
     BRAND_TEXT_COLOR = "#FFFFFF"
-    BRAND_TEXT_COLOR_MUTED = "#e3e7fa"
+    BRAND_TEXT_COLOR_MUTED = "#E3E7FA"
 
 
 class ScreenWidth(StrEnum):
@@ -29,7 +30,6 @@ class DTStyle:
     row_selectable: bool
     row_deletable: bool
     fixed_rows: dict[str, bool]
-    filter_action: str
     filter_options: dict[str, str]
     page_size: int
     style_header: dict[str, str]
@@ -61,7 +61,7 @@ def style_dt_background_colors_by_rank(
         ranks = (
             (df[col.name].rank(ascending=col.ascending, method="max").astype("int") - 1)
             .squeeze()
-            .tolist() # type: ignore
+            .tolist()  # type: ignore
         )
         for row in range(n_bins):
             row_val = df[col.name].iloc[row]
