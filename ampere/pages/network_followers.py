@@ -1,4 +1,5 @@
 import dash
+import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, dcc, html
 from plotly.graph_objects import Figure
@@ -40,8 +41,9 @@ def layout():
             max_intervals=0,
             interval=1,
         ),
-        dcc.Loading(
-            dcc.Graph(
+        dbc.Fade(
+            id="network-follower-graph-fade",
+            children=dcc.Graph(
                 id="network-follower-graph",
                 style={
                     "height": "95vh",
@@ -51,6 +53,8 @@ def layout():
                 },
                 responsive=True,
             ),
+            style={"transition": "opacity 1000ms ease"},
+            is_in=False,
         ),
         dash_table.DataTable(
             df.to_dict("records"),
@@ -69,8 +73,11 @@ def layout():
 
 
 @callback(
-    Output("network-follower-graph", "figure"),
+    [
+        Output("network-follower-graph", "figure"),
+        Output("network-follower-graph-fade", "is_in"),
+    ],
     Input("network-follower-load-interval", "n_intervals"),
 )
-def show_summary_graph(_: int) -> Figure:
-    return viz_follower_network()
+def show_summary_graph(_: int) -> tuple[Figure, bool]:
+    return viz_follower_network(), True

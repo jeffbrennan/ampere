@@ -156,6 +156,7 @@ def get_valid_repos() -> list[str]:
     [
         Output("downloads-overall", "figure"),
         Output("downloads-overall", "style"),
+        Output("downloads-overall-fade", "is_in"),
     ],
     [
         Input("downloads-df", "data"),
@@ -165,10 +166,10 @@ def get_valid_repos() -> list[str]:
 )
 def viz_downloads_overall(
     df_data: list[dict], breakpoint_name: str, date_range: list[int]
-) -> tuple[Figure, dict]:
+) -> tuple[Figure, dict, bool]:
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "overall", date_range)
-    return fig, {}
+    return fig, {}, True
 
 
 @callback(
@@ -351,8 +352,15 @@ layout = [
             "top": "60px",
         },
     ),
-    dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
-    dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
-    dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
-    dcc.Graph("downloads-cloud", style={"visibility": "hidden"}),
+    dbc.Fade(
+        id="downloads-overall-fade",
+        children=[
+            dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
+            dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
+            dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
+            dcc.Graph("downloads-cloud", style={"visibility": "hidden"}),
+        ],
+        style={"transition": "opacity 1000ms ease"},
+        is_in=False,
+    ),
 ]
