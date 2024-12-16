@@ -107,7 +107,7 @@ def viz_area(
     )
     fig.for_each_annotation(
         lambda a: a.update(
-ino            text="<b>"
+            text="<b>"
             + a.text.split("=")[-1]
             .replace("_", " ")
             .replace("system release", "cloud platform")
