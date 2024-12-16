@@ -351,15 +351,8 @@ layout = [
             "top": "60px",
         },
     ),
-    dcc.Loading(
-        id="loading-graph",
-        type="default",
-        delay_show=500,
-        children=[
-            dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
-            dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
-            dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
-            dcc.Graph("downloads-cloud", style={"visibility": "hidden"}),
-        ],
-    ),
+    dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
+    dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
+    dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
+    dcc.Graph("downloads-cloud", style={"visibility": "hidden"}),
 ]
