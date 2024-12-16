@@ -445,23 +445,10 @@ def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figu
 
 
 def viz_summary(
+    df: pd.DataFrame,
     show_fig: bool = False,
     screen_width: ScreenWidth = ScreenWidth.lg,
 ):
-    con = get_db_con()
-    df = con.sql(
-        """
-    select
-        repo_id,
-        metric_type,
-        metric_date,
-        metric_count,
-        repo_name
-    from main.mart_repo_summary
-    order by metric_date
-    """
-    ).to_df()
-
     metric_type_order = [
         "stars",
         "issues",
