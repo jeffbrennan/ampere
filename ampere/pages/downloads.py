@@ -1,4 +1,5 @@
 import datetime
+import time
 from typing import Any, Optional
 
 import dash
@@ -152,7 +153,10 @@ def get_valid_repos() -> list[str]:
 
 
 @callback(
-    Output("downloads-overall", "figure"),
+    [
+        Output("downloads-overall", "figure"),
+        Output("downloads-overall", "style"),
+    ],
     [
         Input("downloads-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
@@ -161,14 +165,17 @@ def get_valid_repos() -> list[str]:
 )
 def viz_downloads_overall(
     df_data: list[dict], breakpoint_name: str, date_range: list[int]
-) -> Figure:
+) -> tuple[Figure, dict]:
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "overall", date_range)
-    return fig
+    return fig, {}
 
 
 @callback(
-    Output("downloads-cloud", "figure"),
+    [
+        Output("downloads-cloud", "figure"),
+        Output("downloads-cloud", "style"),
+    ],
     [
         Input("downloads-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
@@ -177,14 +184,17 @@ def viz_downloads_overall(
 )
 def viz_downloads_by_cloud_provider(
     df_data: list[dict], breakpoint_name: str, date_range: list[int]
-) -> Figure:
+) -> tuple[Figure, dict]:
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "system_release", date_range)
-    return fig
+    return fig, {}
 
 
 @callback(
-    Output("downloads-python-version", "figure"),
+    [
+        Output("downloads-python-version", "figure"),
+        Output("downloads-python-version", "style"),
+    ],
     [
         Input("downloads-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
@@ -193,14 +203,18 @@ def viz_downloads_by_cloud_provider(
 )
 def viz_downloads_by_python_version(
     df_data: list[dict], breakpoint_name: str, date_range: list[int]
-) -> Figure:
+) -> tuple[Figure, dict]:
+    time.sleep(0.1)
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "python_version", date_range)
-    return fig
+    return fig, {}
 
 
 @callback(
-    Output("downloads-package-version", "figure"),
+    [
+        Output("downloads-package-version", "figure"),
+        Output("downloads-package-version", "style"),
+    ],
     [
         Input("downloads-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
@@ -209,10 +223,10 @@ def viz_downloads_by_python_version(
 )
 def viz_downloads_by_package_version(
     df_data: list[dict], breakpoint_name: str, date_range: list[int]
-) -> Figure:
+) -> tuple[Figure, dict]:
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "package_version", date_range)
-    return fig
+    return fig, {}
 
 
 @callback(
@@ -284,7 +298,6 @@ def get_downloads_summary_date_ranges(
         min_timestamp: {"label": min_timestamp_ymd, "style": {"fontSize": 0}},
         max_timestamp: {"label": max_timestamp_ymd, "style": {"fontSize": 0}},
     }
-
     return (
         min_timestamp,
         max_timestamp,
@@ -299,7 +312,7 @@ layout = [
     html.Br(),
     dcc.Store("downloads-df"),
     dbc.Row(
-        [
+        children=[
             dbc.Col(
                 dcc.Dropdown(
                     get_valid_repos(),
@@ -341,11 +354,12 @@ layout = [
     dcc.Loading(
         id="loading-graph",
         type="default",
+        delay_show=500,
         children=[
-            dcc.Graph("downloads-overall"),
-            dcc.Graph("downloads-package-version"),
-            dcc.Graph("downloads-python-version"),
-            dcc.Graph("downloads-cloud"),
+            dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
+            dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
+            dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
+            dcc.Graph("downloads-cloud", style={"visibility": "hidden"}),
         ],
     ),
 ]
