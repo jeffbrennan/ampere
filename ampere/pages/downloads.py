@@ -107,7 +107,11 @@ def viz_area(
     )
     fig.for_each_annotation(
         lambda a: a.update(
-            text="<b>" + a.text.split("=")[-1].replace("_", " ") + "</b>",
+ino            text="<b>"
+            + a.text.split("=")[-1]
+            .replace("_", " ")
+            .replace("system release", "cloud platform")
+            + "</b>",
             font_size=18,
             bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
             font_color="white",
@@ -266,7 +270,7 @@ def toggle_slider_tooltip_visibility(
         "transform": "secondsToYMD",
         "style": {
             "background": AmperePalette.PAGE_ACCENT_COLOR2,
-            "color": AmperePalette.BRAND_TEXT_COLOR_MUTED,
+            "color": AmperePalette.BRAND_TEXT_COLOR,
             "fontSize": "16px",
             "paddingLeft": "4px",
             "paddingRight": "4px",

@@ -35,7 +35,7 @@ def toggle_slider_tooltip_visibility(
         "transform": "secondsToYMD",
         "style": {
             "background": AmperePalette.PAGE_ACCENT_COLOR2,
-            "color": AmperePalette.BRAND_TEXT_COLOR_MUTED,
+            "color": AmperePalette.BRAND_TEXT_COLOR,
             "fontSize": "16px",
             "paddingLeft": "4px",
             "paddingRight": "4px",
