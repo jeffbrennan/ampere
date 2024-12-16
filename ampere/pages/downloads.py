@@ -225,8 +225,38 @@ def get_downloads_summary(repo_name: str) -> list[dict]:
 
 
 @callback(
+    Output("date-slider", "tooltip"),
+    [
+        Input("date-slider", "min"),
+        Input("date-slider", "max"),
+        Input("date-slider", "value"),
+    ],
+)
+def toggle_slider_tooltip_visibility(
+    min_date_seconds: int, max_date_seconds: int, date_range: list[int]
+) -> dict[Any, Any]:
+    always_visible = (
+        date_range[0] == min_date_seconds and date_range[1] == max_date_seconds
+    )
+    return {
+        "placement": "bottom",
+        "always_visible": always_visible,
+        "transform": "secondsToYMD",
+        "style": {
+            "background": AmperePalette.PAGE_ACCENT_COLOR2,
+            "color": AmperePalette.BRAND_TEXT_COLOR_MUTED,
+            "fontSize": "16px",
+            "paddingLeft": "4px",
+            "paddingRight": "4px",
+            "borderRadius": "10px",
+        },
+    }
+
+
+@callback(
     [
         Output("date-slider", "min"),
+        Output("date-slider", "max"),
         Output("date-slider", "value"),
         Output("date-slider", "marks"),
     ],
@@ -236,7 +266,7 @@ def get_downloads_summary(repo_name: str) -> list[dict]:
 )
 def get_downloads_summary_date_ranges(
     df_data: list[dict],
-) -> tuple[int, list[int], dict[Any, dict[str, Any]]]:
+) -> tuple[int, int, list[int], dict[Any, dict[str, Any]]]:
     df = pd.DataFrame(df_data)
     df["download_date"] = pd.to_datetime(df["download_date"], utc=True)
     min_timestamp = df["download_date"].min().timestamp()
@@ -249,14 +279,18 @@ def get_downloads_summary_date_ranges(
         "%Y-%m-%d"
     )
 
-    date_slider_min = min_timestamp
     date_slider_value = [min_timestamp, max_timestamp]
     date_slider_marks = {
         min_timestamp: {"label": min_timestamp_ymd, "style": {"fontSize": 0}},
         max_timestamp: {"label": max_timestamp_ymd, "style": {"fontSize": 0}},
     }
 
-    return date_slider_min, date_slider_value, date_slider_marks
+    return (
+        min_timestamp,
+        max_timestamp,
+        date_slider_value,
+        date_slider_marks,
+    )
 
 
 date_slider_step_seconds = 60 * 60 * 24 * 7
@@ -291,19 +325,6 @@ layout = [
                         id="date-slider",
                         step=date_slider_step_seconds,
                         allowCross=False,
-                        tooltip={
-                            "placement": "bottom",
-                            "always_visible": True,
-                            "transform": "secondsToYMD",
-                            "style": {
-                                "background": AmperePalette.PAGE_ACCENT_COLOR2,
-                                "color": AmperePalette.BRAND_TEXT_COLOR_MUTED,
-                                "fontSize": "16px",
-                                "paddingLeft": "4px",
-                                "paddingRight": "4px",
-                                "borderRadius": "10px",
-                            },
-                        },
                     ),
                     style={"whiteSpace": "nowrap", "paddingLeft": "5%"},
                 ),
