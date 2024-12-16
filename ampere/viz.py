@@ -12,7 +12,7 @@ import plotly.graph_objects as go
 from plotly.graph_objs import Figure
 
 from ampere.common import get_db_con, timeit
-from ampere.styling import ScreenWidth
+from ampere.styling import AmperePalette, ScreenWidth
 
 
 @dataclass(slots=True, frozen=True)
@@ -518,7 +518,13 @@ def viz_summary(
         )
 
     fig.for_each_annotation(
-        lambda a: a.update(text="<b>" + a.text.split("=")[-1] + "</b>", font_size=16)
+        lambda a: a.update(
+            text="<b>" + a.text.split("=")[-1] + "</b>",
+            font_size=18,
+            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
+            font_color="white",
+            borderpad=5,
+        )
     )
 
     fig.for_each_yaxis(

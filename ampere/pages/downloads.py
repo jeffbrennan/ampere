@@ -101,10 +101,20 @@ def viz_area(
         x="download_date",
         y="download_count",
         color="group_value",
-        title=f"<b>{group_name.replace('_', ' ')}</b>",
+        facet_col="group_name",
         template="simple_white",
         category_orders={"group_value": categories},
     )
+    fig.for_each_annotation(
+        lambda a: a.update(
+            text="<b>" + a.text.split("=")[-1].replace("_", " ") + "</b>",
+            font_size=18,
+            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
+            font_color="white",
+            borderpad=5,
+        )
+    )
+
     fig.for_each_yaxis(
         lambda y: y.update(
             title="",
@@ -138,10 +148,7 @@ def viz_area(
         },
         margin=dict(t=50),  # Adjust top margin to avoid overlap with title
     )
-    if len(categories) == 1:
-        fig.update_layout(showlegend=False)
-    else:
-        fig.update_layout(legend_title_text="")
+    fig.update_layout(legend_title_text="")
 
     return fig
 
