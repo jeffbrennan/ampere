@@ -188,9 +188,10 @@ def create_star_network_plot(
         all_repos_text = ", ".join(all_repos)
 
         node_text_list = [
-            user_name,
-            f"followers={followers_count}",
-            f"repos={all_repos_text}",
+            f"<b> {user_name} </b>",
+            "",
+            f"followers: {followers_count}",
+            f"repos: {all_repos_text}",
         ]
 
         node_text = "<br>".join(node_text_list)
@@ -290,13 +291,9 @@ def create_follower_network_plot(
         node_details = follower_details[node]
         node_text_list = [
             "<b>" + node_details.user_name + "</b>",
-            f"followers_count={node_details.followers_count}",
-            f"internal_followers_count={node_details.internal_followers_count}",
-            f"internal_followers_pct={node_details.internal_followers_pct}",
             "",
-            f"following_count={node_details.following_count}",
-            f"internal_following_count={node_details.internal_following_count}",
-            f"internal_following_pct={node_details.internal_following_pct}",
+            f"org followers: {node_details.internal_followers_count}/{node_details.followers_count} ({node_details.internal_followers_pct * 100:.02f}%)",
+            f"org following: {node_details.internal_following_count}/{node_details.following_count} ({node_details.internal_following_pct * 100:.02f}%)",
         ]
 
         internal_followers_clean = format_plot_name_list(node_details.followers)
@@ -306,10 +303,10 @@ def create_follower_network_plot(
             node_text_list += [""]
 
         if internal_followers_clean is not None:
-            node_text_list += [f"followers={internal_followers_clean}"]
+            node_text_list += [f"followers: {internal_followers_clean}"]
 
         if internal_following_clean is not None:
-            node_text_list += [f"following={internal_following_clean}"]
+            node_text_list += [f"following: {internal_following_clean}"]
 
         node_text = "<br>".join(node_text_list)
         node_info.append(
