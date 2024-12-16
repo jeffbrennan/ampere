@@ -31,6 +31,28 @@ def handle_summary_sizes(breakpoint_name: str):
 
 
 @callback(
+    Output("summary-date-slider", "tooltip"),
+    Input("summary-date-slider", "value"),
+)
+def toggle_slider_tooltip_visibility(date_range: list[int]):
+    always_visible_threshold_days = 365 + 225
+    date_range_days = (date_range[1] - date_range[0]) / 60 / 60 / 24
+    return {
+        "placement": "bottom",
+        "always_visible": date_range_days >= always_visible_threshold_days,
+        "transform": "secondsToYMD",
+        "style": {
+            "background": AmperePalette.PAGE_ACCENT_COLOR2,
+            "color": AmperePalette.BRAND_TEXT_COLOR_MUTED,
+            "fontSize": "16px",
+            "paddingLeft": "4px",
+            "paddingRight": "4px",
+            "borderRadius": "10px",
+        },
+    }
+
+
+@callback(
     [
         Output("summary-date-slider", "min"),
         Output("summary-date-slider", "value"),
@@ -45,24 +67,28 @@ def get_summary_date_ranges(
 ) -> tuple[int, list[int], dict[Any, dict[str, Any]]]:
     df = pd.DataFrame(df_data)
     df["metric_date"] = pd.to_datetime(df["metric_date"], utc=True)
-    min_timestamp = df["metric_date"].min().timestamp()
-    max_timestamp = df["metric_date"].max().timestamp()
+    min_date_dt = df["metric_date"].min()
+    min_date_seconds = min_date_dt.timestamp()
 
-    min_timestamp_ymd = datetime.datetime.fromtimestamp(min_timestamp).strftime(
-        "%Y-%m-%d"
-    )
-    max_timestamp_ymd = datetime.datetime.fromtimestamp(max_timestamp).strftime(
-        "%Y-%m-%d"
-    )
+    max_date_dt = df["metric_date"].max()
+    max_date_seconds = max_date_dt.timestamp()
 
-    date_slider_min = min_timestamp
-    date_slider_value = [min_timestamp, max_timestamp]
     date_slider_marks = {
-        min_timestamp: {"label": min_timestamp_ymd, "style": {"fontSize": 0}},
-        max_timestamp: {"label": max_timestamp_ymd, "style": {"fontSize": 0}},
+        min_date_seconds: {
+            "label": min_date_dt.strftime("%Y-%m-%d"),
+            "style": {"fontSize": 0},
+        },
+        max_date_seconds: {
+            "label": max_date_dt.strftime("%Y-%m-%d"),
+            "style": {"fontSize": 0},
+        },
     }
 
-    return date_slider_min, date_slider_value, date_slider_marks
+    return (  # pyright: ignore [reportReturnType]
+        min_date_seconds,
+        [min_date_seconds, max_date_seconds],
+        date_slider_marks,
+    )
 
 
 def get_summary_data() -> list[dict[Any, Any]]:
@@ -128,19 +154,6 @@ layout = [
                         id="summary-date-slider",
                         step=date_slider_step_seconds,
                         allowCross=False,
-                        tooltip={
-                            "placement": "bottom",
-                            "always_visible": True,
-                            "transform": "secondsToYMD",
-                            "style": {
-                                "background": AmperePalette.PAGE_ACCENT_COLOR2,
-                                "color": AmperePalette.BRAND_TEXT_COLOR_MUTED,
-                                "fontSize": "16px",
-                                "paddingLeft": "4px",
-                                "paddingRight": "4px",
-                                "borderRadius": "10px",
-                            },
-                        },
                     ),
                     style={"whiteSpace": "nowrap", "paddingLeft": "5%"},
                 ),
