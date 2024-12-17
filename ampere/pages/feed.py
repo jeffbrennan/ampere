@@ -1,8 +1,9 @@
 import copy
 
 import dash
+import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import Input, Output, callback, dash_table, html, dcc
+from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_db_con
 from ampere.styling import AmpereDTStyle
@@ -156,12 +157,21 @@ def format_feed_table(df: pd.DataFrame) -> pd.DataFrame:
     return df_final
 
 
+@callback(
+    Output("feed-fade", "is_in"),
+    Input("feed-table", "id"),  # dummy input for callback trigger
+)
+def feed_table_fadein(_: str) -> bool:
+    return True
+
+
 def layout():
     raw_df = create_feed_table()
     df = format_feed_table(raw_df)
     feed_style = style_feed_table()
     return [
-        dcc.Loading(
+        dbc.Fade(
+            id="feed-fade",
             children=[
                 html.Br(),
                 html.Br(),
@@ -179,8 +189,7 @@ def layout():
                     **feed_style,
                 ),
             ],
-            delay_hide=400,
-            delay_show=0,
-            fullscreen=True,
+            style={"transition": "opacity 1000ms ease"},
+            is_in=False,
         )
     ]

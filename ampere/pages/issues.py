@@ -1,8 +1,9 @@
 import copy
 
 import dash
+import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import Input, Output, callback, dash_table, dcc, html
+from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_db_con
 from ampere.styling import (
@@ -175,7 +176,10 @@ def summary_title_margin_callback(*args, **kwargs):
 
 @callback(
     Output("summary-table", "style_table"),
-    [Input("summary-table", "style_table"), Input("breakpoints", "widthBreakpoint")],
+    [
+        Input("summary-table", "style_table"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
 )
 def summary_table_margin_callback(*args, **kwargs):
     return handle_table_margins(*args, **kwargs)
@@ -183,7 +187,10 @@ def summary_table_margin_callback(*args, **kwargs):
 
 @callback(
     Output("issues-title", "style"),
-    [Input("issues-title", "style"), Input("breakpoints", "widthBreakpoint")],
+    [
+        Input("issues-title", "style"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
 )
 def issues_title_margin_callback(*args, **kwargs):
     return handle_title_margins(*args, **kwargs)
@@ -191,7 +198,10 @@ def issues_title_margin_callback(*args, **kwargs):
 
 @callback(
     Output("issues-table", "style_table"),
-    [Input("issues-table", "style_table"), Input("breakpoints", "widthBreakpoint")],
+    [
+        Input("issues-table", "style_table"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
 )
 def issues_table_margin_callback(*args, **kwargs):
     return handle_table_margins(*args, **kwargs)
@@ -218,6 +228,14 @@ def style_issues_summary_table(summary_df: pd.DataFrame) -> dict:
     return summary_style
 
 
+@callback(
+    Output("issues-fade", "is_in"),
+    Input("issues-table", "id"),  # dummy input for callback trigger
+)
+def issues_table_fadein(_: str) -> bool:
+    return True
+
+
 def layout():
     cell_padding = [
         dict(
@@ -242,7 +260,8 @@ def layout():
     summary_style = style_issues_summary_table(summary_df)
     summary_style["css"] = cell_padding
     return [
-        dcc.Loading(
+        dbc.Fade(
+            id="issues-fade",
             children=[
                 html.Br(),
                 html.Label("summary", style=table_title_style, id="summary-title"),
@@ -271,8 +290,7 @@ def layout():
                     **issues_style,
                 ),
             ],
-            delay_hide=400,
-            delay_show=0,
-            fullscreen=True,
+            style={"transition": "opacity 1000ms ease"},
+            is_in=False,
         ),
     ]

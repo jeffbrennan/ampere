@@ -1,7 +1,7 @@
 import dash
 import dash_bootstrap_components as dbc
 import dash_breakpoints
-from dash import html
+from dash import Input, Output, callback, dcc, html
 
 from ampere.styling import AmperePalette, ScreenWidth
 
@@ -11,25 +11,65 @@ app = dash.Dash(
     suppress_callback_exceptions=True,
 )
 
+
+@callback(
+    [
+        Output("downloads-link", "style"),
+        Output("feed-link", "style"),
+        Output("issues-link", "style"),
+        Output("network-link", "toggle_style"),
+        Output("about-link", "style"),
+    ],
+    Input("current-url", "pathname"),
+)
+def update_downloads_link_color(pathname: str):
+    output_styles = [
+        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+    ]
+
+    if pathname in ["/", "network"]:
+        return output_styles
+
+    pages = ["downloads", "feed", "issues", "network", "about"]
+    current_page = pathname.removeprefix("/").split("-")[0]
+
+    output_styles[pages.index(current_page)] = {
+        "color": AmperePalette.PAGE_ACCENT_COLOR,
+        "backgroundColor": "white",
+        "borderRadius": "10px",
+    }
+
+    return output_styles
+
+
 navbar = dbc.NavbarSimple(
     children=[
+        dcc.Location(id="current-url", refresh=False),
         dbc.NavItem(
             dbc.NavLink(
-                "downloads",
+                id="downloads-link",
+                children="downloads",
                 href="downloads",
                 style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                class_name="downloads-link",
             )
         ),
         dbc.NavItem(
             dbc.NavLink(
-                "feed",
+                id="feed-link",
+                children="feed",
                 href="feed",
                 style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
             )
         ),
         dbc.NavItem(
             dbc.NavLink(
-                "issues",
+                id="issues-link",
+                children="issues",
                 href="issues",
                 style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
             )
@@ -39,12 +79,15 @@ navbar = dbc.NavbarSimple(
                 dbc.DropdownMenuItem(
                     "stargazers",
                     href="network-stargazers",
-                    style={"color": "black"},
+                    style={"color": AmperePalette.PAGE_ACCENT_COLOR},
                 ),
                 dbc.DropdownMenuItem(
-                    "followers", href="network-followers", style={"color": "black"}
+                    "followers",
+                    href="network-followers",
+                    style={"color": AmperePalette.PAGE_ACCENT_COLOR},
                 ),
             ],
+            id="network-link",
             nav=True,
             in_navbar=True,
             label="networks",
@@ -52,7 +95,8 @@ navbar = dbc.NavbarSimple(
         ),
         dbc.NavItem(
             dbc.NavLink(
-                "about",
+                id="about-link",
+                children="about",
                 href="about",
                 style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
             )

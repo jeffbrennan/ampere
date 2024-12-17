@@ -2,8 +2,9 @@ import datetime
 from copy import deepcopy
 
 import dash
+import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import dash_table, html, dcc
+from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_db_con
 from ampere.styling import AmpereDTStyle
@@ -40,6 +41,14 @@ def create_repo_table() -> pd.DataFrame:
     ).to_df()
 
 
+@callback(
+    Output("about-fade", "is_in"),
+    Input("about-table", "id"),  # dummy input for callback trigger
+)
+def about_table_fadein(_: str) -> bool:
+    return True
+
+
 def layout():
     df = create_repo_table()
     last_updated = get_last_updated()
@@ -61,7 +70,8 @@ def layout():
     ]
 
     return [
-        dcc.Loading(
+        dbc.Fade(
+            id="about-fade",
             children=[
                 html.Br(),
                 dash_table.DataTable(
@@ -74,7 +84,7 @@ def layout():
                         )
                         for x in df.columns
                     ],
-                    id="tbl",
+                    id="about-table",
                     **about_style,
                 ),
                 html.Hr(),
@@ -97,8 +107,7 @@ def layout():
                 ),
                 html.P(f"last updated: {last_updated_str}"),
             ],
-            delay_hide=400,
-            delay_show=0,
-            fullscreen=True,
+            style={"transition": "opacity 1000ms ease"},
+            is_in=False,
         )
     ]

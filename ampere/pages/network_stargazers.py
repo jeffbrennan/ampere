@@ -1,4 +1,5 @@
 import dash
+import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, dcc, html
 from plotly.graph_objects import Figure
@@ -31,6 +32,17 @@ def create_stargazers_table() -> pd.DataFrame:
     ).to_df()
 
 
+@callback(
+    [
+        Output("network-stargazer-graph", "figure"),
+        Output("network-stargazer-graph-fade", "is_in"),
+    ],
+    Input("network-stargazer-load-interval", "n_intervals"),
+)
+def show_summary_graph(_: int) -> tuple[Figure, bool]:
+    return viz_star_network(), True
+
+
 def layout():
     df = create_stargazers_table()
     return [
@@ -41,37 +53,34 @@ def layout():
             max_intervals=0,
             interval=1,
         ),
-        dcc.Loading(
-            dcc.Graph(
-                id="network-stargazer-graph",
-                style={
-                    "height": "95vh",
-                    "marginLeft": "0vw",
-                    "marginRight": "0vw",
-                    "width": "100%",
-                },
-                responsive=True,
-            )
-        ),
-        dash_table.DataTable(
-            df.to_dict("records"),
-            columns=[
-                (
-                    {"id": x, "name": "", "presentation": "markdown"}
-                    if x == "user_name"
-                    else {"id": x, "name": x}
-                )
-                for x in df.columns
+        dbc.Fade(
+            id="network-stargazer-graph-fade",
+            children=[
+                dcc.Graph(
+                    id="network-stargazer-graph",
+                    style={
+                        "height": "95vh",
+                        "marginLeft": "0vw",
+                        "marginRight": "0vw",
+                        "width": "100%",
+                    },
+                    responsive=True,
+                ),
+                dash_table.DataTable(
+                    df.to_dict("records"),
+                    columns=[
+                        (
+                            {"id": x, "name": "", "presentation": "markdown"}
+                            if x == "user_name"
+                            else {"id": x, "name": x}
+                        )
+                        for x in df.columns
+                    ],
+                    id="tbl",
+                    **AmpereDTStyle,
+                ),
             ],
-            id="tbl",
-            **AmpereDTStyle,
+            style={"transition": "opacity 1000ms ease"},
+            is_in=False,
         ),
     ]
-
-
-@callback(
-    Output("network-stargazer-graph", "figure"),
-    Input("network-stargazer-load-interval", "n_intervals"),
-)
-def show_summary_graph(_: int) -> Figure:
-    return viz_star_network()

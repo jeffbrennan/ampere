@@ -12,7 +12,7 @@ import plotly.graph_objects as go
 from plotly.graph_objs import Figure
 
 from ampere.common import get_db_con, timeit
-from ampere.styling import ScreenWidth
+from ampere.styling import AmperePalette, ScreenWidth
 
 
 @dataclass(slots=True, frozen=True)
@@ -154,14 +154,14 @@ def create_star_network_plot(
     edge_x = []
     edge_y = []
     for edge in graph.edges():
+        if edge[0] in repos:
+            continue
+
         x0, y0 = graph.nodes[edge[0]]["pos"]
         x1, y1 = graph.nodes[edge[1]]["pos"]
-        edge_x.append(x0)
-        edge_x.append(x1)
-        edge_x.append(None)
-        edge_y.append(y0)
-        edge_y.append(y1)
-        edge_y.append(None)
+
+        edge_x.extend([x0, x1, None])
+        edge_y.extend([y0, y1, None])
 
     edge_trace = go.Scatter(
         x=edge_x,
@@ -188,9 +188,10 @@ def create_star_network_plot(
         all_repos_text = ", ".join(all_repos)
 
         node_text_list = [
-            user_name,
-            f"followers={followers_count}",
-            f"repos={all_repos_text}",
+            f"<b> {user_name} </b>",
+            "",
+            f"followers: {followers_count}",
+            f"repos: {all_repos_text}",
         ]
 
         node_text = "<br>".join(node_text_list)
@@ -290,13 +291,9 @@ def create_follower_network_plot(
         node_details = follower_details[node]
         node_text_list = [
             "<b>" + node_details.user_name + "</b>",
-            f"followers_count={node_details.followers_count}",
-            f"internal_followers_count={node_details.internal_followers_count}",
-            f"internal_followers_pct={node_details.internal_followers_pct}",
             "",
-            f"following_count={node_details.following_count}",
-            f"internal_following_count={node_details.internal_following_count}",
-            f"internal_following_pct={node_details.internal_following_pct}",
+            f"org followers: {node_details.internal_followers_count}/{node_details.followers_count} ({node_details.internal_followers_pct * 100:.02f}%)",
+            f"org following: {node_details.internal_following_count}/{node_details.following_count} ({node_details.internal_following_pct * 100:.02f}%)",
         ]
 
         internal_followers_clean = format_plot_name_list(node_details.followers)
@@ -306,10 +303,10 @@ def create_follower_network_plot(
             node_text_list += [""]
 
         if internal_followers_clean is not None:
-            node_text_list += [f"followers={internal_followers_clean}"]
+            node_text_list += [f"followers: {internal_followers_clean}"]
 
         if internal_following_clean is not None:
-            node_text_list += [f"following={internal_following_clean}"]
+            node_text_list += [f"following: {internal_following_clean}"]
 
         node_text = "<br>".join(node_text_list)
         node_info.append(
@@ -521,7 +518,13 @@ def viz_summary(
         )
 
     fig.for_each_annotation(
-        lambda a: a.update(text="<b>" + a.text.split("=")[-1] + "</b>", font_size=16)
+        lambda a: a.update(
+            text="<b>" + a.text.split("=")[-1] + "</b>",
+            font_size=18,
+            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
+            font_color="white",
+            borderpad=5,
+        )
     )
 
     fig.for_each_yaxis(

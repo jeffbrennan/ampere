@@ -35,7 +35,7 @@ def toggle_slider_tooltip_visibility(
         "transform": "secondsToYMD",
         "style": {
             "background": AmperePalette.PAGE_ACCENT_COLOR2,
-            "color": AmperePalette.BRAND_TEXT_COLOR_MUTED,
+            "color": AmperePalette.BRAND_TEXT_COLOR,
             "fontSize": "16px",
             "paddingLeft": "4px",
             "paddingRight": "4px",
@@ -108,6 +108,7 @@ def get_summary_data() -> list[dict[Any, Any]]:
         Output("summary-graph", "figure"),
         Output("summary-graph", "config"),
         Output("summary-graph", "style"),
+        Output("summary-graph-fade", "is_in"),
     ],
     [
         Input("summary-df", "data"),
@@ -119,7 +120,7 @@ def show_summary_graph(
     df_data: list[dict[Any, Any]],
     date_range,
     breakpoint_name: str,
-) -> tuple[Figure, dict[str, bool], dict]:
+) -> tuple[Figure, dict[str, bool], dict, bool]:
     df = pd.DataFrame(df_data)
     filter_date_min = datetime.datetime.fromtimestamp(
         date_range[0], tz=pytz.timezone("America/New_York")
@@ -135,7 +136,7 @@ def show_summary_graph(
     fig = viz_summary(df_filtered, screen_width=ScreenWidth(breakpoint_name))
 
     config = {"displayModeBar": breakpoint_name != "sm"}
-    return fig, config, {}
+    return fig, config, {}, True
 
 
 date_slider_step_seconds = 60 * 60 * 24 * 7
@@ -162,8 +163,13 @@ layout = [
             "top": "60px",
         },
     ),
-    dcc.Graph(
-        id="summary-graph",
-        style={"visibility": "hidden"},
+    dbc.Fade(
+        id="summary-graph-fade",
+        children=dcc.Graph(
+            id="summary-graph",
+            style={"visibility": "hidden"},
+        ),
+        style={"transition": "opacity 1000ms ease"},
+        is_in=False,
     ),
 ]

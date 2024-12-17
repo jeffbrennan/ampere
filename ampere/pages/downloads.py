@@ -101,10 +101,24 @@ def viz_area(
         x="download_date",
         y="download_count",
         color="group_value",
-        title=f"<b>{group_name.replace('_', ' ')}</b>",
+        facet_col="group_name",
         template="simple_white",
         category_orders={"group_value": categories},
     )
+    fig.for_each_annotation(
+        lambda a: a.update(
+            text="<b>"
+            + a.text.split("=")[-1]
+            .replace("_", " ")
+            .replace("system release", "cloud platform")
+            + "</b>",
+            font_size=18,
+            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
+            font_color="white",
+            borderpad=5,
+        )
+    )
+
     fig.for_each_yaxis(
         lambda y: y.update(
             title="",
@@ -127,21 +141,18 @@ def viz_area(
         )
     )
     fig.update_yaxes(matches=None, showticklabels=True)
-    fig.update_layout(margin=dict(l=0, r=0))
 
     fig.update_layout(
         title={
-            "y": 0.95,  # Adjust this value to move the title closer or further
-            "x": 0.5,  # Center the title horizontally
+            "y": 0.95,
+            "x": 0.5,
             "xanchor": "center",
             "yanchor": "top",
         },
-        margin=dict(t=50),  # Adjust top margin to avoid overlap with title
+        margin=dict(t=50, l=0, r=0),
+        legend=dict(title=None, itemsizing="constant", font=dict(size=14)),
+        legend_title_text="",
     )
-    if len(categories) == 1:
-        fig.update_layout(showlegend=False)
-    else:
-        fig.update_layout(legend_title_text="")
 
     return fig
 
@@ -156,6 +167,7 @@ def get_valid_repos() -> list[str]:
     [
         Output("downloads-overall", "figure"),
         Output("downloads-overall", "style"),
+        Output("downloads-overall-fade", "is_in"),
     ],
     [
         Input("downloads-df", "data"),
@@ -165,10 +177,10 @@ def get_valid_repos() -> list[str]:
 )
 def viz_downloads_overall(
     df_data: list[dict], breakpoint_name: str, date_range: list[int]
-) -> tuple[Figure, dict]:
+) -> tuple[Figure, dict, bool]:
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "overall", date_range)
-    return fig, {}
+    return fig, {}, True
 
 
 @callback(
@@ -258,7 +270,7 @@ def toggle_slider_tooltip_visibility(
         "transform": "secondsToYMD",
         "style": {
             "background": AmperePalette.PAGE_ACCENT_COLOR2,
-            "color": AmperePalette.BRAND_TEXT_COLOR_MUTED,
+            "color": AmperePalette.BRAND_TEXT_COLOR,
             "fontSize": "16px",
             "paddingLeft": "4px",
             "paddingRight": "4px",
@@ -319,6 +331,7 @@ layout = [
                     placeholder="quinn",
                     value="quinn",
                     clearable=False,
+                    searchable=False,
                     id="repo-selection",
                     style={
                         "background": AmperePalette.PAGE_ACCENT_COLOR2,
@@ -326,8 +339,9 @@ layout = [
                         "borderRadius": "10px",
                         "fontSize": "20px",
                         "marginRight": "10%",
-                        "paddingTop": "2px",
+                        "marginTop": "2%",
                         "paddingBottom": "2px",
+                        "paddingTop": "2px",
                     },
                 ),
                 width=1,
@@ -351,8 +365,15 @@ layout = [
             "top": "60px",
         },
     ),
-    dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
-    dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
-    dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
-    dcc.Graph("downloads-cloud", style={"visibility": "hidden"}),
+    dbc.Fade(
+        id="downloads-overall-fade",
+        children=[
+            dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
+            dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
+            dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
+            dcc.Graph("downloads-cloud", style={"visibility": "hidden"}),
+        ],
+        style={"transition": "opacity 1000ms ease"},
+        is_in=False,
+    ),
 ]
