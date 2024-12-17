@@ -154,14 +154,14 @@ def create_star_network_plot(
     edge_x = []
     edge_y = []
     for edge in graph.edges():
+        if edge[0] in repos:
+            continue
+
         x0, y0 = graph.nodes[edge[0]]["pos"]
         x1, y1 = graph.nodes[edge[1]]["pos"]
-        edge_x.append(x0)
-        edge_x.append(x1)
-        edge_x.append(None)
-        edge_y.append(y0)
-        edge_y.append(y1)
-        edge_y.append(None)
+
+        edge_x.extend([x0, x1, None])
+        edge_y.extend([y0, y1, None])
 
     edge_trace = go.Scatter(
         x=edge_x,
