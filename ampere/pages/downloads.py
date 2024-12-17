@@ -141,18 +141,18 @@ def viz_area(
         )
     )
     fig.update_yaxes(matches=None, showticklabels=True)
-    fig.update_layout(margin=dict(l=0, r=0))
 
     fig.update_layout(
         title={
-            "y": 0.95,  # Adjust this value to move the title closer or further
-            "x": 0.5,  # Center the title horizontally
+            "y": 0.95,
+            "x": 0.5,
             "xanchor": "center",
             "yanchor": "top",
         },
-        margin=dict(t=50),  # Adjust top margin to avoid overlap with title
+        margin=dict(t=50, l=0, r=0),
+        legend=dict(title=None, itemsizing="constant", font=dict(size=14)),
+        legend_title_text="",
     )
-    fig.update_layout(legend_title_text="")
 
     return fig
 
