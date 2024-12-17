@@ -331,6 +331,7 @@ layout = [
                     placeholder="quinn",
                     value="quinn",
                     clearable=False,
+                    searchable=False,
                     id="repo-selection",
                     style={
                         "background": AmperePalette.PAGE_ACCENT_COLOR2,
@@ -338,8 +339,9 @@ layout = [
                         "borderRadius": "10px",
                         "fontSize": "20px",
                         "marginRight": "10%",
-                        "paddingTop": "2px",
+                        "marginTop": "2%",
                         "paddingBottom": "2px",
+                        "paddingTop": "2px",
                     },
                 ),
                 width=1,

@@ -27,3 +27,7 @@
 .Select-value-label {
   color: #FFFFFF !important;
 }
+
+.Select.is-focused .Select-control {
+    box-shadow: none !important;
+}
