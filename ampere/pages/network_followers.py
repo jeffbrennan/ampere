@@ -43,31 +43,33 @@ def layout():
         ),
         dbc.Fade(
             id="network-follower-graph-fade",
-            children=dcc.Graph(
-                id="network-follower-graph",
-                style={
-                    "height": "95vh",
-                    "marginLeft": "0vw",
-                    "marginRight": "0vw",
-                    "width": "100%",
-                },
-                responsive=True,
-            ),
+            children=[
+                dcc.Graph(
+                    id="network-follower-graph",
+                    style={
+                        "height": "95vh",
+                        "marginLeft": "0vw",
+                        "marginRight": "0vw",
+                        "width": "100%",
+                    },
+                    responsive=True,
+                ),
+                dash_table.DataTable(
+                    df.to_dict("records"),
+                    columns=[
+                        (
+                            {"id": x, "name": "", "presentation": "markdown"}
+                            if x == "user_name"
+                            else {"id": x, "name": x}
+                        )
+                        for x in df.columns
+                    ],
+                    id="tbl",
+                    **AmpereDTStyle,
+                ),
+            ],
             style={"transition": "opacity 1000ms ease"},
             is_in=False,
-        ),
-        dash_table.DataTable(
-            df.to_dict("records"),
-            columns=[
-                (
-                    {"id": x, "name": "", "presentation": "markdown"}
-                    if x == "user_name"
-                    else {"id": x, "name": x}
-                )
-                for x in df.columns
-            ],
-            id="tbl",
-            **AmpereDTStyle,
         ),
     ]
 
