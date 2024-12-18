@@ -1,9 +1,17 @@
 models:
+  - name: stg_downloads
+    config:
+      meta:
+        dagster:
+          group: bigquery_daily
   - name: stg_downloads_inc
     config:
       contract:
         enforced: true
       on_schema_change: append_new_columns
+      meta:
+        dagster:
+          group: bigquery_daily
     columns:
       - name: project
         data_type: string
