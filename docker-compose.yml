@@ -1,34 +1,20 @@
 services:
-  reverse_proxy:
-    image: traefik:3.1.2
-    command: 
-      - "--api.insecure=true"
-      - "--providers.docker"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entryPoints.websecure.address=:443"
-      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-      - "--certificatesresolvers.myresolver.acme.email=${ADMIN_EMAIL}"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - letsencrypt:/letsencrypt
-      - /var/run/docker.sock:/var/run/docker.sock
   ampere_backend:
     build:
       context: .
       dockerfile: Dockerfile-backend
     labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.ampere.rule=Host(`${AMPERE_BACKEND}`)"
-        - "traefik.http.routers.ampere.entrypoints=websecure"
-        - "traefik.http.routers.ampere.tls.certresolver=myresolver"
+      - "traefik.http.routers.ampere_backend.rule=Host(`${AMPERE_BACKEND}`)"
+      - "traefik.enable=true"
+      - "traefik.http.routers.ampere_backend.entrypoints=websecure"
+      - "traefik.http.routers.ampere_backend.tls.certresolver=myresolver"
+
+      - "traefik.http.routers.ampere_backend.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=${BACKEND_ADMIN}:${BACKEND_HASH}"
     volumes:
       - ampere_data:/ampere/data
+    networks:
+    - jb-proxy
 
 volumes:
   letsencrypt:
@@ -38,3 +24,6 @@ volumes:
         type: 'none'
         o: 'bind'
         device: 'data'
+networks:
+  jb-proxy:
+    external: true
