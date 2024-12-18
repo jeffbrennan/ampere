@@ -8,10 +8,10 @@ from google.cloud import bigquery
 
 from ampere.common import (
     DeltaWriteConfig,
-    get_model_primary_key,
-    write_delta_table,
     get_current_time,
     get_db_con,
+    get_model_primary_key,
+    write_delta_table,
 )
 from ampere.models import PyPIDownload, PyPIQueryConfig
 
@@ -101,7 +101,7 @@ def refresh_pypi_downloads_from_bigquery(
 
 
 def get_pypi_download_query_dates() -> list[PyPIQueryConfig]:
-    max_query_days = 30
+    max_query_days = 45
 
     con = get_db_con()
 
