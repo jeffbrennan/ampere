@@ -11,3 +11,5 @@ tmp*
 *.DS_Store
 *.pyc
 *.sh
+
+.config
