@@ -1207,17 +1207,17 @@ files = [
 
 [[package]]
 name = "deltalake"
-version = "0.19.2"
+version = "0.22.3"
 description = "Native Delta Lake Python binding based on delta-rs with Pandas integration"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 files = [
-    {file = "deltalake-0.19.2-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:471add9cbde0b3c6e4d0fa4f752fa0fbd661039dc59c3c0c986fd40beb9f6958"},
-    {file = "deltalake-0.19.2-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:2ef9abe0a5b33dff307eb43051d0e24bdf35e029decf1467ff2d9a1c103c1672"},
-    {file = "deltalake-0.19.2-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7ba87501b8d4b589caf256b7676f5cf77494aa37a2e7dc82771ceb3ec032e02f"},
-    {file = "deltalake-0.19.2-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:972d1d0a800bc8d1111a3fd0db242ed8406e2a2b4ce0777111d483eccca71c2b"},
-    {file = "deltalake-0.19.2-cp38-abi3-win_amd64.whl", hash = "sha256:badab7d9aa1797a77b941b37894407d9a43719e46c5f0c91ee0ffacd182bb6c1"},
-    {file = "deltalake-0.19.2.tar.gz", hash = "sha256:551026f6f50d265102f5698d389cbbe9163a0de0618bee1380aeed667b5a28cb"},
+    {file = "deltalake-0.22.3-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:996b422432abf978aae1e39fe28a95df12fba6d057e4d1ba64b571f5a3f27576"},
+    {file = "deltalake-0.22.3-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:bedb0cc865bcaaa20be4d7989ea46063e042b443cd0e07b71f4e5b9dfad27457"},
+    {file = "deltalake-0.22.3-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1a80c51f4b44872a63dea2d6d544db07ec24cf359397c0cd25f71430088229af"},
+    {file = "deltalake-0.22.3-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:636c657ac0a6f439c4f6a180f43f4d521e91ced8a8041cb69001de0e566518b9"},
+    {file = "deltalake-0.22.3-cp39-abi3-win_amd64.whl", hash = "sha256:65d9b477ff6e7ae2333da86d268551b3c7ff6654ba65f1c4900670f8ad6fba2b"},
+    {file = "deltalake-0.22.3.tar.gz", hash = "sha256:5e753a000a4710b0e2a3c3793fd5383599c7a7d4fb86846ed2513e8ca41f2d9a"},
 ]
 
 [package.dependencies]
@@ -6272,4 +6272,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11, <3.13"
-content-hash = "826cd9c7136fb621a4723cdd11a76125ffd39805742d0687e7ccf7b4a29b0f72"
+content-hash = "4541b43e1f282831293193a2347e1ef27c11d916ab220671127122b483362c48"
