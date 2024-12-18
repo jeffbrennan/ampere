@@ -70,7 +70,3 @@ RUN dbt deps --profiles-dir .
 
 # DAGSTER ------
 ENV DAGSTER_HOME=/ampere/data/dagster
-
-EXPOSE 3000
-
-ENTRYPOINT ["dagster-webserver", "-h", "0.0.0.0", "-p", "3000"]
