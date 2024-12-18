@@ -157,17 +157,6 @@ class Follower(SQLModel):
     retrieved_at: datetime.datetime
 
 
-# https://pypistats.org/api
-# class PyPIDownload(SQLModel):
-#     __tablename__ = "pypi_downloads"  # pyright: ignore [reportAssignmentType]
-#     package: str = Field(primary_key=True, foreign_key="repo.repo_name")
-#     type: str = Field(primary_key=True)
-#     category: str = Field(primary_key=True)
-#     date: str = Field(primary_key=True)
-#     downloads: int
-#     retrieved_at: datetime.datetime
-
-
 class PyPIDownload(SQLModel):
     __tablename__ = "pypi_downloads"  # pyright: ignore [reportAssignmentType]
     project: str = Field(primary_key=True, foreign_key="repo.repo_name")
