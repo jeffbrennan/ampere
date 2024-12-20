@@ -3,6 +3,7 @@ import json
 import os
 import time
 from dataclasses import dataclass
+from enum import StrEnum, auto
 from functools import wraps
 from pathlib import Path
 from typing import Callable, Optional
@@ -10,6 +11,7 @@ from typing import Callable, Optional
 import dotenv
 import duckdb
 import pandas as pd
+import polars as pl
 from deltalake import DeltaTable, write_deltalake
 from duckdb import DuckDBPyConnection
 from sqlmodel.main import SQLModelMetaclass
@@ -28,6 +30,13 @@ class DeltaWriteConfig:
     table_dir: str
     table_name: str
     pks: list[str]
+
+
+class DeltaTableWriteMode(StrEnum):
+    MERGE = auto()
+    APPEND = auto()
+    OVERWRITE = auto()
+    OVERWRITE_WITH_SCHEMA = auto()
 
 
 def format_list_sql_query(input_list: list[str]) -> str:
@@ -58,28 +67,46 @@ def get_token(secret_name: str) -> str:
 
 
 def get_current_time() -> datetime.datetime:
-    current_time = datetime.datetime.now()
-    return datetime.datetime.strptime(
-        current_time.isoformat(timespec="seconds"), "%Y-%m-%dT%H:%M:%S"
-    )
+    return datetime.datetime.now(datetime.timezone.utc)
 
 
 def write_delta_table(
-    records: list[SQLModelType],
+    records: list[SQLModelType] | pd.DataFrame | pl.DataFrame,
     table_dir: str,
     table_name: str,
     pks: list[str],
     cleanup: bool = True,
+    mode: DeltaTableWriteMode = DeltaTableWriteMode.MERGE,
 ) -> None:
     data_dir = Path(__file__).parents[1] / "data" / table_dir
     table_path = data_dir / table_name
+    if isinstance(records, pd.DataFrame):
+        df = records
+    elif isinstance(records, pl.DataFrame):
+        df = records.to_pandas(use_pyarrow_extension_array=True)
+    else:
+        df = pd.DataFrame.from_records([i.model_dump() for i in records])
 
-    df = pd.DataFrame.from_records([i.model_dump() for i in records])
     delta_log_dir = table_path / "_delta_log"
     print(f"writing {len(records)} to {table_path}...")
     if not delta_log_dir.exists():
         table_path.mkdir(exist_ok=True, parents=True)
         write_deltalake(table_path, df, mode="error")
+        return
+
+    if mode == DeltaTableWriteMode.APPEND:
+        write_deltalake(table_path, df, mode="append")
+        print("append complete")
+        return
+
+    elif mode == DeltaTableWriteMode.OVERWRITE:
+        write_deltalake(table_path, df, mode="overwrite")
+        print("overwrite complete")
+        return
+
+    elif mode == DeltaTableWriteMode.OVERWRITE_WITH_SCHEMA:
+        write_deltalake(table_path, df, mode="overwrite", schema_mode="overwrite")
+        print("overwrite (including table schema) complete")
         return
 
     delta_table = DeltaTable(table_path)
