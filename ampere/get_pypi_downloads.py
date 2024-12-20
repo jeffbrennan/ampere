@@ -171,12 +171,32 @@ def get_repos_with_releases() -> list[str]:
 
 
 def get_backfill_queries(
-    repo: str, min_date: datetime.datetime, max_days_per_chunk: int = 15
+    repo: str,
+    min_date: datetime.datetime,
+    max_date: Optional[datetime.datetime] = None,
+    max_days_per_chunk: int = 15,
 ) -> list[PyPIQueryConfig]:
-    n_days_to_fill = get_current_time() - min_date.replace(tzinfo=None)
-    chunks = n_days_to_fill.days // max_days_per_chunk + 1
+    max_date_final = max_date
+
+    if max_date_final is None:
+        n_days_to_fill = (get_current_time() - min_date).days
+    else:
+        n_days_to_fill = (max_date_final - min_date).days
 
     queries = []
+    if n_days_to_fill < max_days_per_chunk:
+        max_date = min_date + datetime.timedelta(days=n_days_to_fill)
+        queries.append(
+            PyPIQueryConfig(
+                repo=repo,
+                min_date=datetime.datetime.strftime(min_date, "%Y-%m-%d"),
+                max_date=datetime.datetime.strftime(max_date, "%Y-%m-%d"),
+                retrieved_at=get_current_time(),
+            )
+        )
+        return queries
+
+    chunks = n_days_to_fill // max_days_per_chunk + 1
     for _ in range(1, chunks):
         max_date = min_date + datetime.timedelta(days=max_days_per_chunk)
         queries.append(
@@ -189,14 +209,19 @@ def get_backfill_queries(
         )
         min_date = max_date
 
-    yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
-    max_date = datetime.datetime.strftime(yesterday, "%Y-%m-%d")
+    if max_date_final is not None:
+        return queries
 
+    yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
+    if max_date is not None and max_date > yesterday:
+        return queries
+
+    max_date = datetime.datetime.strftime(yesterday, "%Y-%m-%d")  # type: ignore
     queries.append(
         PyPIQueryConfig(
             repo=repo,
             min_date=datetime.datetime.strftime(min_date, "%Y-%m-%d"),
-            max_date=max_date,
+            max_date=max_date,  # type: ignore
             retrieved_at=get_current_time(),
         )
     )
@@ -204,9 +229,13 @@ def get_backfill_queries(
 
 
 def add_backfill_to_table(
-    repo: str, min_date: datetime.datetime, max_days_per_chunk: int, dry_run: bool
+    repo: str,
+    min_date: datetime.datetime,
+    max_date: Optional[datetime.datetime],
+    max_days_per_chunk: int,
+    dry_run: bool,
 ):
-    queries = get_backfill_queries(repo, min_date, max_days_per_chunk)
+    queries = get_backfill_queries(repo, min_date, max_date, max_days_per_chunk)
 
     print(f"backfilling {repo} {'-' * 20}")
     for query in queries:
