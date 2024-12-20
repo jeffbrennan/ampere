@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from google.cloud import bigquery
 
 from ampere.common import (
+    DeltaTableWriteMode,
     DeltaWriteConfig,
     get_current_time,
     get_db_con,
@@ -89,6 +90,7 @@ def refresh_pypi_downloads_from_bigquery(
         write_config.table_dir,
         write_config.table_name,
         write_config.pks,
+        mode=DeltaTableWriteMode.APPEND, # less resource intensive than merge
     )
 
     record_pypi_query(query_config)
