@@ -7,3 +7,7 @@ ampere:
       extensions:
         - delta
       threads: 8
+      settings:
+        memory_limit: "4GB"
+        temp_directory: "/tmp/duckdb_swap"
+        max_temp_directory_size: "100GB"
