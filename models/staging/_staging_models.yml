@@ -1,9 +1,4 @@
 models:
-  - name: stg_downloads
-    config:
-      meta:
-        dagster:
-          group: bigquery_daily
   - name: stg_downloads_inc
     config:
       contract:
