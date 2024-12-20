@@ -51,7 +51,8 @@ def get_pypi_downloads_from_bigquery(
             coalesce(details.distro.version, 'unknown') as `system_distro_version`,
             coalesce(details.system.name, 'unknown')    as `system_name`,
             coalesce(details.system.release, 'unknown') as `system_release`,
-            count(*)                                    as download_count
+            count(*)                                    as download_count,
+            current_timestamp()                         as retrieved_at
         from `bigquery-public-data.pypi.file_downloads`
         where 
             TIMESTAMP_TRUNC(timestamp, day) >= timestamp ('{config.min_date}') 
@@ -62,7 +63,7 @@ def get_pypi_downloads_from_bigquery(
 
     print(cmd)
     if dry_run:
-        return
+        return None
 
     client = bigquery.Client()
     query_job = client.query_and_wait(cmd)
@@ -72,14 +73,7 @@ def get_pypi_downloads_from_bigquery(
     elapsed_time = time.time() - start_time
     print(f"query finished in {elapsed_time:.2f} seconds")
 
-    record_pypi_query(config)
     return results
-
-
-def parse_pypi_downloads(results: pd.DataFrame) -> list[PyPIDownload]:
-    results["retrieved_at"] = get_current_time()
-    parsed_results = [PyPIDownload(**row) for row in results.to_dict(orient="records")]
-    return parsed_results
 
 
 def refresh_pypi_downloads_from_bigquery(
@@ -90,14 +84,15 @@ def refresh_pypi_downloads_from_bigquery(
         print("no results to write!")
         return 0
 
-    parsed_results = parse_pypi_downloads(results)
     write_delta_table(
-        parsed_results,
+        results,
         write_config.table_dir,
         write_config.table_name,
         write_config.pks,
     )
-    return len(parsed_results)
+
+    record_pypi_query(query_config)
+    return len(results)
 
 
 def get_pypi_download_query_dates() -> list[PyPIQueryConfig]:
