@@ -4,6 +4,9 @@ models:
       contract:
         enforced: true
       on_schema_change: append_new_columns
+      meta:
+        dagster:
+          group: bigquery_daily
     constraints:
       - type: primary_key
         columns: [repo, download_timestamp, group_name, group_value]
@@ -25,6 +28,9 @@ models:
       contract:
         enforced: true
       on_schema_change: append_new_columns
+      meta:
+        dagster:
+          group: bigquery_daily
     constraints:
       - type: primary_key
         columns: [repo, download_date, group_name, group_value]
@@ -46,6 +52,9 @@ models:
       contract:
         enforced: true
       on_schema_change: append_new_columns
+      meta:
+        dagster:
+          group: bigquery_daily
     constraints:
       - type: primary_key
         columns: [repo, download_date, group_name, group_value]

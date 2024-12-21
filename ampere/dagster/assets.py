@@ -199,7 +199,7 @@ def dagster_get_followers(context: AssetExecutionContext) -> None:
     context.add_output_metadata({"n_records": n})
 
 
-@asset(compute_kind="python", key=["pypi_downloads"])
+@asset(compute_kind="python", key=["pypi_downloads"], group_name="bigquery_daily")
 def dagster_get_pypi_downloads(context: AssetExecutionContext) -> None:
     records_added = refresh_all_pypi_downloads(dry_run=False)
     context.add_output_metadata({"n_records": records_added})

@@ -7,11 +7,12 @@ from dotenv import load_dotenv
 from google.cloud import bigquery
 
 from ampere.common import (
+    DeltaTableWriteMode,
     DeltaWriteConfig,
-    get_model_primary_key,
-    write_delta_table,
     get_current_time,
     get_db_con,
+    get_model_primary_key,
+    write_delta_table,
 )
 from ampere.models import PyPIDownload, PyPIQueryConfig
 
@@ -51,7 +52,8 @@ def get_pypi_downloads_from_bigquery(
             coalesce(details.distro.version, 'unknown') as `system_distro_version`,
             coalesce(details.system.name, 'unknown')    as `system_name`,
             coalesce(details.system.release, 'unknown') as `system_release`,
-            count(*)                                    as download_count
+            count(*)                                    as download_count,
+            current_timestamp()                         as retrieved_at
         from `bigquery-public-data.pypi.file_downloads`
         where 
             TIMESTAMP_TRUNC(timestamp, day) >= timestamp ('{config.min_date}') 
@@ -62,7 +64,7 @@ def get_pypi_downloads_from_bigquery(
 
     print(cmd)
     if dry_run:
-        return
+        return None
 
     client = bigquery.Client()
     query_job = client.query_and_wait(cmd)
@@ -72,14 +74,7 @@ def get_pypi_downloads_from_bigquery(
     elapsed_time = time.time() - start_time
     print(f"query finished in {elapsed_time:.2f} seconds")
 
-    record_pypi_query(config)
     return results
-
-
-def parse_pypi_downloads(results: pd.DataFrame) -> list[PyPIDownload]:
-    results["retrieved_at"] = get_current_time()
-    parsed_results = [PyPIDownload(**row) for row in results.to_dict(orient="records")]
-    return parsed_results
 
 
 def refresh_pypi_downloads_from_bigquery(
@@ -90,18 +85,20 @@ def refresh_pypi_downloads_from_bigquery(
         print("no results to write!")
         return 0
 
-    parsed_results = parse_pypi_downloads(results)
     write_delta_table(
-        parsed_results,
+        results,
         write_config.table_dir,
         write_config.table_name,
         write_config.pks,
+        mode=DeltaTableWriteMode.APPEND, # less resource intensive than merge
     )
-    return len(parsed_results)
+
+    record_pypi_query(query_config)
+    return len(results)
 
 
 def get_pypi_download_query_dates() -> list[PyPIQueryConfig]:
-    max_query_days = 30
+    max_query_days = 45
 
     con = get_db_con()
 
@@ -175,12 +172,33 @@ def get_repos_with_releases() -> list[str]:
     return [i[0] for i in records]
 
 
-def get_backfill_queries(repo: str, min_date: datetime.datetime) -> list[PyPIQueryConfig]:
-    n_days_to_fill = get_current_time() - min_date.replace(tzinfo=None)
-    max_days_per_chunk = 90
-    chunks = n_days_to_fill.days // max_days_per_chunk + 1
+def get_backfill_queries(
+    repo: str,
+    min_date: datetime.datetime,
+    max_date: Optional[datetime.datetime] = None,
+    max_days_per_chunk: int = 15,
+) -> list[PyPIQueryConfig]:
+    max_date_final = max_date
+
+    if max_date_final is None:
+        n_days_to_fill = (get_current_time() - min_date).days
+    else:
+        n_days_to_fill = (max_date_final - min_date).days
 
     queries = []
+    if n_days_to_fill < max_days_per_chunk:
+        max_date = min_date + datetime.timedelta(days=n_days_to_fill)
+        queries.append(
+            PyPIQueryConfig(
+                repo=repo,
+                min_date=datetime.datetime.strftime(min_date, "%Y-%m-%d"),
+                max_date=datetime.datetime.strftime(max_date, "%Y-%m-%d"),
+                retrieved_at=get_current_time(),
+            )
+        )
+        return queries
+
+    chunks = n_days_to_fill // max_days_per_chunk + 1
     for _ in range(1, chunks):
         max_date = min_date + datetime.timedelta(days=max_days_per_chunk)
         queries.append(
@@ -193,22 +211,33 @@ def get_backfill_queries(repo: str, min_date: datetime.datetime) -> list[PyPIQue
         )
         min_date = max_date
 
-    yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
-    max_date = datetime.datetime.strftime(yesterday, "%Y-%m-%d")
+    if max_date_final is not None:
+        return queries
 
+    yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
+    if max_date is not None and max_date > yesterday:
+        return queries
+
+    max_date = datetime.datetime.strftime(yesterday, "%Y-%m-%d")  # type: ignore
     queries.append(
         PyPIQueryConfig(
             repo=repo,
             min_date=datetime.datetime.strftime(min_date, "%Y-%m-%d"),
-            max_date=max_date,
+            max_date=max_date,  # type: ignore
             retrieved_at=get_current_time(),
         )
     )
     return queries
 
 
-def add_backfill_to_table(repo: str, min_date: datetime.datetime, dry_run: bool = True):
-    queries = get_backfill_queries(repo, min_date)
+def add_backfill_to_table(
+    repo: str,
+    min_date: datetime.datetime,
+    max_date: Optional[datetime.datetime],
+    max_days_per_chunk: int,
+    dry_run: bool,
+):
+    queries = get_backfill_queries(repo, min_date, max_date, max_days_per_chunk)
 
     print(f"backfilling {repo} {'-' * 20}")
     for query in queries:

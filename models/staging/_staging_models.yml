@@ -4,6 +4,9 @@ models:
       contract:
         enforced: true
       on_schema_change: append_new_columns
+      meta:
+        dagster:
+          group: bigquery_daily
     columns:
       - name: project
         data_type: string
@@ -46,9 +49,21 @@ models:
         constraints:
           - type: not_null
       - name: retrieved_at
-        data_type: timestamp
+        data_type: timestamp with time zone
         constraints:
           - type: not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - project
+            - timestamp
+            - country_code
+            - package_version
+            - python_version
+            - system_distro_name
+            - system_distro_version
+            - system_name
+            - system_release
   - name: stg_followers
     columns:
       - name: user_id

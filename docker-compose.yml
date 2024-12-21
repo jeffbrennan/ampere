@@ -1,0 +1,55 @@
+services:
+  backend_dagster_webserver:
+    build:
+      context: .
+      dockerfile: ./Dockerfile-backend
+    entrypoint:
+      - dagster-webserver
+      - -h
+      - "0.0.0.0"
+      - -p
+      - "3000"
+    expose:
+      - "3000"
+    ports:
+      - "3000:3000"
+    labels:
+      - "traefik.http.routers.ampere_backend.rule=Host(`${AMPERE_BACKEND}`)"
+      - "traefik.enable=true"
+      - "traefik.http.routers.ampere_backend.entrypoints=websecure"
+      - "traefik.http.routers.ampere_backend.tls.certresolver=myresolver"
+
+      - "traefik.http.routers.ampere_backend.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=${BACKEND_ADMIN}:${BACKEND_HASH}"
+    volumes:
+      - ampere_data:/ampere/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/io_manager_storage:/tmp/io_manager_storage
+    networks:
+      - jb-proxy
+  backend_dagster_daemon:
+    build:
+      context: .
+      dockerfile: ./Dockerfile-backend
+    entrypoint:
+      - dagster-daemon
+      - run
+    restart: on-failure
+    volumes: # Make docker client accessible so we can launch containers using host docker
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/io_manager_storage:/tmp/io_manager_storage
+      - ampere_data:/ampere/data
+    networks:
+      - jb-proxy
+
+volumes:
+  letsencrypt:
+  ampere_data:
+      driver: local
+      driver_opts:
+        type: 'none'
+        o: 'bind'
+        device: 'data'
+networks:
+  jb-proxy:
+    external: true

@@ -63,5 +63,5 @@ select
     week_downloads_diff_pct
 from diff
 where
-    week_downloads_diff_pct >= 1
-    or week_downloads_diff_pct <= -0.25
+    (week_downloads_diff_pct >= 1 and previous_week_downloads > 1000)
+    or week_downloads_diff_pct <= -0.4
