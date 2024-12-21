@@ -1,8 +1,6 @@
 from pathlib import Path
 
 import polars as pl
-import typer
-from deltalake import DeltaTable
 
 from ampere.common import (
     DeltaTableWriteMode,
@@ -21,14 +19,13 @@ def main(dry_run: bool = True):
         pks=get_model_primary_key(PyPIDownload),
     )
     tbl_dir = Path(__file__).parents[1] / "data" / "bronze"
-    tbl_path = tbl_dir / table_name
+    tbl_path = tbl_dir / f"{table_name}CLONE"
     updated_df = pl.scan_delta(str(tbl_path)).with_columns(
         pl.col("retrieved_at")
         .cast(pl.Datetime)
         .dt.replace_time_zone("UTC")
         .alias("retrieved_at")
     )
-    updated_df = pl.scan_parquet(tbl_dir / "PyPIDownload_fixed/file.parquet")
     if dry_run:
         print(updated_df.collect().head())
         return
