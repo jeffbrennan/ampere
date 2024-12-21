@@ -48,12 +48,6 @@ WORKDIR $PYSETUP_PATH
 COPY --from=builder-base $POETRY_HOME $POETRY_HOME
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 
-#https://github.com/python-poetry/poetry/issues/3353#issuecomment-804042557
-RUN poetry config virtualenvs.path --unset
-
-# quicker install as runtime deps are already installed
-RUN poetry install
-
 # APP CODE -------
 COPY ampere/ ./ampere
 
@@ -71,6 +65,11 @@ COPY .config/ ./.config
 COPY .env .
 
 RUN dbt deps --profiles-dir .
+#https://github.com/python-poetry/poetry/issues/3353#issuecomment-804042557
+RUN poetry config virtualenvs.path --unset
+
+# quicker install as runtime deps are already installed
+RUN poetry install
 
 # DAGSTER ------
 ENV DAGSTER_HOME=/ampere/data/dagster
