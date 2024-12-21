@@ -1,48 +1,48 @@
--- usage: to be copied into ampere/data/ folder and executed from there
-create view if not exists commits as
+create or replace view commits as
 select *
-from delta_scan("../../ampere/data/bronze/commits");
+from delta_scan("data/bronze/commits");
 
-create view if not exists forks as
+drop view if exists forks;
+create or replace view forks as
 select *
-from delta_scan("../../ampere/data/bronze/forks");
+from delta_scan("data/bronze/forks");
 
-create view if not exists issues as
+create or replace view issues as
 select *
-from delta_scan("../../ampere/data/bronze/issues");
+from delta_scan("data/bronze/issues");
 
-create view if not exists pull_requests as
+create or replace view pull_requests as
 select *
-from delta_scan("../../ampere/data/bronze/pull_requests");
+from delta_scan("data/bronze/pull_requests");
 
-create view if not exists releases as
+create or replace view releases as
 select *
-from delta_scan("../../ampere/data/bronze/releases");
+from delta_scan("data/bronze/releases");
 
-create view if not exists repos as
+create or replace view repos as
 select *
-from delta_scan("../../ampere/data/bronze/repos");
+from delta_scan("data/bronze/repos");
 
-create view if not exists stargazers as
+create or replace view stargazers as
 select *
-from delta_scan("../../ampere/data/bronze/stargazers");
+from delta_scan("data/bronze/stargazers");
 
-create view if not exists users as
+create or replace view users as
 select *
-from delta_scan("../../ampere/data/bronze/users");
+from delta_scan("data/bronze/users");
 
-create view if not exists watchers as
+create or replace view watchers as
 select *
-from delta_scan("../../ampere/data/bronze/watchers");
+from delta_scan("data/bronze/watchers");
 
-create view if not exists followers as
+create or replace view followers as
 select *
-from delta_scan("../../ampere/data/bronze/followers");
+from delta_scan("data/bronze/followers");
 
-create view if not exists pypi_downloads as
+create or replace view pypi_downloads as
 select *
-from delta_scan("../../ampere/data/bronze/pypi_downloads");
+from delta_scan("data/bronze/pypi_downloads");
 
-create view if not exists pypi_download_queries as
+create or replace view pypi_download_queries as
 select *
-from delta_scan("../../ampere/data/bronze/pypi_download_queries");
+from delta_scan("data/bronze/pypi_download_queries");
