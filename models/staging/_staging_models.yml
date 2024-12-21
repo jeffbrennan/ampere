@@ -52,6 +52,18 @@ models:
         data_type: timestamp with time zone
         constraints:
           - type: not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - project
+            - timestamp
+            - country_code
+            - package_version
+            - python_version
+            - system_distro_name
+            - system_distro_version
+            - system_name
+            - system_release
   - name: stg_followers
     columns:
       - name: user_id
