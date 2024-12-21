@@ -65,6 +65,9 @@ models:
             - system_name
             - system_release
   - name: stg_followers
+    meta:
+      dagster:
+        group: github_followers_daily
     columns:
       - name: user_id
         data_tests:
@@ -73,6 +76,9 @@ models:
         data_tests:
           - not_null
   - name: stg_stargazers
+    meta:
+      dagster:
+        group: github_metrics_daily_4
     columns:
       - name: repo_id
         data_tests:

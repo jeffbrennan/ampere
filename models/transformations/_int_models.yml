@@ -73,6 +73,10 @@ models:
         data_type: bigint
         columns: [repo, download_date, group_name, group_value]
   - name: int_feed_events
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+
     config:
       contract:
         enforced: true
@@ -96,6 +100,10 @@ models:
       - name: event_data
         data_type: string
   - name: int_internal_followers
+    meta:
+      dagster:
+        group: github_followers_daily
+
     config:
       contract:
         enforced: true
@@ -109,6 +117,10 @@ models:
       - name: follower_id
         data_type: bigint
   - name: int_network_follower_details
+    meta:
+      dagster:
+        group: github_followers_daily
+
     config:
       contract:
         enforced: true
@@ -140,6 +152,10 @@ models:
       - name: internal_following_pct
         data_type: double
   - name: int_network_stargazers
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+
     config:
       contract:
         enforced: true
@@ -165,6 +181,10 @@ models:
       - name: repo_name_list
         data_type: string[]
   - name: int_repo_metrics
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+
     config:
       contract:
         enforced: true
@@ -186,6 +206,10 @@ models:
       - name: metric_count
         data_type: bigint
   - name: int_repo_metrics_changes
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+
     config:
       contract:
         enforced: true
@@ -207,6 +231,10 @@ models:
       - name: metric_count
         data_type: bigint
   - name: int_repo_metrics_filled
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+
     config:
       contract:
         enforced: true
@@ -228,6 +256,10 @@ models:
       - name: metric_count
         data_type: bigint
   - name: int_repo_metrics_filled_partial
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+
     config:
       contract:
         enforced: true
@@ -248,3 +280,13 @@ models:
         data_type: bigint
       - name: metric_count
         data_type: bigint
+  - name: helper_date_spine
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+  - name: int_network_stargazers_pivoted
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+
+

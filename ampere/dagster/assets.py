@@ -44,13 +44,22 @@ def ampere_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource) -> An
     yield from dbt.cli(["build"], context=context).stream()
 
 
-@asset(compute_kind="python", key=["repos"])
+@asset(
+    compute_kind="python",
+    key=["repos"],
+    group_name="github_metrics_daily_4",
+)
 def dagster_get_repos() -> None:
     repos = get_repos("mrpowers-io")
     write_delta_table(repos, "bronze", "repos", ["repo_id"])
 
 
-@asset(compute_kind="python", key=["stargazers"], deps=["repos"])
+@asset(
+    compute_kind="python",
+    key=["stargazers"],
+    deps=["repos"],
+    group_name="github_metrics_daily_4",
+)
 def dagster_get_stargazers(context: AssetExecutionContext) -> None:
     repos = read_repos()
     owner_name = "mrpowers-io"
@@ -67,7 +76,12 @@ def dagster_get_stargazers(context: AssetExecutionContext) -> None:
     context.add_output_metadata({"n_records": n})
 
 
-@asset(compute_kind="python", key=["forks"], deps=["stargazers"])
+@asset(
+    compute_kind="python",
+    key=["forks"],
+    deps=["stargazers"],
+    group_name="github_metrics_daily_4",
+)
 def dagster_get_forks(context: AssetExecutionContext) -> None:
     repos = read_repos()
     owner_name = "mrpowers-io"
@@ -84,7 +98,12 @@ def dagster_get_forks(context: AssetExecutionContext) -> None:
     context.add_output_metadata({"n_records": n})
 
 
-@asset(compute_kind="python", key=["releases"], deps=["forks"])
+@asset(
+    compute_kind="python",
+    key=["releases"],
+    deps=["forks"],
+    group_name="github_metrics_daily_4",
+)
 def dagster_get_releases(context: AssetExecutionContext) -> None:
     repos = read_repos()
     owner_name = "mrpowers-io"
@@ -101,7 +120,12 @@ def dagster_get_releases(context: AssetExecutionContext) -> None:
     context.add_output_metadata({"n_records": n})
 
 
-@asset(compute_kind="python", key=["pull_requests"], deps=["releases"])
+@asset(
+    compute_kind="python",
+    key=["pull_requests"],
+    deps=["releases"],
+    group_name="github_metrics_daily_4",
+)
 def dagster_get_pull_requests(context: AssetExecutionContext) -> None:
     repos = read_repos()
     owner_name = "mrpowers-io"
@@ -118,7 +142,12 @@ def dagster_get_pull_requests(context: AssetExecutionContext) -> None:
     context.add_output_metadata({"n_records": n})
 
 
-@asset(compute_kind="python", key=["issues"], deps=["pull_requests"])
+@asset(
+    compute_kind="python",
+    key=["issues"],
+    deps=["pull_requests"],
+    group_name="github_metrics_daily_4",
+)
 def dagster_get_issues(context: AssetExecutionContext) -> None:
     repos = read_repos()
     owner_name = "mrpowers-io"
@@ -135,7 +164,12 @@ def dagster_get_issues(context: AssetExecutionContext) -> None:
     context.add_output_metadata({"n_records": n})
 
 
-@asset(compute_kind="python", key=["watchers"], deps=["issues"])
+@asset(
+    compute_kind="python",
+    key=["watchers"],
+    deps=["issues"],
+    group_name="github_metrics_daily_4",
+)
 def dagster_get_watchers(context: AssetExecutionContext) -> None:
     repos = read_repos()
     owner_name = "mrpowers-io"
@@ -152,7 +186,12 @@ def dagster_get_watchers(context: AssetExecutionContext) -> None:
     context.add_output_metadata({"n_records": n})
 
 
-@asset(compute_kind="python", key=["commits"], deps=["watchers"])
+@asset(
+    compute_kind="python",
+    key=["commits"],
+    deps=["watchers"],
+    group_name="github_metrics_daily_4",
+)
 def dagster_get_commits(context: AssetExecutionContext) -> None:
     repos = read_repos()
     owner_name = "mrpowers-io"
@@ -169,7 +208,12 @@ def dagster_get_commits(context: AssetExecutionContext) -> None:
     context.add_output_metadata({"n_records": n})
 
 
-@asset(compute_kind="python", key=["users"], deps=["commits"])
+@asset(
+    compute_kind="python",
+    key=["users"],
+    deps=["commits"],
+    group_name="github_metrics_daily_4",
+)
 def dagster_get_users(context: AssetExecutionContext) -> None:
     user_ids = get_user_ids()
     n = refresh_users(
@@ -184,7 +228,12 @@ def dagster_get_users(context: AssetExecutionContext) -> None:
     context.add_output_metadata({"n_records": n})
 
 
-@asset(compute_kind="python", key=["followers"], deps=["users"])
+@asset(
+    compute_kind="python",
+    key=["followers"],
+    deps=["users"],
+    group_name="github_followers_daily",
+)
 def dagster_get_followers(context: AssetExecutionContext) -> None:
     user_ids = get_user_ids()
     n = refresh_followers(

@@ -8,12 +8,12 @@ from .assets import (
     dagster_get_forks,
     dagster_get_issues,
     dagster_get_pull_requests,
+    dagster_get_pypi_downloads,
     dagster_get_releases,
     dagster_get_repos,
     dagster_get_stargazers,
     dagster_get_users,
     dagster_get_watchers,
-    dagster_get_pypi_downloads,
 )
 from .project import ampere_project
 from .schedules import schedules
