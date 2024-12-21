@@ -7,7 +7,7 @@ with star_events as (
         user_id,
         user_id as event_id,
         null as event_data
-    from stargazers
+    from {{ref('stg_stargazers')}}
 ),
 
 commit_events as (
@@ -19,7 +19,7 @@ commit_events as (
         author_id as user_id,
         commit_id as event_id,
         message as event_data
-    from commits
+    from {{source('main', 'commits')}}
 ),
 
 fork_events as (
@@ -31,7 +31,7 @@ fork_events as (
         owner_id as user_id,
         fork_id as event_id,
         null as event_data
-    from forks
+    from {{source('main', 'forks')}}
 ),
 
 issue_created_events as (
@@ -43,7 +43,7 @@ issue_created_events as (
         author_id as user_id,
         issue_id as event_id,
         issue_title as event_data
-    from issues
+    from {{source('main', 'issues')}}
     where created_at is not null
 ),
 
@@ -56,7 +56,7 @@ issue_updated_events as (
         author_id as user_id,
         issue_id as event_id,
         issue_title as event_data
-    from issues
+    from {{source('main', 'issues')}}
     where updated_at is not null
 ),
 
@@ -69,7 +69,7 @@ issue_closed_events as (
         author_id as user_id,
         issue_id as event_id,
         issue_title as event_data
-    from issues
+    from {{source('main', 'issues')}}
     where closed_at is not null
 ),
 
@@ -82,7 +82,7 @@ pr_created_events as (
         author_id as user_id,
         pr_id as event_id,
         pr_title as event_data
-    from pull_requests
+    from {{source('main', 'pull_requests')}}
     where created_at is not null
 ),
 
@@ -95,7 +95,7 @@ pr_updated_events as (
         author_id as user_id,
         pr_id as event_id,
         pr_title as event_data
-    from pull_requests
+    from {{source('main', 'pull_requests')}}
     where updated_at is not null
 ),
 
@@ -108,7 +108,7 @@ pr_closed_events as (
         author_id as user_id,
         pr_id as event_id,
         pr_title as event_data
-    from pull_requests
+    from {{source('main', 'pull_requests')}}
     where closed_at is not null
 ),
 
@@ -121,7 +121,7 @@ pr_merged_events as (
         author_id as user_id,
         pr_id as event_id,
         pr_title as event_data
-    from pull_requests
+    from {{source('main', 'pull_requests')}}
     where merged_at is not null
 ),
 

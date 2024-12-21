@@ -11,7 +11,7 @@ star_metrics as (
             order by a.starred_at
             rows between unbounded preceding and current row
         ) as metric_count
-    from stargazers as a
+    from {{ref('stg_stargazers')}} as a
 ),
 
 issue_metrics_open as (
@@ -21,7 +21,7 @@ issue_metrics_open as (
         created_at as metric_timestamp,
         author_id as user_id,
         1 as metric_count
-    from issues
+    from {{source('main', 'issues')}}
     where created_at is not null
 ),
 
@@ -32,7 +32,7 @@ issue_metrics_closed as (
         closed_at as metric_timestamp,
         author_id as user_id,
         -1 as metric_count
-    from issues
+    from {{source('main', 'issues')}}
     where closed_at is not null
 ),
 
@@ -65,7 +65,7 @@ pr_metrics_open as (
         created_at as metric_timestamp,
         author_id as user_id,
         1 as metric_count
-    from pull_requests
+    from {{source('main', 'pull_requests')}}
     where created_at is not null
 ),
 
@@ -76,7 +76,7 @@ pr_metrics_closed as (
         closed_at as metric_timestamp,
         author_id as user_id,
         -1 as metric_count
-    from pull_requests
+    from {{source('main', 'pull_requests')}}
     where closed_at is not null
 ),
 
@@ -114,7 +114,7 @@ fork_metrics as (
             order by created_at
             rows between unbounded preceding and current row
         ) as metric_count
-    from forks
+    from {{source('main', 'forks')}}
 ),
 
 commit_metrics_added as (
@@ -124,7 +124,7 @@ commit_metrics_added as (
         committed_at as metric_timestamp,
         author_id as user_id,
         additions_count as metric_count
-    from commits
+    from {{source('main', 'commits')}}
 ),
 
 commit_metrics_deleted as (
@@ -134,7 +134,7 @@ commit_metrics_deleted as (
         committed_at as metric_timestamp,
         author_id as user_id,
         deletions_count * -1 as metric_count
-    from commits
+    from {{source('main', 'commits')}}
 ),
 
 commit_metrics_combined as (
