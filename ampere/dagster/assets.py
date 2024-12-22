@@ -16,7 +16,6 @@ from ampere.get_repo_metrics import (
     get_repos,
     get_stargazers,
     get_user_ids,
-    get_watchers,
     read_repos,
     refresh_followers,
     refresh_github_table,
@@ -31,7 +30,6 @@ from ampere.models import (
     Release,
     Stargazer,
     User,
-    Watcher,
 )
 
 from .project import ampere_project
@@ -166,30 +164,8 @@ def dagster_get_issues(context: AssetExecutionContext) -> None:
 
 @asset(
     compute_kind="python",
-    key=["watchers"],
-    deps=["issues"],
-    group_name="github_metrics_daily_4",
-)
-def dagster_get_watchers(context: AssetExecutionContext) -> None:
-    repos = read_repos()
-    owner_name = "mrpowers-io"
-    n = refresh_github_table(
-        owner_name,
-        repos,
-        DeltaWriteConfig(
-            table_dir="bronze",
-            table_name=Watcher.__tablename__,  # pyright: ignore [reportArgumentType]
-            pks=get_model_primary_key(Watcher),
-        ),
-        get_watchers,
-    )
-    context.add_output_metadata({"n_records": n})
-
-
-@asset(
-    compute_kind="python",
     key=["commits"],
-    deps=["watchers"],
+    deps=["issues"],
     group_name="github_metrics_daily_4",
 )
 def dagster_get_commits(context: AssetExecutionContext) -> None:
@@ -236,6 +212,7 @@ def dagster_get_users(context: AssetExecutionContext) -> None:
 )
 def dagster_get_followers(context: AssetExecutionContext) -> None:
     user_ids = get_user_ids()
+    chunk_size = 2000
     n = refresh_followers(
         user_ids,
         DeltaWriteConfig(

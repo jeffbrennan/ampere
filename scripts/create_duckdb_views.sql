@@ -31,9 +31,6 @@ create or replace view users as
 select *
 from delta_scan("data/bronze/users");
 
-create or replace view watchers as
-select *
-from delta_scan("data/bronze/watchers");
 
 create or replace view followers as
 select *

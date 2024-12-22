@@ -38,10 +38,6 @@ sources:
         meta:
           dagster:
             asset_key: ["users"]
-      - name: watchers
-        meta:
-          dagster:
-            asset_key: ["watchers"]
       - name: followers
         meta:
           dagster:

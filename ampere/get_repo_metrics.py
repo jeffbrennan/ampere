@@ -28,7 +28,6 @@ from ampere.models import (
     Stargazer,
     User,
     View,
-    Watcher,
 )
 
 
@@ -119,47 +118,6 @@ def get_stargazers(owner_name: str, repo: Repo) -> list[Stargazer]:
     return output
 
 
-def get_watchers(owner_name: str, repo: Repo) -> list[Watcher]:
-    print("getting watchers...")
-    url = f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/subscribers?per_page=100"
-    headers = {
-        "Accept": "application/vnd.github.subscriber+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-
-    response = requests.get(url, headers=headers)
-
-    output = []
-    requests_finished = False
-    max_pages = 10
-    pages_checked = 0
-
-    while not requests_finished and pages_checked < max_pages:
-        if response.status_code != 200:
-            raise ValueError(response.status_code)
-        results = json.loads(response.content)
-
-        for result in results:
-            output.append(
-                Watcher(
-                    repo_id=repo.repo_id,
-                    user_id=result["id"],
-                    retrieved_at=get_current_time(),
-                )
-            )
-
-        pages_checked += 1
-        print(f"n={len(output)}")
-        requests_finished = "next" not in response.links
-        if requests_finished:
-            break
-
-        response = requests.get(response.links["next"]["url"], headers=headers)
-
-    return output
-
-
 def get_repo_language(owner_name: str, repo_name: str) -> list[Language]:
     url = f"https://api.github.com/repos/{owner_name}/{repo_name}/languages"
 
@@ -208,7 +166,6 @@ def get_repos(org_name: str) -> list[Repo]:
                 language=language,
                 repo_size=result["size"],
                 forks_count=result["forks_count"],
-                watchers_count=result["watchers_count"],
                 stargazers_count=result["stargazers_count"],
                 open_issues_count=result["open_issues_count"],
                 pushed_at=datetime.datetime.strptime(
@@ -605,7 +562,7 @@ def get_user(user_id: int) -> Optional[User]:
 
 
 def get_user_ids() -> list[int]:
-    user_models = [Stargazer, Watcher, Fork, Commit, Issue, PullRequest]
+    user_models = [Stargazer, Fork, Commit, Issue, PullRequest]
 
     users = []
     print("getting user ids from existing tables")

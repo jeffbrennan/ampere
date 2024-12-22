@@ -15,13 +15,6 @@ class Stargazer(SQLModel):
     retrieved_at: datetime.datetime
 
 
-class Watcher(SQLModel):
-    __tablename__ = "watchers"  # pyright: ignore [reportAssignmentType]
-    repo_id: int = Field(primary_key=True, foreign_key="repo.repo_id")
-    user_id: int = Field(primary_key=True, foreign_key="user.user_id")
-    retrieved_at: datetime.datetime
-
-
 @dataclass
 class Language:
     name: str
@@ -37,7 +30,6 @@ class Repo(SQLModel):
     language: Optional[list[Language]] = None
     repo_size: int
     forks_count: int
-    watchers_count: int
     stargazers_count: int
     open_issues_count: int
     pushed_at: datetime.datetime
