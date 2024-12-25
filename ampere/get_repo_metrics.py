@@ -4,6 +4,7 @@ import time
 from pathlib import Path
 from typing import Callable, Optional
 
+import duckdb
 import requests
 from deltalake import DeltaTable
 
@@ -344,7 +345,12 @@ def get_latest_commit(repo: Repo) -> str | None:
         )
         """
 
-    latest_commit = con.sql(query).fetchone()
+    try:
+        latest_commit = con.sql(query).fetchone()
+    except duckdb.CatalogException as e:
+        print(e)
+        return None
+
     if latest_commit is None:
         print(f"{repo.repo_name} has no commits")
         return latest_commit
