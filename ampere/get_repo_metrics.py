@@ -1,6 +1,7 @@
 import datetime
 import json
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -454,37 +455,57 @@ def get_issues(owner_name: str, repo: Repo) -> list[Issue]:
     return output
 
 
-def get_followers(user_id: int) -> list[Follower]:
-    print("getting followers...")
-    url = f"https://api.github.com/user/{user_id}/followers"
+@dataclass
+class FollowerResponse:
+    id: int
+    retrieved_at: datetime.datetime
+
+
+def handle_follower_following_request(
+    user_id: int, url: str, user_type: str
+) -> list[Follower]:
+    parameters = {"per_page": 100}
     headers = {
         "Accept": "application/vnd.github+json",
         "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
         "X-GitHub-Api-Version": "2022-11-28",
     }
-    parameters = {"per_page": 100}
-
-    output = []
+    output_raw = []
     requests_finished = False
-    max_pages = 10
+    max_pages = 5000
+    max_errors = 1
     pages_checked = 0
+    errors = 0
+
+    if user_type not in ["follower", "following"]:
+        raise ValueError("expecting one of [follower, following]")
 
     response = requests.get(url, headers=headers, params=parameters)
     while not requests_finished and pages_checked < max_pages:
+        if response.status_code in [403, 429]:
+            errors += 1
+            if errors > max_errors:
+                break
+            print(response.json())
+            print("waiting one hour")
+            time.sleep(60 * 60)
+            response = requests.get(url, headers=headers, params=parameters)
+            continue
+
         if response.status_code != 200:
             raise ValueError(response.status_code)
+
         results = json.loads(response.content)
         for result in results:
-            output.append(
-                Follower(
-                    user_id=user_id,
-                    follower_id=result["id"],
+            output_raw.append(
+                FollowerResponse(
+                    id=result["id"],
                     retrieved_at=get_current_time(),
                 )
             )
 
         pages_checked += 1
-        print(f"n={len(output)}")
+        print(f"n={len(output_raw)}")
         requests_finished = "next" not in response.links
         if requests_finished:
             break
@@ -493,49 +514,29 @@ def get_followers(user_id: int) -> list[Follower]:
             response.links["next"]["url"], headers=headers, params=parameters
         )
 
+    if user_type == "follower":
+        output = [
+            Follower(user_id=user_id, follower_id=i.id, retrieved_at=i.retrieved_at)
+            for i in output_raw
+        ]
+    else:
+        output = [
+            Follower(user_id=i.id, follower_id=user_id, retrieved_at=i.retrieved_at)
+            for i in output_raw
+        ]
     return output
+
+
+def get_followers(user_id: int) -> list[Follower]:
+    print("getting followers...")
+    url = f"https://api.github.com/user/{user_id}/followers"
+    return handle_follower_following_request(user_id, url, "follower")
 
 
 def get_following(user_id: int) -> list[Follower]:
     print("getting following...")
     url = f"https://api.github.com/user/{user_id}/following"
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    parameters = {"per_page": 100}
-
-    output = []
-    requests_finished = False
-    max_pages = 10
-    pages_checked = 0
-
-    response = requests.get(url, headers=headers, params=parameters)
-    while not requests_finished and pages_checked < max_pages:
-        if response.status_code != 200:
-            raise ValueError(response.status_code)
-        results = json.loads(response.content)
-        for result in results:
-            output.append(
-                Follower(
-                    user_id=result["id"],
-                    follower_id=user_id,
-                    retrieved_at=get_current_time(),
-                )
-            )
-
-        pages_checked += 1
-        print(f"n={len(output)}")
-        requests_finished = "next" not in response.links
-        if requests_finished:
-            break
-
-        response = requests.get(
-            response.links["next"]["url"], headers=headers, params=parameters
-        )
-
-    return output
+    return handle_follower_following_request(user_id, url, "following")
 
 
 def get_views(owner_name: str, repo: Repo) -> list[View]:
@@ -625,6 +626,30 @@ def get_user_ids() -> list[int]:
     return unique_users
 
 
+def get_stale_followers_user_ids() -> list[int]:
+    con = get_db_con()
+    stale_hours = 20
+    query = f"""
+        with follower_retrievals as (
+            select 
+                user_id,
+                max(retrieved_at) as retrieved_at
+            from followers
+            group by user_id
+        )
+        select user_id
+        from follower_retrievals
+        where retrieved_at < current_time() - interval {stale_hours} hour
+    """
+
+    try:
+        user_ids = con.sql(query).to_df().squeeze().tolist()
+    except duckdb.CatalogException:
+        return get_user_ids()
+
+    return user_ids
+
+
 def refresh_github_table(
     owner_name: str,
     repos: list[Repo],
@@ -694,6 +719,10 @@ def refresh_followers(
             print(e)
 
     elapsed_time = time.time() - start_time
+    if len(all_results) == 0:
+        print("no results obtained")
+        return 0
+
     avg_time_per_user = elapsed_time / len(user_ids)
 
     print(f"elapsed time: {elapsed_time:.2f} seconds")
