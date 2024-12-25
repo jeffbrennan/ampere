@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum, auto
 from functools import wraps
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 import dotenv
 import duckdb
@@ -202,3 +202,8 @@ def cleanup_delta_tables():
 
         optimize_delta_table(delta_table_path)
         vacuum_delta_table(delta_table_path)
+
+
+def divide_chunks(l: list[Any], n: int):
+    for i in range(0, len(l), n):
+        yield l[i : i + n]
