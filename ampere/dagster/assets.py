@@ -3,7 +3,12 @@ from typing import Any
 from dagster import AssetExecutionContext, asset
 from dagster_dbt import DbtCliResource, dbt_assets
 
-from ampere.common import DeltaWriteConfig, get_model_primary_key, write_delta_table
+from ampere.common import (
+    DeltaWriteConfig,
+    divide_chunks,
+    get_model_primary_key,
+    write_delta_table,
+)
 from ampere.get_pypi_downloads import (
     refresh_all_pypi_downloads,
 )
@@ -14,6 +19,7 @@ from ampere.get_repo_metrics import (
     get_pull_requests,
     get_releases,
     get_repos,
+    get_stale_followers_user_ids,
     get_stargazers,
     get_user_ids,
     read_repos,
@@ -211,16 +217,20 @@ def dagster_get_users(context: AssetExecutionContext) -> None:
     group_name="github_followers_daily",
 )
 def dagster_get_followers(context: AssetExecutionContext) -> None:
-    user_ids = get_user_ids()
-    chunk_size = 2000
-    n = refresh_followers(
-        user_ids,
-        DeltaWriteConfig(
-            table_dir="bronze",
-            table_name=Follower.__tablename__,  # pyright: ignore [reportArgumentType]
-            pks=get_model_primary_key(Follower),
-        ),
-    )
+    n = 0
+    user_ids = get_stale_followers_user_ids()
+    user_ids_chunked = list(divide_chunks(user_ids, 1000))
+
+    for user_ids_chunk in user_ids_chunked:
+        records_updated = refresh_followers(
+            user_ids_chunk,
+            DeltaWriteConfig(
+                table_dir="bronze",
+                table_name=Follower.__tablename__,  # pyright: ignore [reportArgumentType]
+                pks=get_model_primary_key(Follower),
+            ),
+        )
+        n += records_updated
 
     context.add_output_metadata({"n_records": n})
 
