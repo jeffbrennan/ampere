@@ -11,6 +11,7 @@ from ampere.common import (
     DeltaWriteConfig,
     create_header,
     get_current_time,
+    get_db_con,
     get_model_foreign_key,
     get_token,
     write_delta_table,
@@ -237,7 +238,9 @@ def get_releases(owner_name: str, repo: Repo) -> list[Release]:
     return output
 
 
-def get_commit_stats(owner_name: str, repo_name: str, commit_id: str) -> CommitStats:
+def get_commit_stats(
+    owner_name: str, repo_name: str, commit_id: str
+) -> list[CommitStats]:
     url = f"https://api.github.com/repos/{owner_name}/{repo_name}/commits/{commit_id}"
 
     headers = {
@@ -250,14 +253,24 @@ def get_commit_stats(owner_name: str, repo_name: str, commit_id: str) -> CommitS
         raise ValueError(response.status_code)
 
     result = json.loads(response.content)
-    return CommitStats(
-        additions=result["stats"]["additions"],
-        deletions=result["stats"]["deletions"],
-    )
+    output = []
+    for f in result["files"]:
+        output.append(
+            CommitStats(
+                filename=f["filename"],
+                additions=f["additions"],
+                deletions=f["deletions"],
+                changes=f["changes"],
+                status=f["status"],
+            )
+        )
+
+    return output
 
 
 def get_commits(owner_name: str, repo: Repo) -> list[Commit]:
     print("getting commits...")
+    # by default, sorts by created descending
     url = (
         f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/commits?per_page=100"
     )
@@ -269,15 +282,22 @@ def get_commits(owner_name: str, repo: Repo) -> list[Commit]:
 
     output = []
     requests_finished = False
+    reached_oldest_commit = False
     max_pages = 10
     pages_checked = 0
-
+    latest_commit = get_latest_commit(repo)
     response = requests.get(url, headers=headers)
     while not requests_finished and pages_checked < max_pages:
         if response.status_code != 200:
+            print(response.json())
             raise ValueError(response.status_code)
         results = json.loads(response.content)
         for result in results:
+            if latest_commit is not None and result["sha"] == latest_commit:
+                print("caught up to latest recorded commit!")
+                reached_oldest_commit = True
+                break
+
             print(result["sha"])
             commit_stats = get_commit_stats(owner_name, repo.repo_name, result["sha"])
             if result["author"] is not None:
@@ -294,12 +314,14 @@ def get_commits(owner_name: str, repo: Repo) -> list[Commit]:
                     author_id=author_id,
                     comment_count=result["commit"]["comment_count"],
                     message=result["commit"]["message"],
-                    additions_count=commit_stats.additions,
-                    deletions_count=commit_stats.deletions,
+                    stats=commit_stats,
                     committed_at=result["commit"]["author"]["date"],
                     retrieved_at=get_current_time(),
                 )
             )
+
+        if reached_oldest_commit:
+            break
 
         pages_checked += 1
         print(f"n={len(output)}")
@@ -312,6 +334,24 @@ def get_commits(owner_name: str, repo: Repo) -> list[Commit]:
     return output
 
 
+def get_latest_commit(repo: Repo) -> str | None:
+    con = get_db_con()
+    query = f"""
+        select commit_id
+        from commits 
+        where committed_at = (
+            select max(committed_at) from commits where repo_id = {repo.repo_id}
+        )
+        """
+
+    latest_commit = con.sql(query).fetchone()
+    if latest_commit is None:
+        print(f"{repo.repo_name} has no commits")
+        return latest_commit
+
+    return latest_commit[0]
+
+
 def get_pull_requests(owner_name: str, repo: Repo) -> list[PullRequest]:
     print("getting prs...")
     url = f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/pulls"
@@ -320,6 +360,7 @@ def get_pull_requests(owner_name: str, repo: Repo) -> list[PullRequest]:
         "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
         "X-GitHub-Api-Version": "2022-11-28",
     }
+
     parameters = {"per_page": 100, "state": "all"}
 
     output = []

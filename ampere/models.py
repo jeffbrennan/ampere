@@ -51,8 +51,11 @@ class Fork(SQLModel):
 # https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#get-a-commit
 @dataclass
 class CommitStats:
+    filename: str
     additions: int
     deletions: int
+    changes: int
+    status: str
 
 
 class Commit(SQLModel):
@@ -62,8 +65,7 @@ class Commit(SQLModel):
     author_id: Optional[int] = Field(foreign_key="user.user_id")
     comment_count: int
     message: str
-    additions_count: int
-    deletions_count: int
+    stats: list[CommitStats]
     committed_at: datetime.datetime
     retrieved_at: datetime.datetime
 
