@@ -48,9 +48,6 @@ WORKDIR $PYSETUP_PATH
 COPY --from=builder-base $POETRY_HOME $POETRY_HOME
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 
-# APP CODE -------
-COPY ampere/ ./ampere
-
 # DBT ---------
 COPY dbt_project.yml .
 COPY profiles.yml .
@@ -70,6 +67,9 @@ RUN poetry config virtualenvs.path --unset
 
 # quicker install as runtime deps are already installed
 RUN poetry install
+
+# APP CODE -------
+COPY ampere/ ./ampere
 
 # DAGSTER ------
 ENV DAGSTER_HOME=/ampere/data/dagster
