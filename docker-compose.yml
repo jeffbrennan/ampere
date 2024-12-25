@@ -14,13 +14,13 @@ services:
     ports:
       - "3000:3000"
     labels:
-      - "traefik.http.routers.ampere_backend.rule=Host(`${AMPERE_BACKEND}`)"
       - "traefik.enable=true"
+      - "traefik.http.routers.ampere_backend.rule=Host(`${AMPERE_BACKEND}`)"
       - "traefik.http.routers.ampere_backend.entrypoints=websecure"
       - "traefik.http.routers.ampere_backend.tls.certresolver=myresolver"
 
       - "traefik.http.routers.ampere_backend.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=${BACKEND_ADMIN}:${BACKEND_HASH}"
+      - "traefik.http.middlewares.auth.basicauth.users=${BACKEND_ADMIN}:$$apr1$$4fgqfc7O$$BCgqHyFgMEcp0oRep4yoG0"
     volumes:
       - ampere_data:/ampere/data
       - /var/run/docker.sock:/var/run/docker.sock
@@ -44,6 +44,7 @@ services:
 
 volumes:
   letsencrypt:
+    external: true
   ampere_data:
       driver: local
       driver_opts:
