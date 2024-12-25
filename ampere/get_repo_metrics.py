@@ -102,9 +102,7 @@ def get_stargazers(owner_name: str, repo: Repo) -> list[Stargazer]:
                 Stargazer(
                     repo_id=repo.repo_id,
                     user_id=result["user"]["id"],
-                    starred_at=datetime.datetime.strptime(
-                        result["starred_at"], "%Y-%m-%dT%H:%M:%SZ"
-                    ),
+                    starred_at=result["starred_at"],
                     retrieved_at=get_current_time(),
                 )
             )
@@ -170,15 +168,9 @@ def get_repos(org_name: str) -> list[Repo]:
                 forks_count=result["forks_count"],
                 stargazers_count=result["stargazers_count"],
                 open_issues_count=result["open_issues_count"],
-                pushed_at=datetime.datetime.strptime(
-                    result["pushed_at"], "%Y-%m-%dT%H:%M:%SZ"
-                ),
-                created_at=datetime.datetime.strptime(
-                    result["created_at"], "%Y-%m-%dT%H:%M:%SZ"
-                ),
-                updated_at=datetime.datetime.strptime(
-                    result["updated_at"], "%Y-%m-%dT%H:%M:%SZ"
-                ),
+                pushed_at=result["pushed_at"],
+                created_at=result["updated_at"],
+                updated_at=result["updated_at"],
                 retrieved_at=get_current_time(),
             )
         )
