@@ -25,18 +25,19 @@ class RefreshConfig:
     get_func: Callable
 
 
-@dataclass
-class DeltaWriteConfig:
-    table_dir: str
-    table_name: str
-    pks: list[str]
-
-
 class DeltaTableWriteMode(StrEnum):
     MERGE = auto()
     APPEND = auto()
     OVERWRITE = auto()
     OVERWRITE_WITH_SCHEMA = auto()
+
+
+@dataclass
+class DeltaWriteConfig:
+    table_dir: str
+    table_name: str
+    pks: list[str]
+    mode: DeltaTableWriteMode = DeltaTableWriteMode.MERGE
 
 
 def format_list_sql_query(input_list: list[str]) -> str:
@@ -72,14 +73,11 @@ def get_current_time() -> datetime.datetime:
 
 def write_delta_table(
     records: list[SQLModelType] | pd.DataFrame | pl.DataFrame,
-    table_dir: str,
-    table_name: str,
-    pks: list[str],
+    config: DeltaWriteConfig,
     cleanup: bool = True,
-    mode: DeltaTableWriteMode = DeltaTableWriteMode.MERGE,
 ) -> None:
-    data_dir = Path(__file__).parents[1] / "data" / table_dir
-    table_path = data_dir / table_name
+    data_dir = Path(__file__).parents[1] / "data" / config.table_dir
+    table_path = data_dir / config.table_name
     if isinstance(records, pd.DataFrame):
         df = records
     elif isinstance(records, pl.DataFrame):
@@ -94,23 +92,23 @@ def write_delta_table(
         write_deltalake(table_path, df, mode="error")
         return
 
-    if mode == DeltaTableWriteMode.APPEND:
+    if config.mode == DeltaTableWriteMode.APPEND:
         write_deltalake(table_path, df, mode="append")
         print("append complete")
         return
 
-    elif mode == DeltaTableWriteMode.OVERWRITE:
+    elif config.mode == DeltaTableWriteMode.OVERWRITE:
         write_deltalake(table_path, df, mode="overwrite")
         print("overwrite complete")
         return
 
-    elif mode == DeltaTableWriteMode.OVERWRITE_WITH_SCHEMA:
+    elif config.mode == DeltaTableWriteMode.OVERWRITE_WITH_SCHEMA:
         write_deltalake(table_path, df, mode="overwrite", schema_mode="overwrite")
         print("overwrite (including table schema) complete")
         return
 
     delta_table = DeltaTable(table_path)
-    predicate_str = " and ".join([f"s.{i} = t.{i}" for i in pks])
+    predicate_str = " and ".join([f"s.{i} = t.{i}" for i in config.pks])
     merge_results = (
         delta_table.merge(
             df,

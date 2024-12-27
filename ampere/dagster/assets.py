@@ -4,6 +4,7 @@ from dagster import AssetExecutionContext, asset
 from dagster_dbt import DbtCliResource, dbt_assets
 
 from ampere.common import (
+    DeltaTableWriteMode,
     DeltaWriteConfig,
     divide_chunks,
     get_model_primary_key,
@@ -34,6 +35,7 @@ from ampere.models import (
     Issue,
     PullRequest,
     Release,
+    Repo,
     Stargazer,
     User,
 )
@@ -53,9 +55,18 @@ def ampere_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource) -> An
     key=["repos"],
     group_name="github_metrics_daily_4",
 )
-def dagster_get_repos() -> None:
+def dagster_get_repos(context: AssetExecutionContext) -> None:
     repos = get_repos("mrpowers-io")
-    write_delta_table(repos, "bronze", "repos", ["repo_id"])
+    write_delta_table(
+        records=repos,
+        config=DeltaWriteConfig(
+            table_dir="bronze",
+            table_name=str(Repo.__tablename__),
+            pks=get_model_primary_key(Repo),
+            mode=DeltaTableWriteMode.APPEND,
+        ),
+    )
+    context.add_output_metadata({"n_records": len(repos)})
 
 
 @asset(
@@ -74,6 +85,7 @@ def dagster_get_stargazers(context: AssetExecutionContext) -> None:
             table_dir="bronze",
             table_name=Stargazer.__tablename__,  # pyright: ignore [reportArgumentType]
             pks=get_model_primary_key(Stargazer),
+            mode=DeltaTableWriteMode.APPEND,
         ),
         get_stargazers,
     )
@@ -96,6 +108,7 @@ def dagster_get_forks(context: AssetExecutionContext) -> None:
             table_dir="bronze",
             table_name=Fork.__tablename__,  # pyright: ignore [reportArgumentType]
             pks=get_model_primary_key(Fork),
+            mode=DeltaTableWriteMode.APPEND,
         ),
         get_forks,
     )
@@ -118,6 +131,7 @@ def dagster_get_releases(context: AssetExecutionContext) -> None:
             table_dir="bronze",
             table_name=Release.__tablename__,  # pyright: ignore [reportArgumentType]
             pks=get_model_primary_key(Release),
+            mode=DeltaTableWriteMode.APPEND,
         ),
         get_releases,
     )
@@ -140,6 +154,7 @@ def dagster_get_pull_requests(context: AssetExecutionContext) -> None:
             table_dir="bronze",
             table_name=PullRequest.__tablename__,  # pyright: ignore [reportArgumentType]
             pks=get_model_primary_key(PullRequest),
+            mode=DeltaTableWriteMode.APPEND,
         ),
         get_pull_requests,
     )
@@ -162,6 +177,7 @@ def dagster_get_issues(context: AssetExecutionContext) -> None:
             table_dir="bronze",
             table_name=Issue.__tablename__,  # pyright: ignore [reportArgumentType]
             pks=get_model_primary_key(Issue),
+            mode=DeltaTableWriteMode.APPEND,
         ),
         get_issues,
     )
@@ -184,6 +200,7 @@ def dagster_get_commits(context: AssetExecutionContext) -> None:
             table_dir="bronze",
             table_name=Commit.__tablename__,  # pyright: ignore [reportArgumentType]
             pks=get_model_primary_key(Commit),
+            mode=DeltaTableWriteMode.APPEND,
         ),
         get_commits,
     )
@@ -204,6 +221,7 @@ def dagster_get_users(context: AssetExecutionContext) -> None:
             table_dir="bronze",
             table_name=User.__tablename__,  # pyright: ignore [reportArgumentType]
             pks=get_model_primary_key(User),
+            mode=DeltaTableWriteMode.APPEND,
         ),
     )
 
@@ -228,6 +246,7 @@ def dagster_get_followers(context: AssetExecutionContext) -> None:
                 table_dir="bronze",
                 table_name=Follower.__tablename__,  # pyright: ignore [reportArgumentType]
                 pks=get_model_primary_key(Follower),
+                mode=DeltaTableWriteMode.APPEND,
             ),
         )
         n += records_updated

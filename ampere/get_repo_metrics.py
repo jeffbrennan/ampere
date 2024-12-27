@@ -665,7 +665,7 @@ def refresh_github_table(
         print(f"obtained {len(results)} records")
         all_results.extend(results)
 
-    write_delta_table(all_results, config.table_dir, config.table_name, config.pks)
+    write_delta_table(records=all_results, config=config)
     return len(all_results)
 
 
@@ -693,7 +693,7 @@ def refresh_users(
     print(f"elapsed time: {elapsed_time:.2f} seconds")
     print(f"average time per user: {avg_time_per_user:.2f} seconds")
 
-    write_delta_table(all_results, config.table_dir, config.table_name, config.pks)
+    write_delta_table(records=all_results, config=config)
     return len(all_results)
 
 
@@ -729,5 +729,5 @@ def refresh_followers(
     print(f"average time per user: {avg_time_per_user:.2f} seconds")
     valid_results = [i for i in all_results if i is not None]
 
-    write_delta_table(valid_results, config.table_dir, config.table_name, config.pks)
+    write_delta_table(records=valid_results, config=config)
     return len(all_results)
