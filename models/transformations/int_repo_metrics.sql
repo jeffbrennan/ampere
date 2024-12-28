@@ -116,25 +116,43 @@ fork_metrics as (
         ) as metric_count
     from {{ref('stg_forks')}}
 ),
-
+commit_metrics_unnested as (
+    select
+        commit_id,
+        unnest(stats) as stats_unnested
+    from {{ref('stg_commits')}}
+),
+commit_metrics_summed as (
+    select
+        commit_id,
+        sum(stats_unnested.additions) as additions_count,
+        sum(stats_unnested.deletions) as deletions_count
+    from commit_metrics_unnested
+    where ends_with(stats_unnested.filename, '.py') or ends_with(stats_unnested.filename, '.scala') or ends_with(stats_unnested.filename, '.rs')
+    group by commit_id
+),
 commit_metrics_added as (
     select
         repo_id,
-        commit_id as metric_id,
+        a.commit_id as metric_id,
         committed_at as metric_timestamp,
         author_id as user_id,
-        additions_count as metric_count
-    from {{ref('stg_commits')}}
+        b.additions_count as metric_count
+    from {{ref('stg_commits')}} a
+    join commit_metrics_summed b
+    on a.commit_id = b.commit_id
 ),
 
 commit_metrics_deleted as (
     select
         repo_id,
-        commit_id as metric_id,
+        a.commit_id as metric_id,
         committed_at as metric_timestamp,
         author_id as user_id,
-        deletions_count * -1 as metric_count
-    from {{ref('stg_commits')}}
+        b.deletions_count * -1 as metric_count
+    from {{ref('stg_commits')}} a
+    join commit_metrics_summed b
+    on a.commit_id = b.commit_id
 ),
 
 commit_metrics_combined as (
