@@ -143,9 +143,9 @@ def get_model_foreign_key(model: SQLModelMetaclass, fk_name: str) -> Optional[st
             return k
 
 
-def get_db_con() -> DuckDBPyConnection:
+def get_db_con(read_only: bool = True) -> DuckDBPyConnection:
     db_path = Path(__file__).parents[1] / "data" / "ampere.duckdb"
-    return duckdb.connect(str(db_path))
+    return duckdb.connect(str(db_path), read_only=read_only)
 
 
 def timeit(func):
