@@ -1,3 +1,4 @@
+import time
 from typing import Any
 
 from dagster import AssetExecutionContext, asset
@@ -39,6 +40,7 @@ from ampere.models import (
     Stargazer,
     User,
 )
+from ampere.viz import viz_follower_network, viz_star_network
 
 from .project import ampere_project
 
@@ -230,8 +232,32 @@ def dagster_get_users(context: AssetExecutionContext) -> None:
 
 @asset(
     compute_kind="python",
+    key=["refresh_star_network"],
+    deps=["int_network_stargazers"],
+    group_name="github_metrics_daily_4",
+)
+def dagster_refresh_star_network(context: AssetExecutionContext) -> None:
+    start_time = time.time()
+    _ = viz_star_network(use_cache=False, show_fig=False)
+    context.add_output_metadata({"elapsed time": time.time() - start_time})
+
+
+@asset(
+    compute_kind="python",
+    key=["refresh_follower_network"],
+    deps=["int_network_follower_details"],
+    group_name="github_followers_daily",
+)
+def dagster_refresh_follower_network(context: AssetExecutionContext) -> None:
+    start_time = time.time()
+    _ = viz_follower_network(use_cache=False, show_fig=False)
+    context.add_output_metadata({"elapsed time": time.time() - start_time})
+
+
+@asset(
+    compute_kind="python",
     key=["followers"],
-    deps=["users"],
+    deps=["stg_users"],
     group_name="github_followers_daily",
 )
 def dagster_get_followers(context: AssetExecutionContext) -> None:

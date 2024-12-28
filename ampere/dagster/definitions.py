@@ -13,6 +13,8 @@ from .assets import (
     dagster_get_repos,
     dagster_get_stargazers,
     dagster_get_users,
+    dagster_refresh_follower_network,
+    dagster_refresh_star_network,
 )
 from .project import ampere_project
 from .schedules import schedules
@@ -30,6 +32,8 @@ defs = Definitions(
         dagster_get_commits,
         dagster_get_followers,
         dagster_get_pypi_downloads,
+        dagster_refresh_star_network,
+        dagster_refresh_follower_network
     ],
     schedules=schedules,
     resources={
