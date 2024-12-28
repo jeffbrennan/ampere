@@ -1,12 +1,11 @@
-{{
-    config(
-        materialized='incremental',
-        unique_key=[
-          'repo_id',
-          'retrieved_at',
-        ]
-    )
-}}
+{{ config(materialized='table') }}
+with base as (
+    select 
+        *,
+        row_number() over (partition by repo_id order by retrieved_at desc) as rn
+    from {{ source('main', 'repos') }}
+    where retrieved_at >= (select max(retrieved_at) - interval 3 hours from {{source('main', 'repos')}})
+)
 select
     repo_id,
     repo_name,
@@ -21,9 +20,5 @@ select
     created_at,
     updated_at,
     retrieved_at
-from {{ source('main', 'repos') }}
-{% if is_incremental() %}
-    where
-       retrieved_at 
-        > (select coalesce(max(retrieved_at), '1900-01-01') from {{ this }}) --noqa
-{% endif %}
+from base 
+where rn = 1
