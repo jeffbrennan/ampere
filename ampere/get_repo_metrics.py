@@ -630,21 +630,29 @@ def get_stale_followers_user_ids() -> list[int]:
     con = get_db_con()
     stale_hours = 20
     query = f"""
-        with follower_retrievals as (
-            select 
-                user_id,
-                max(retrieved_at) as retrieved_at
-            from stg_followers
-            group by user_id
-        )
-        select user_id
-        from follower_retrievals
-        where retrieved_at < current_time() - interval {stale_hours} hour
+        select 
+        a.user_id
+        from stg_users a
+        left join stg_followers b 
+            on a.user_id = b.user_id
+        where 
+            b.user_id is null
+            or b.retrieved_at < current_time() - interval {stale_hours} hour
+        union
+        select 
+        a.user_id
+        from stg_users a
+        left join stg_followers b 
+            on a.user_id = b.follower_id
+        where 
+            b.follower_id is null
+            or b.retrieved_at < current_time() - interval {stale_hours} hour
     """
 
     try:
         user_ids = con.sql(query).to_df().squeeze().tolist()
-    except duckdb.CatalogException:
+    except duckdb.CatalogException as e:
+        print(e)
         return get_user_ids()
 
     return user_ids
