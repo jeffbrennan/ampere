@@ -4357,6 +4357,20 @@ files = [
 windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
+name = "pypalettes"
+version = "0.1.4"
+description = "A large (+2500) collection of color maps for Python"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "pypalettes-0.1.4-py3-none-any.whl", hash = "sha256:332bfa5247b4279eac511d3e07e26e6260c088a3e360bb540898e3888c8894a7"},
+    {file = "pypalettes-0.1.4.tar.gz", hash = "sha256:3457261c944a4c663035241c7d32001ec29e1e306aaeae1f5790fa5411e1c9d8"},
+]
+
+[package.dependencies]
+matplotlib = "*"
+
+[[package]]
 name = "pyparsing"
 version = "3.2.0"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
@@ -6272,4 +6286,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11, <3.13"
-content-hash = "226f82608642e82e37d455aaa6e32c658ec83dd924d4bf21b44c3ab8b02ff299"
+content-hash = "b8451535345ac7c337a180f8a4d7ef2e43cd63b29810e9f7d8da9f3bb61e1f5a"
