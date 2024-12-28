@@ -19,7 +19,7 @@ select
         )
     }}
 from {{ ref('int_network_stargazers_pivoted') }} as a
-inner join users as b
+inner join {{ ref('stg_users') }} as b
     on a.user_id = b.user_id
 inner join starred_repo_counts as c
     on a.user_id = c.user_id

@@ -9,9 +9,9 @@ with base as (
         a.event_data,
         a.event_timestamp
     from {{ ref("int_feed_events") }} as a
-    inner join repos as b
+    inner join {{ ref("stg_repos") }} as b
         on a.repo_id = b.repo_id
-    inner join users as c
+    inner join  {{ ref("stg_users") }} as c
         on a.user_id = c.user_id
 ),
 
@@ -21,7 +21,7 @@ pr_numbers as (
         a.event_type,
         b.pr_number
     from base as a
-    left join pull_requests as b
+    left join {{ ref("stg_pull_requests") }} as b
         on a.event_id = b.pr_id
     where a.event_type = 'pull request'
 ),
@@ -32,7 +32,7 @@ issue_numbers as (
         a.event_type,
         b.issue_number
     from base as a
-    left join issues as b
+    left join {{ ref("stg_issues") }} as b
         on a.event_id = b.issue_id
     where a.event_type = 'issue'
 )
