@@ -72,6 +72,9 @@ models:
       contract:
         enforced: true
       on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [user_id, follower_id]
     columns:
       - name: user_id
         data_tests:
