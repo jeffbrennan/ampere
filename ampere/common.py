@@ -37,7 +37,7 @@ class DeltaWriteConfig:
     table_dir: str
     table_name: str
     pks: list[str]
-    mode: DeltaTableWriteMode = DeltaTableWriteMode.MERGE
+    mode: DeltaTableWriteMode
 
 
 def format_list_sql_query(input_list: list[str]) -> str:
