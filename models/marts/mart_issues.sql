@@ -18,9 +18,9 @@ select
     coalesce(a.issue_body, '') as body, --noqa
     strftime(a.created_at, '%Y-%m-%d') as date, --noqa
     date_part('day', current_date - a.created_at) as "days old" --noqa
-from {{source('main', 'issues')}} as a
-inner join {{source('main', 'users')}} as b
+from {{source('stg_issues')}} as a
+inner join {{source('stg_users')}} as b
     on a.author_id = b.user_id
-inner join {{source('main', 'repos')}} as c
+inner join {{source('stg_repos')}} as c
     on a.repo_id = c.repo_id
 where a.state = 'open'

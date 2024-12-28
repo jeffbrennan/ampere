@@ -149,14 +149,14 @@ def get_repos_with_releases() -> list[str]:
             release_repos as (
                 select distinct
                     repo_id
-                from releases
+                from stg_releases
             ),
             repo_details as (
                 select
                     a.repo_id,
                     a.repo_name,
                     unnest(a.language) as "language"
-                from repos               a
+                from stg_repos               a
                 inner join release_repos b
                 on a.repo_id = b.repo_id
             )

@@ -3,18 +3,25 @@
         materialized='incremental',
         unique_key=[
           'repo_id',
-          'user_id',
+          'pr_id',
           'retrieved_at',
         ]
     )
 }}
 select
     repo_id,
-    fork_id,
-    owner_id,
+    pr_id,
+    pr_number,
+    pr_title,
+    pr_state,
+    pr_body,
+    author_id,
     created_at,
+    updated_at,
+    closed_at,
+    merged_at,
     retrieved_at
-from {{ source('main', 'stargazers') }}
+from {{ source('main', 'pull_requests') }}
 {% if is_incremental() %}
     where
        retrieved_at 

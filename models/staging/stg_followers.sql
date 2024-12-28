@@ -1,6 +1,21 @@
+{{
+    config(
+        materialized='incremental',
+        unique_key=[
+          'user_id',
+          'follower_id',
+          'retrieved_at'
+        ]
+    )
+}}
 select
     user_id,
     follower_id,
-    max(retrieved_at) as retrieved_at
+    retrieved_at
 from {{source('main', 'followers')}}
-group by user_id, follower_id
+{% if is_incremental() %}
+    where
+       retrieved_at 
+        > (select coalesce(max(retrieved_at), '1900-01-01') from {{ this }}) --noqa
+{% endif %}
+

@@ -332,9 +332,9 @@ def get_latest_commit(repo: Repo) -> str | None:
     con = get_db_con()
     query = f"""
         select commit_id
-        from commits 
+        from stg_commits 
         where committed_at = (
-            select max(committed_at) from commits where repo_id = {repo.repo_id}
+            select max(committed_at) from stg_commits where repo_id = {repo.repo_id}
         )
         """
 
@@ -634,7 +634,7 @@ def get_stale_followers_user_ids() -> list[int]:
             select 
                 user_id,
                 max(retrieved_at) as retrieved_at
-            from followers
+            from stg_followers
             group by user_id
         )
         select user_id

@@ -3,7 +3,7 @@ closed_issues_past_month as (
     select
         repo_id,
         count(issue_id) as closed_issues
-    from {{source('main', 'issues')}}
+    from {{source('stg_issues')}}
     where
         state = 'closed'
         and closed_at >= current_date - 120
@@ -15,7 +15,7 @@ open_issues_base as (
         repo_id,
         issue_id,
         date_part('day', current_date - created_at) as age_days
-    from {{source('main', 'issues')}}
+    from {{source('stg_issues')}}
     where
         state = 'open'
 ),
@@ -33,7 +33,7 @@ new_issues as (
     select
         repo_id,
         count(issue_id) as new_issues_count
-    from {{source('main', 'issues')}}
+    from {{source('stg_issues')}}
     where
         state = 'open'
         and created_at >= current_date - 120
@@ -44,7 +44,7 @@ repo_spine as (
     select
         repo_id,
         repo_name
-    from {{source('main', 'repos')}}
+    from {{source('stg_repos')}}
 )
 
 select

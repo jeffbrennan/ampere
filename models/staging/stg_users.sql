@@ -2,19 +2,24 @@
     config(
         materialized='incremental',
         unique_key=[
-          'repo_id',
           'user_id',
           'retrieved_at',
         ]
     )
 }}
 select
-    repo_id,
-    fork_id,
-    owner_id,
+    user_id,
+    user_name,
+    full_name,
+    company,
+    avatar_url,
+    repos_count,
+    followers_count,
+    following_count,
     created_at,
+    updated_at,
     retrieved_at
-from {{ source('main', 'stargazers') }}
+from {{ source('main', 'users') }}
 {% if is_incremental() %}
     where
        retrieved_at 
