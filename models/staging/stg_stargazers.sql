@@ -4,15 +4,13 @@
         unique_key=[
           'repo_id',
           'user_id',
-          'retrieved_at',
         ]
     )
 }}
 select
     repo_id,
-    fork_id,
-    owner_id,
-    created_at,
+    user_id,
+    starred_at,
     retrieved_at
 from {{ source('main', 'stargazers') }}
 {% if is_incremental() %}
