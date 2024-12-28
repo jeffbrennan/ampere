@@ -13,7 +13,7 @@
 
 with
 base as (
-    select * from {{ ref('stg_downloads_inc') }}
+    select * from {{ ref('stg_pypi_downloads') }}
     {% if is_incremental() %}
         where
             timestamp

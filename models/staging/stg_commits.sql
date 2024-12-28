@@ -3,8 +3,7 @@
         materialized='incremental',
         unique_key=[
           'repo_id',
-          'commit_id',
-          'retrieved_at'
+          'commit_id'
         ]
     )
 }}

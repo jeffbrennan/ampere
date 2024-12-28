@@ -12,7 +12,7 @@ select
     repo_id,
     issue_id,
     issue_number,
-    issue_title
+    issue_title,
     issue_body,
     author_id,
     state,

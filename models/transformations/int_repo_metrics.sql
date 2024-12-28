@@ -21,7 +21,7 @@ issue_metrics_open as (
         created_at as metric_timestamp,
         author_id as user_id,
         1 as metric_count
-    from {{source('stg_issues')}}
+    from {{ref('stg_issues')}}
     where created_at is not null
 ),
 
@@ -32,7 +32,7 @@ issue_metrics_closed as (
         closed_at as metric_timestamp,
         author_id as user_id,
         -1 as metric_count
-    from {{source('stg_issues')}}
+    from {{ref('stg_issues')}}
     where closed_at is not null
 ),
 
@@ -65,7 +65,7 @@ pr_metrics_open as (
         created_at as metric_timestamp,
         author_id as user_id,
         1 as metric_count
-    from {{source('stg_pull_requests')}}
+    from {{ref('stg_pull_requests')}}
     where created_at is not null
 ),
 
@@ -76,7 +76,7 @@ pr_metrics_closed as (
         closed_at as metric_timestamp,
         author_id as user_id,
         -1 as metric_count
-    from {{source('stg_pull_requests')}}
+    from {{ref('stg_pull_requests')}}
     where closed_at is not null
 ),
 
@@ -114,7 +114,7 @@ fork_metrics as (
             order by created_at
             rows between unbounded preceding and current row
         ) as metric_count
-    from {{source('stg_forks')}}
+    from {{ref('stg_forks')}}
 ),
 
 commit_metrics_added as (
@@ -124,7 +124,7 @@ commit_metrics_added as (
         committed_at as metric_timestamp,
         author_id as user_id,
         additions_count as metric_count
-    from {{source('stg_commits')}}
+    from {{ref('stg_commits')}}
 ),
 
 commit_metrics_deleted as (
@@ -134,7 +134,7 @@ commit_metrics_deleted as (
         committed_at as metric_timestamp,
         author_id as user_id,
         deletions_count * -1 as metric_count
-    from {{source('stg_commits')}}
+    from {{ref('stg_commits')}}
 ),
 
 commit_metrics_combined as (

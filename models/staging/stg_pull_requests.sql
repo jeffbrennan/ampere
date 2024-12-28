@@ -1,11 +1,6 @@
 {{
     config(
         materialized='incremental',
-        unique_key=[
-          'repo_id',
-          'pr_id',
-          'retrieved_at',
-        ]
     )
 }}
 select

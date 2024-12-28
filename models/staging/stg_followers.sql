@@ -1,11 +1,6 @@
 {{
     config(
         materialized='incremental',
-        unique_key=[
-          'user_id',
-          'follower_id',
-          'retrieved_at'
-        ]
     )
 }}
 select
