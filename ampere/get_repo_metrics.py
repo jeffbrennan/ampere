@@ -665,6 +665,10 @@ def refresh_github_table(
         print(f"obtained {len(results)} records")
         all_results.extend(results)
 
+    if len(all_results) == 0:
+        print("no records to write")
+        return 0
+
     write_delta_table(records=all_results, config=config)
     return len(all_results)
 
