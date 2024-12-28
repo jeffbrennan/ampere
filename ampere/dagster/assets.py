@@ -72,7 +72,7 @@ def dagster_get_repos(context: AssetExecutionContext) -> None:
 @asset(
     compute_kind="python",
     key=["stargazers"],
-    deps=["repos"],
+    deps=["stg_repos"],
     group_name="github_metrics_daily_4",
 )
 def dagster_get_stargazers(context: AssetExecutionContext) -> None:
@@ -95,7 +95,7 @@ def dagster_get_stargazers(context: AssetExecutionContext) -> None:
 @asset(
     compute_kind="python",
     key=["forks"],
-    deps=["repos"],
+    deps=["stg_repos"],
     group_name="github_metrics_daily_4",
 )
 def dagster_get_forks(context: AssetExecutionContext) -> None:
@@ -118,7 +118,7 @@ def dagster_get_forks(context: AssetExecutionContext) -> None:
 @asset(
     compute_kind="python",
     key=["releases"],
-    deps=["repos"],
+    deps=["stg_repos"],
     group_name="github_metrics_daily_4",
 )
 def dagster_get_releases(context: AssetExecutionContext) -> None:
@@ -141,7 +141,7 @@ def dagster_get_releases(context: AssetExecutionContext) -> None:
 @asset(
     compute_kind="python",
     key=["pull_requests"],
-    deps=["repos"],
+    deps=["stg_repos"],
     group_name="github_metrics_daily_4",
 )
 def dagster_get_pull_requests(context: AssetExecutionContext) -> None:
@@ -164,7 +164,7 @@ def dagster_get_pull_requests(context: AssetExecutionContext) -> None:
 @asset(
     compute_kind="python",
     key=["issues"],
-    deps=["repos"],
+    deps=["stg_repos"],
     group_name="github_metrics_daily_4",
 )
 def dagster_get_issues(context: AssetExecutionContext) -> None:
@@ -187,7 +187,7 @@ def dagster_get_issues(context: AssetExecutionContext) -> None:
 @asset(
     compute_kind="python",
     key=["commits"],
-    deps=["repos"],
+    deps=["stg_repos"],
     group_name="github_metrics_daily_4",
 )
 def dagster_get_commits(context: AssetExecutionContext) -> None:
@@ -210,7 +210,7 @@ def dagster_get_commits(context: AssetExecutionContext) -> None:
 @asset(
     compute_kind="python",
     key=["users"],
-    deps=["repos"],
+    deps=["stg_repos"],
     group_name="github_metrics_daily_4",
 )
 def dagster_get_users(context: AssetExecutionContext) -> None:
