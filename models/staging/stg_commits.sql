@@ -11,7 +11,7 @@
 select
     repo_id,
     commit_id,
-    author_id,
+    author_id::bigint as author_id,
     comment_count,
     message,
     stats,
