@@ -180,11 +180,9 @@ def get_repos(org_name: str) -> list[Repo]:
 
 
 def read_repos() -> list[Repo]:
-    delta_table_path = Path(__file__).parents[1] / "data" / "bronze" / "repos"
-    if not delta_table_path.exists():
-        raise FileNotFoundError(delta_table_path)
-    repo_records = DeltaTable(delta_table_path).to_pandas().to_dict("records")
-    repos = [Repo.model_validate(i) for i in repo_records]
+    con = get_db_con()
+    repos_dict = con.sql("select * from stg_repos").to_df().to_dict("records")
+    repos = [Repo.model_validate(i) for i in repos_dict]
     return repos
 
 
