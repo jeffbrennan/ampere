@@ -88,16 +88,6 @@ class Issue(SQLModel):
     retrieved_at: datetime.datetime = Field(primary_key=True)
 
 
-# https://docs.github.com/en/rest/metrics/traffic?apiVersion=2022-11-28#get-page-views
-class View(SQLModel):
-    __tablename__ = "views"  # pyright: ignore [reportAssignmentType]
-    repo_id: int = Field(primary_key=True, foreign_key="repo.repo_id")
-    view_count: int
-    unique_view_count: int
-    view_date: datetime.date
-    retrieved_at: datetime.datetime
-
-
 # https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#list-pull-requests
 class PullRequest(SQLModel):
     __tablename__ = "pull_requests"  # pyright: ignore [reportAssignmentType]

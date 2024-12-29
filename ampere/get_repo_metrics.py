@@ -509,36 +509,6 @@ def get_following(user_id: int) -> list[Follower]:
     return handle_follower_following_request(user_id, url, "following")
 
 
-def get_views(owner_name: str, repo: Repo) -> list[View]:
-    # TODO: get "Administration" repository permissions (read)
-    print("getting views...")
-    url = f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/traffic/views"
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-
-    output = []
-
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        raise ValueError(response.status_code)
-    results = json.loads(response.content)
-    for result in results["views"]:
-        output.append(
-            View(
-                repo_id=repo.repo_id,
-                view_count=result["count"],
-                unique_view_count=result["uniques"],
-                view_date=result["timestamp"],
-                retrieved_at=get_current_time(),
-            )
-        )
-
-    print(f"n={len(output)}")
-    return output
-
 
 @dataclass
 class APIRequest:
