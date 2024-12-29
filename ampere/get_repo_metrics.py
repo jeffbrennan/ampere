@@ -1,6 +1,7 @@
 import datetime
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional
@@ -575,15 +576,54 @@ def get_user(user_id: int) -> Optional[User]:
         "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
         "X-GitHub-Api-Version": "2022-11-28",
     }
+    print(user_id)
+
+    max_errors = 1
+    errors = 0
+    attempts = 0
+    max_attempts = 3
+    request_finished = False
+
+    # https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#about-secondary-rate-limits
+    n_workers = 2
+    request_cpu_time_seconds = 0.25
+    task_real_time_seconds = 0.3
+    rate_limit_seconds_per_60_seconds = 90
+    target_cpu_time_per_60_seconds = rate_limit_seconds_per_60_seconds * 0.9
+    task_sleep_seconds = (
+        1
+        / (
+            (target_cpu_time_per_60_seconds)
+            / (n_workers * 60 * request_cpu_time_seconds)
+        )
+        - task_real_time_seconds
+    )
 
     response = requests.get(url, headers=headers)
-    if response.status_code == 404:
-        print("user not found", user_id)
-        return None
-    elif response.status_code != 200:
-        raise ValueError(response.status_code)
+    while attempts < max_attempts:
+        attempts += 1
+        request_finished = response.status_code == 200
+        if request_finished:
+            break
+
+        if response.status_code == 404:
+            print("user not found", user_id)
+            return None
+        elif response.status_code in [403, 429]:
+            response_text = str(response.json())
+            errors += 1
+            if errors > max_errors:
+                raise ValueError(response_text)
+            print(response_text)
+            if "secondary" in response_text:
+                time.sleep(60 * max_errors)
+            else:
+                time.sleep(60 * 60)
+
+            response = requests.get(url, headers=headers)
 
     results = json.loads(response.content)
+    time.sleep(task_sleep_seconds)
     return User(
         user_id=results["id"],
         user_name=results["login"],
@@ -683,20 +723,11 @@ def refresh_users(
     user_ids: list[int],
     config: DeltaWriteConfig,
 ) -> int:
-    all_results = []
     start_time = time.time()
-    for i, user_id in enumerate(user_ids, 1):
-        header_text = f"[{i:04d}/{len(user_ids):04d}] {user_id}"
-        print(create_header(80, header_text, True, "-"))
-        try:
-            result = get_user(user_id)
-        except Exception as e:
-            raise e
-
-        if result is None:
-            continue
-
-        all_results.append(result)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        raw_results = list(executor.map(get_user, user_ids))
+    
+    all_results = [i for i in raw_results if i is not None]
     elapsed_time = time.time() - start_time
     avg_time_per_user = elapsed_time / len(user_ids)
 
