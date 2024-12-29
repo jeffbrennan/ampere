@@ -454,75 +454,46 @@ def get_issues(owner_name: str, repo: Repo) -> list[Issue]:
     return output
 
 
-@dataclass
-class FollowerResponse:
-    id: int
-    retrieved_at: datetime.datetime
-
-
 def handle_follower_following_request(
     user_id: int, url: str, user_type: str
 ) -> list[Follower]:
-    parameters = {"per_page": 100}
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    output_raw = []
-    requests_finished = False
-    max_pages = 5000
-    max_errors = 1
-    pages_checked = 0
-    errors = 0
-
     if user_type not in ["follower", "following"]:
         raise ValueError("expecting one of [follower, following]")
 
-    response = requests.get(url, headers=headers, params=parameters)
-    while not requests_finished and pages_checked < max_pages:
-        if response.status_code in [403, 429]:
-            errors += 1
-            if errors > max_errors:
-                break
-            print(response.json())
-            print("waiting one hour")
-            time.sleep(60 * 60)
-            response = requests.get(url, headers=headers, params=parameters)
-            continue
-
-        if response.status_code != 200:
-            raise ValueError(response.status_code)
-
-        results = json.loads(response.content)
-        for result in results:
-            output_raw.append(
-                FollowerResponse(
-                    id=result["id"],
-                    retrieved_at=get_current_time(),
-                )
-            )
-
-        pages_checked += 1
-        print(f"n={len(output_raw)}")
-        requests_finished = "next" not in response.links
-        if requests_finished:
-            break
-
-        response = requests.get(
-            response.links["next"]["url"], headers=headers, params=parameters
+    results = handle_api_response(
+        APIRequest(
+            url=url,
+            max_requests=5000,
+            max_errors=1,
+            headers=get_github_api_header(),
+            parameters={"per_page": 100},
         )
+    )
 
     if user_type == "follower":
         output = [
-            Follower(user_id=user_id, follower_id=i.id, retrieved_at=i.retrieved_at)
-            for i in output_raw
+            Follower(
+                user_id=user_id, follower_id=i["id"], retrieved_at=i["ampere_timestamp"]
+            )
+            for i in results
         ]
     else:
         output = [
-            Follower(user_id=i.id, follower_id=user_id, retrieved_at=i.retrieved_at)
-            for i in output_raw
+            Follower(
+                user_id=i["id"], follower_id=user_id, retrieved_at=i["ampere_timestamp"]
+            )
+            for i in results
         ]
+    time.sleep(
+        get_task_sleep_seconds(
+            TaskSleepConfig(
+                n_workers=2,
+                target_adj_pct=0.9,
+                request_cpu_time_seconds=0.25,
+                task_real_time_seconds=0.3,
+            )
+        )
+    )
     return output
 
 
@@ -569,61 +540,129 @@ def get_views(owner_name: str, repo: Repo) -> list[View]:
     return output
 
 
-def get_user(user_id: int) -> Optional[User]:
-    url = f"https://api.github.com/user/{user_id}"
+@dataclass
+class APIRequest:
+    url: str
+    max_requests: int
+    max_errors: int
+    headers: Optional[dict] = None
+    parameters: Optional[dict] = None
+
+
+def handle_api_response(config: APIRequest) -> list[dict]:
+    url = config.url
+    n_requests = 0
+    errors = 0
+
+    n_requests += 1
+    results = []
+    while n_requests < config.max_requests:
+        response = requests.get(url=url, headers=config.headers, params=config.parameters)
+        response_json = response.json()
+        response_json["ampere_timestamp"] = get_current_time()
+        n_requests += 1
+        if response.status_code in [403, 429]:
+            errors += 1
+            if errors > config.max_errors:
+                break
+            response_text = str(response_json)
+
+            if "secondary" in response_text:
+                time.sleep(60 * config.max_errors)
+            else:
+                time.sleep(get_rate_limit_reset_sleep_seconds())
+            continue
+
+        if response.status_code != 200:
+            raise ValueError(response.status_code)
+
+        url = response.links["next"]["url"]
+        results.append(response_json)
+        if not response.links:
+            break
+
+        requests_finished = "next" not in response.links
+        if requests_finished:
+            break
+    return results
+
+
+def get_rate_limit_reset_sleep_seconds() -> int:
+    url = f"https://api.github.com/rate_limit"
     headers = {
         "Accept": "application/vnd.github+json",
         "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
         "X-GitHub-Api-Version": "2022-11-28",
     }
-    print(user_id)
 
-    max_errors = 1
-    errors = 0
-    attempts = 0
-    max_attempts = 3
-    request_finished = False
+    response = requests.get(url=url, headers=headers)
+    response_json = response.json()
+    if response.status_code != 200:
+        raise ValueError(str(response_json))
 
+    reset = int(response_json["resources"]["core"]["reset"])
+    seconds_to_sleep = reset - int(time.time()) + 1
+
+    print("sleeping for", seconds_to_sleep, "seconds")
+    return seconds_to_sleep
+
+
+@dataclass
+class TaskSleepConfig:
+    n_workers: int
+    target_adj_pct: float
+    request_cpu_time_seconds: float
+    task_real_time_seconds: float
+
+
+def get_task_sleep_seconds(config: TaskSleepConfig) -> float:
     # https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#about-secondary-rate-limits
-    n_workers = 2
-    request_cpu_time_seconds = 0.25
-    task_real_time_seconds = 0.3
     rate_limit_seconds_per_60_seconds = 90
-    target_cpu_time_per_60_seconds = rate_limit_seconds_per_60_seconds * 0.9
+    target_cpu_time_per_60_seconds = (
+        rate_limit_seconds_per_60_seconds * config.target_adj_pct
+    )
     task_sleep_seconds = (
         1
         / (
             (target_cpu_time_per_60_seconds)
-            / (n_workers * 60 * request_cpu_time_seconds)
+            / (config.request_cpu_time_seconds * 60 * config.n_workers)
         )
-        - task_real_time_seconds
+        - config.task_real_time_seconds
+    ) / config.n_workers
+    return task_sleep_seconds
+
+
+def get_github_api_header():
+    return {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+
+
+def get_user(user_id: int) -> Optional[User]:
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/user/{user_id}",
+            max_requests=3,
+            max_errors=1,
+            headers=get_github_api_header(),
+        )
     )
+    if len(results) > 1:
+        raise ValueError("expecting one result")
 
-    response = requests.get(url, headers=headers)
-    while attempts < max_attempts:
-        attempts += 1
-        request_finished = response.status_code == 200
-        if request_finished:
-            break
-
-        if response.status_code == 404:
-            print("user not found", user_id)
-            return None
-        elif response.status_code in [403, 429]:
-            response_text = str(response.json())
-            errors += 1
-            if errors > max_errors:
-                raise ValueError(response_text)
-            print(response_text)
-            if "secondary" in response_text:
-                time.sleep(60 * max_errors)
-            else:
-                time.sleep(60 * 60)
-
-            response = requests.get(url, headers=headers)
-
-    results = json.loads(response.content)
-    time.sleep(task_sleep_seconds)
+    results = results[0]
+    time.sleep(
+        get_task_sleep_seconds(
+            TaskSleepConfig(
+                n_workers=2,
+                target_adj_pct=0.9,
+                request_cpu_time_seconds=0.25,
+                task_real_time_seconds=0.3,
+            )
+        )
+    )
     return User(
         user_id=results["id"],
         user_name=results["login"],
@@ -726,7 +765,7 @@ def refresh_users(
     start_time = time.time()
     with ThreadPoolExecutor(max_workers=2) as executor:
         raw_results = list(executor.map(get_user, user_ids))
-    
+
     all_results = [i for i in raw_results if i is not None]
     elapsed_time = time.time() - start_time
     avg_time_per_user = elapsed_time / len(user_ids)
