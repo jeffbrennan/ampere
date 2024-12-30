@@ -31,128 +31,81 @@ from ampere.models import (
     Repo,
     Stargazer,
     User,
-    View,
 )
 
 
 def get_forks(owner_name: str, repo: Repo) -> list[Fork]:
     print("getting forks...")
-    url = f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/forks?per_page=100"
-    headers = {
-        "Accept": "application/vnd.github.star+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-
     output = []
-    requests_finished = False
-    max_pages = 10
-    pages_checked = 0
-
-    response = requests.get(url, headers=headers)
-    while not requests_finished and pages_checked < max_pages:
-        if response.status_code != 200:
-            raise ValueError(response.status_code)
-        results = json.loads(response.content)
-
-        for result in results:
-            output.append(
-                Fork(
-                    repo_id=repo.repo_id,
-                    fork_id=result["id"],
-                    owner_id=result["owner"]["id"],
-                    created_at=result["created_at"],
-                    retrieved_at=get_current_time(),
-                )
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/forks?per_page=100",
+            max_requests=50,
+            max_errors=1,
+            headers=get_github_api_header(),
+        )
+    )
+    for result in results:
+        output.append(
+            Fork(
+                repo_id=repo.repo_id,
+                fork_id=result["id"],
+                owner_id=result["owner"]["id"],
+                created_at=result["created_at"],
+                retrieved_at=get_current_time(),
             )
-
-        pages_checked += 1
-        print(f"n={len(output)}")
-        requests_finished = "next" not in response.links
-        if requests_finished:
-            break
-
-        response = requests.get(response.links["next"]["url"], headers=headers)
-
+        )
     return output
 
 
 def get_stargazers(owner_name: str, repo: Repo) -> list[Stargazer]:
     # https://docs.github.com/en/rest/activity/starring?apiVersion=2022-11-28
     print("getting stargazers...")
-    url = f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/stargazers?per_page=100"
-    headers = {
-        "Accept": "application/vnd.github.star+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-
-    response = requests.get(url, headers=headers)
-
     output = []
-    requests_finished = False
-    max_pages = 10
-    pages_checked = 0
-
-    while not requests_finished and pages_checked < max_pages:
-        if response.status_code != 200:
-            raise ValueError(response.status_code)
-        results = json.loads(response.content)
-
-        for result in results:
-            output.append(
-                Stargazer(
-                    repo_id=repo.repo_id,
-                    user_id=result["user"]["id"],
-                    starred_at=result["starred_at"],
-                    retrieved_at=get_current_time(),
-                )
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/stargazers?per_page=100",
+            max_requests=50,
+            max_errors=1,
+            headers=get_github_api_header(),
+        )
+    )
+    for result in results:
+        output.append(
+            Stargazer(
+                repo_id=repo.repo_id,
+                user_id=result["user"]["id"],
+                starred_at=result["starred_at"],
+                retrieved_at=get_current_time(),
             )
-
-        pages_checked += 1
-        print(f"n={len(output)}")
-        requests_finished = "next" not in response.links
-        if requests_finished:
-            break
-
-        response = requests.get(response.links["next"]["url"], headers=headers)
-
+        )
     return output
 
 
 def get_repo_language(owner_name: str, repo_name: str) -> list[Language]:
-    url = f"https://api.github.com/repos/{owner_name}/{repo_name}/languages"
+    result = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo_name}/languages",
+            max_requests=1,
+            max_errors=0,
+            headers=get_github_api_header(),
+        )
+    )[0]
 
-    headers = {
-        "Accept": "application/vnd.github.star+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        raise ValueError(response.status_code)
-
-    result = json.loads(response.content)
     return [Language(name=k, size_bytes=v) for k, v in result.items()]
 
 
 def get_repos(org_name: str) -> list[Repo]:
-    """
-    get repos in org
-    """
-    url = f"https://api.github.com/orgs/{org_name}/repos"
-
-    headers = {
-        "Accept": "application/vnd.github.star+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        raise ValueError(response.status_code)
+    print("getting repos")
     output = []
-    results = json.loads(response.content)
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/orgs/{org_name}/repos",
+            max_requests=1,
+            max_errors=0,
+            headers=get_github_api_header(),
+        )
+    )
 
     for result in results:
         language = get_repo_language(owner_name=org_name, repo_name=result["name"])
@@ -189,44 +142,28 @@ def read_repos() -> list[Repo]:
 
 def get_releases(owner_name: str, repo: Repo) -> list[Release]:
     print("getting releases...")
-    url = f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/releases?per_page=100"
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-
     output = []
-    requests_finished = False
-    max_pages = 10
-    pages_checked = 0
-
-    response = requests.get(url, headers=headers)
-    while not requests_finished and pages_checked < max_pages:
-        if response.status_code != 200:
-            raise ValueError(response.status_code)
-        results = json.loads(response.content)
-        for result in results:
-            output.append(
-                Release(
-                    repo_id=repo.repo_id,
-                    release_id=result["id"],
-                    release_name=result["name"],
-                    tag_name=result["tag_name"],
-                    release_body=result["body"],
-                    created_at=result["created_at"],
-                    published_at=result["published_at"],
-                    retrieved_at=get_current_time(),
-                )
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/releases?per_page=100",
+            max_requests=50,
+            max_errors=1,
+            headers=get_github_api_header(),
+        )
+    )
+    for result in results:
+        output.append(
+            Release(
+                repo_id=repo.repo_id,
+                release_id=result["id"],
+                release_name=result["name"],
+                tag_name=result["tag_name"],
+                release_body=result["body"],
+                created_at=result["created_at"],
+                published_at=result["published_at"],
+                retrieved_at=get_current_time(),
             )
-
-        pages_checked += 1
-        print(f"n={len(output)}")
-        requests_finished = "next" not in response.links
-        if requests_finished:
-            break
-
-        response = requests.get(response.links["next"]["url"], headers=headers)
+        )
 
     return output
 
@@ -234,19 +171,16 @@ def get_releases(owner_name: str, repo: Repo) -> list[Release]:
 def get_commit_stats(
     owner_name: str, repo_name: str, commit_id: str
 ) -> list[CommitStats]:
-    url = f"https://api.github.com/repos/{owner_name}/{repo_name}/commits/{commit_id}"
-
-    headers = {
-        "Accept": "application/vnd.github.star+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        raise ValueError(response.status_code)
-
-    result = json.loads(response.content)
     output = []
+    result = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo_name}/commits/{commit_id}",
+            max_requests=1,
+            max_errors=0,
+            headers=get_github_api_header(),
+        )
+    )[0]
+
     for f in result["files"]:
         output.append(
             CommitStats(
@@ -264,65 +198,39 @@ def get_commit_stats(
 def get_commits(owner_name: str, repo: Repo) -> list[Commit]:
     print("getting commits...")
     # by default, sorts by created descending
-    url = (
-        f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/commits?per_page=100"
-    )
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-
     output = []
-    requests_finished = False
-    reached_oldest_commit = False
-    max_pages = 10
-    pages_checked = 0
-    latest_commit = get_latest_commit(repo)
-    response = requests.get(url, headers=headers)
-    while not requests_finished and pages_checked < max_pages:
-        if response.status_code != 200:
-            print(response.json())
-            raise ValueError(response.status_code)
-        results = json.loads(response.content)
-        for result in results:
-            if latest_commit is not None and result["sha"] == latest_commit:
-                print("caught up to latest recorded commit!")
-                reached_oldest_commit = True
-                break
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/commits?per_page=100",
+            max_requests=10,
+            max_errors=1,
+            headers=get_github_api_header(),
+            termination_key="sha",
+            termination_value=get_latest_commit(repo),
+        )
+    )
 
-            print(result["sha"])
-            commit_stats = get_commit_stats(owner_name, repo.repo_name, result["sha"])
-            if result["author"] is not None:
-                author_id = result["author"]["id"]
-            elif result["committer"] is not None:
-                author_id = result["committer"]["id"]
-            else:
-                author_id = None
+    for result in results:
+        commit_stats = get_commit_stats(owner_name, repo.repo_name, result["sha"])
+        if result["author"] is not None:
+            author_id = result["author"]["id"]
+        elif result["committer"] is not None:
+            author_id = result["committer"]["id"]
+        else:
+            author_id = None
 
-            output.append(
-                Commit(
-                    repo_id=repo.repo_id,
-                    commit_id=result["sha"],
-                    author_id=author_id,
-                    comment_count=result["commit"]["comment_count"],
-                    message=result["commit"]["message"],
-                    stats=commit_stats,
-                    committed_at=result["commit"]["author"]["date"],
-                    retrieved_at=get_current_time(),
-                )
+        output.append(
+            Commit(
+                repo_id=repo.repo_id,
+                commit_id=result["sha"],
+                author_id=author_id,
+                comment_count=result["commit"]["comment_count"],
+                message=result["commit"]["message"],
+                stats=commit_stats,
+                committed_at=result["commit"]["author"]["date"],
+                retrieved_at=get_current_time(),
             )
-
-        if reached_oldest_commit:
-            break
-
-        pages_checked += 1
-        print(f"n={len(output)}")
-        requests_finished = "next" not in response.links
-        if requests_finished:
-            break
-
-        response = requests.get(response.links["next"]["url"], headers=headers)
+        )
 
     return output
 
@@ -352,51 +260,32 @@ def get_latest_commit(repo: Repo) -> str | None:
 
 def get_pull_requests(owner_name: str, repo: Repo) -> list[PullRequest]:
     print("getting prs...")
-    url = f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/pulls"
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-
-    parameters = {"per_page": 100, "state": "all"}
-
     output = []
-    requests_finished = False
-    max_pages = 10
-    pages_checked = 0
-
-    response = requests.get(url, headers=headers, params=parameters)
-    while not requests_finished and pages_checked < max_pages:
-        if response.status_code != 200:
-            raise ValueError(response.status_code)
-        results = json.loads(response.content)
-        for result in results:
-            output.append(
-                PullRequest(
-                    repo_id=repo.repo_id,
-                    pr_id=result["id"],
-                    pr_number=result["number"],
-                    pr_title=result["title"],
-                    pr_state=result["state"],
-                    pr_body=result["body"],
-                    author_id=result["user"]["id"],
-                    created_at=result["created_at"],
-                    updated_at=result["updated_at"],
-                    closed_at=result["closed_at"],
-                    merged_at=result["merged_at"],
-                    retrieved_at=get_current_time(),
-                )
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/pulls",
+            max_requests=50,
+            max_errors=1,
+            parameters={"per_page": 100, "state": "all"},
+            headers=get_github_api_header(),
+        )
+    )
+    for result in results:
+        output.append(
+            PullRequest(
+                repo_id=repo.repo_id,
+                pr_id=result["id"],
+                pr_number=result["number"],
+                pr_title=result["title"],
+                pr_state=result["state"],
+                pr_body=result["body"],
+                author_id=result["user"]["id"],
+                created_at=result["created_at"],
+                updated_at=result["updated_at"],
+                closed_at=result["closed_at"],
+                merged_at=result["merged_at"],
+                retrieved_at=get_current_time(),
             )
-
-        pages_checked += 1
-        print(f"n={len(output)}")
-        requests_finished = "next" not in response.links
-        if requests_finished:
-            break
-
-        response = requests.get(
-            response.links["next"]["url"], headers=headers, params=parameters
         )
 
     return output
@@ -404,53 +293,34 @@ def get_pull_requests(owner_name: str, repo: Repo) -> list[PullRequest]:
 
 def get_issues(owner_name: str, repo: Repo) -> list[Issue]:
     print("getting issues...")
-    url = f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/issues"
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    parameters = {"per_page": 100, "state": "all"}
-
     output = []
-    requests_finished = False
-    max_pages = 10
-    pages_checked = 0
-
-    response = requests.get(url, headers=headers, params=parameters)
-    while not requests_finished and pages_checked < max_pages:
-        if response.status_code != 200:
-            raise ValueError(response.status_code)
-        results = json.loads(response.content)
-        for result in results:
-            output.append(
-                Issue(
-                    repo_id=repo.repo_id,
-                    issue_id=result["id"],
-                    issue_number=result["number"],
-                    issue_title=result["title"],
-                    issue_body=result["body"],
-                    author_id=result["user"]["id"],
-                    state=result["state"],
-                    state_reason=result["state_reason"],
-                    comments_count=result["comments"],
-                    created_at=result["created_at"],
-                    updated_at=result["updated_at"],
-                    closed_at=result["closed_at"],
-                    retrieved_at=get_current_time(),
-                )
-            )
-
-        pages_checked += 1
-        print(f"n={len(output)}")
-        requests_finished = "next" not in response.links
-        if requests_finished:
-            break
-
-        response = requests.get(
-            response.links["next"]["url"], headers=headers, params=parameters
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/issues",
+            headers=get_github_api_header(),
+            parameters={"per_page": 100, "state": "all"},
+            max_requests=20,
+            max_errors=1,
         )
-
+    )
+    for result in results:
+        output.append(
+            Issue(
+                repo_id=repo.repo_id,
+                issue_id=result["id"],
+                issue_number=result["number"],
+                issue_title=result["title"],
+                issue_body=result["body"],
+                author_id=result["user"]["id"],
+                state=result["state"],
+                state_reason=result["state_reason"],
+                comments_count=result["comments"],
+                created_at=result["created_at"],
+                updated_at=result["updated_at"],
+                closed_at=result["closed_at"],
+                retrieved_at=get_current_time(),
+            )
+        )
     return output
 
 
@@ -509,7 +379,6 @@ def get_following(user_id: int) -> list[Follower]:
     return handle_follower_following_request(user_id, url, "following")
 
 
-
 @dataclass
 class APIRequest:
     url: str
@@ -517,6 +386,8 @@ class APIRequest:
     max_errors: int
     headers: Optional[dict] = None
     parameters: Optional[dict] = None
+    termination_key: Optional[str] = None
+    termination_value: Optional[str] = None
 
 
 def handle_api_response(config: APIRequest) -> list[dict]:
@@ -524,10 +395,11 @@ def handle_api_response(config: APIRequest) -> list[dict]:
     n_requests = 0
     errors = 0
 
-    n_requests += 1
     results = []
     while n_requests < config.max_requests:
         response = requests.get(url=url, headers=config.headers, params=config.parameters)
+        n_requests += 1
+
         response_json = response.json()
         response_json["ampere_timestamp"] = get_current_time()
         n_requests += 1
@@ -546,31 +418,40 @@ def handle_api_response(config: APIRequest) -> list[dict]:
         if response.status_code != 200:
             raise ValueError(response.status_code)
 
-        url = response.links["next"]["url"]
         results.append(response_json)
+
+        # exit if no links section to contain a continuation link
         if not response.links:
             break
 
+        # exit if termination condition met
+        if (
+            config.termination_key is not None
+            and config.termination_value is not None
+            and response_json[config.termination_key] == config.termination_value
+        ):
+            break
+
+        # exit if no more continuation tokens
         requests_finished = "next" not in response.links
         if requests_finished:
             break
+
+        url = response.links["next"]["url"]
     return results
 
 
 def get_rate_limit_reset_sleep_seconds() -> int:
-    url = f"https://api.github.com/rate_limit"
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
+    result = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/rate_limit",
+            max_requests=1,
+            max_errors=0,
+            headers=get_github_api_header(),
+        )
+    )[0]
 
-    response = requests.get(url=url, headers=headers)
-    response_json = response.json()
-    if response.status_code != 200:
-        raise ValueError(str(response_json))
-
-    reset = int(response_json["resources"]["core"]["reset"])
+    reset = int(result["resources"]["core"]["reset"])
     seconds_to_sleep = reset - int(time.time()) + 1
 
     print("sleeping for", seconds_to_sleep, "seconds")
