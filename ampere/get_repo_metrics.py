@@ -1,8 +1,6 @@
-import datetime
-import json
 import time
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -34,103 +32,62 @@ from ampere.models import (
 )
 
 
-def get_forks(owner_name: str, repo: Repo) -> list[Fork]:
-    print("getting forks...")
-    output = []
-    results = handle_api_response(
-        APIRequest(
-            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/forks?per_page=100",
-            max_requests=50,
-            max_errors=1,
-            headers=get_github_api_header(),
-        )
+@dataclass(frozen=True)
+class APIRequest:
+    url: str
+    max_requests: int = 50
+    max_errors: int = 1
+    headers: Optional[dict] = field(
+        default_factory=lambda: {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
     )
-    for result in results:
-        output.append(
-            Fork(
-                repo_id=repo.repo_id,
-                fork_id=result["id"],
-                owner_id=result["owner"]["id"],
-                created_at=result["created_at"],
-                retrieved_at=get_current_time(),
-            )
-        )
-    return output
+    parameters: Optional[dict] = None
+    termination_key: Optional[str] = None
+    termination_value: Optional[str] = None
 
 
-def get_stargazers(owner_name: str, repo: Repo) -> list[Stargazer]:
-    # https://docs.github.com/en/rest/activity/starring?apiVersion=2022-11-28
-    print("getting stargazers...")
-    output = []
-    results = handle_api_response(
-        APIRequest(
-            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/stargazers?per_page=100",
-            max_requests=50,
-            max_errors=1,
-            headers=get_github_api_header(),
-        )
-    )
-    for result in results:
-        output.append(
-            Stargazer(
-                repo_id=repo.repo_id,
-                user_id=result["user"]["id"],
-                starred_at=result["starred_at"],
-                retrieved_at=get_current_time(),
-            )
-        )
-    return output
+@dataclass
+class TaskSleepConfig:
+    n_workers: int
+    target_adj_pct: float
+    request_cpu_time_seconds: float
+    task_real_time_seconds: float
 
 
-def get_repo_language(owner_name: str, repo_name: str) -> list[Language]:
+def get_rate_limit_reset_sleep_seconds() -> int:
     result = handle_api_response(
         APIRequest(
-            url=f"https://api.github.com/repos/{owner_name}/{repo_name}/languages",
+            url=f"https://api.github.com/rate_limit",
             max_requests=1,
             max_errors=0,
-            headers=get_github_api_header(),
         )
     )[0]
 
-    return [Language(name=k, size_bytes=v) for k, v in result.items()]
+    reset = int(result["resources"]["core"]["reset"])
+    seconds_to_sleep = reset - int(time.time()) + 1
+
+    print("sleeping for", seconds_to_sleep, "seconds")
+    return seconds_to_sleep
 
 
-def get_repos(org_name: str) -> list[Repo]:
-    print("getting repos")
-    output = []
-    results = handle_api_response(
-        APIRequest(
-            url=f"https://api.github.com/orgs/{org_name}/repos",
-            max_requests=1,
-            max_errors=0,
-            headers=get_github_api_header(),
-        )
+def get_task_sleep_seconds(config: TaskSleepConfig) -> float:
+    # https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#about-secondary-rate-limits
+    rate_limit_seconds_per_60_seconds = 90
+    target_cpu_time_per_60_seconds = (
+        rate_limit_seconds_per_60_seconds * config.target_adj_pct
     )
-
-    for result in results:
-        language = get_repo_language(owner_name=org_name, repo_name=result["name"])
-        repo_license = None
-        if result["license"] is not None:
-            repo_license = result["license"]["name"]
-        output.append(
-            Repo(
-                repo_id=result["id"],
-                repo_name=result["name"],
-                license=repo_license,
-                topics=result["topics"],
-                language=language,
-                repo_size=result["size"],
-                forks_count=result["forks_count"],
-                stargazers_count=result["stargazers_count"],
-                open_issues_count=result["open_issues_count"],
-                pushed_at=result["pushed_at"],
-                created_at=result["updated_at"],
-                updated_at=result["updated_at"],
-                retrieved_at=get_current_time(),
-            )
+    task_sleep_seconds = (
+        1
+        / (
+            (target_cpu_time_per_60_seconds)
+            / (config.request_cpu_time_seconds * 60 * config.n_workers)
         )
-
-    return output
+        - config.task_real_time_seconds
+    ) / config.n_workers
+    return task_sleep_seconds
 
 
 def read_repos() -> list[Repo]:
@@ -138,101 +95,6 @@ def read_repos() -> list[Repo]:
     repos_dict = con.sql("select * from stg_repos").to_df().to_dict("records")
     repos = [Repo.model_validate(i) for i in repos_dict]
     return repos
-
-
-def get_releases(owner_name: str, repo: Repo) -> list[Release]:
-    print("getting releases...")
-    output = []
-    results = handle_api_response(
-        APIRequest(
-            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/releases?per_page=100",
-            max_requests=50,
-            max_errors=1,
-            headers=get_github_api_header(),
-        )
-    )
-    for result in results:
-        output.append(
-            Release(
-                repo_id=repo.repo_id,
-                release_id=result["id"],
-                release_name=result["name"],
-                tag_name=result["tag_name"],
-                release_body=result["body"],
-                created_at=result["created_at"],
-                published_at=result["published_at"],
-                retrieved_at=get_current_time(),
-            )
-        )
-
-    return output
-
-
-def get_commit_stats(
-    owner_name: str, repo_name: str, commit_id: str
-) -> list[CommitStats]:
-    output = []
-    result = handle_api_response(
-        APIRequest(
-            url=f"https://api.github.com/repos/{owner_name}/{repo_name}/commits/{commit_id}",
-            max_requests=1,
-            max_errors=0,
-            headers=get_github_api_header(),
-        )
-    )[0]
-
-    for f in result["files"]:
-        output.append(
-            CommitStats(
-                filename=f["filename"],
-                additions=f["additions"],
-                deletions=f["deletions"],
-                changes=f["changes"],
-                status=f["status"],
-            )
-        )
-
-    return output
-
-
-def get_commits(owner_name: str, repo: Repo) -> list[Commit]:
-    print("getting commits...")
-    # by default, sorts by created descending
-    output = []
-    results = handle_api_response(
-        APIRequest(
-            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/commits?per_page=100",
-            max_requests=10,
-            max_errors=1,
-            headers=get_github_api_header(),
-            termination_key="sha",
-            termination_value=get_latest_commit(repo),
-        )
-    )
-
-    for result in results:
-        commit_stats = get_commit_stats(owner_name, repo.repo_name, result["sha"])
-        if result["author"] is not None:
-            author_id = result["author"]["id"]
-        elif result["committer"] is not None:
-            author_id = result["committer"]["id"]
-        else:
-            author_id = None
-
-        output.append(
-            Commit(
-                repo_id=repo.repo_id,
-                commit_id=result["sha"],
-                author_id=author_id,
-                comment_count=result["commit"]["comment_count"],
-                message=result["commit"]["message"],
-                stats=commit_stats,
-                committed_at=result["commit"]["author"]["date"],
-                retrieved_at=get_current_time(),
-            )
-        )
-
-    return output
 
 
 def get_latest_commit(repo: Repo) -> str | None:
@@ -256,277 +118,6 @@ def get_latest_commit(repo: Repo) -> str | None:
         return latest_commit
 
     return latest_commit[0]
-
-
-def get_pull_requests(owner_name: str, repo: Repo) -> list[PullRequest]:
-    print("getting prs...")
-    output = []
-    results = handle_api_response(
-        APIRequest(
-            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/pulls",
-            max_requests=50,
-            max_errors=1,
-            parameters={"per_page": 100, "state": "all"},
-            headers=get_github_api_header(),
-        )
-    )
-    for result in results:
-        output.append(
-            PullRequest(
-                repo_id=repo.repo_id,
-                pr_id=result["id"],
-                pr_number=result["number"],
-                pr_title=result["title"],
-                pr_state=result["state"],
-                pr_body=result["body"],
-                author_id=result["user"]["id"],
-                created_at=result["created_at"],
-                updated_at=result["updated_at"],
-                closed_at=result["closed_at"],
-                merged_at=result["merged_at"],
-                retrieved_at=get_current_time(),
-            )
-        )
-
-    return output
-
-
-def get_issues(owner_name: str, repo: Repo) -> list[Issue]:
-    print("getting issues...")
-    output = []
-    results = handle_api_response(
-        APIRequest(
-            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/issues",
-            headers=get_github_api_header(),
-            parameters={"per_page": 100, "state": "all"},
-            max_requests=20,
-            max_errors=1,
-        )
-    )
-    for result in results:
-        output.append(
-            Issue(
-                repo_id=repo.repo_id,
-                issue_id=result["id"],
-                issue_number=result["number"],
-                issue_title=result["title"],
-                issue_body=result["body"],
-                author_id=result["user"]["id"],
-                state=result["state"],
-                state_reason=result["state_reason"],
-                comments_count=result["comments"],
-                created_at=result["created_at"],
-                updated_at=result["updated_at"],
-                closed_at=result["closed_at"],
-                retrieved_at=get_current_time(),
-            )
-        )
-    return output
-
-
-def handle_follower_following_request(
-    user_id: int, url: str, user_type: str
-) -> list[Follower]:
-    if user_type not in ["follower", "following"]:
-        raise ValueError("expecting one of [follower, following]")
-
-    results = handle_api_response(
-        APIRequest(
-            url=url,
-            max_requests=5000,
-            max_errors=1,
-            headers=get_github_api_header(),
-            parameters={"per_page": 100},
-        )
-    )
-
-    if user_type == "follower":
-        output = [
-            Follower(
-                user_id=user_id, follower_id=i["id"], retrieved_at=i["ampere_timestamp"]
-            )
-            for i in results
-        ]
-    else:
-        output = [
-            Follower(
-                user_id=i["id"], follower_id=user_id, retrieved_at=i["ampere_timestamp"]
-            )
-            for i in results
-        ]
-    time.sleep(
-        get_task_sleep_seconds(
-            TaskSleepConfig(
-                n_workers=2,
-                target_adj_pct=0.9,
-                request_cpu_time_seconds=0.25,
-                task_real_time_seconds=0.3,
-            )
-        )
-    )
-    return output
-
-
-def get_followers(user_id: int) -> list[Follower]:
-    print("getting followers...")
-    url = f"https://api.github.com/user/{user_id}/followers"
-    return handle_follower_following_request(user_id, url, "follower")
-
-
-def get_following(user_id: int) -> list[Follower]:
-    print("getting following...")
-    url = f"https://api.github.com/user/{user_id}/following"
-    return handle_follower_following_request(user_id, url, "following")
-
-
-@dataclass
-class APIRequest:
-    url: str
-    max_requests: int
-    max_errors: int
-    headers: Optional[dict] = None
-    parameters: Optional[dict] = None
-    termination_key: Optional[str] = None
-    termination_value: Optional[str] = None
-
-
-def handle_api_response(config: APIRequest) -> list[dict]:
-    url = config.url
-    n_requests = 0
-    errors = 0
-
-    results = []
-    while n_requests < config.max_requests:
-        response = requests.get(url=url, headers=config.headers, params=config.parameters)
-        n_requests += 1
-
-        response_json = response.json()
-        response_json["ampere_timestamp"] = get_current_time()
-        n_requests += 1
-        if response.status_code in [403, 429]:
-            errors += 1
-            if errors > config.max_errors:
-                break
-            response_text = str(response_json)
-
-            if "secondary" in response_text:
-                time.sleep(60 * config.max_errors)
-            else:
-                time.sleep(get_rate_limit_reset_sleep_seconds())
-            continue
-
-        if response.status_code != 200:
-            raise ValueError(response.status_code)
-
-        results.append(response_json)
-
-        # exit if no links section to contain a continuation link
-        if not response.links:
-            break
-
-        # exit if termination condition met
-        if (
-            config.termination_key is not None
-            and config.termination_value is not None
-            and response_json[config.termination_key] == config.termination_value
-        ):
-            break
-
-        # exit if no more continuation tokens
-        requests_finished = "next" not in response.links
-        if requests_finished:
-            break
-
-        url = response.links["next"]["url"]
-    return results
-
-
-def get_rate_limit_reset_sleep_seconds() -> int:
-    result = handle_api_response(
-        APIRequest(
-            url=f"https://api.github.com/rate_limit",
-            max_requests=1,
-            max_errors=0,
-            headers=get_github_api_header(),
-        )
-    )[0]
-
-    reset = int(result["resources"]["core"]["reset"])
-    seconds_to_sleep = reset - int(time.time()) + 1
-
-    print("sleeping for", seconds_to_sleep, "seconds")
-    return seconds_to_sleep
-
-
-@dataclass
-class TaskSleepConfig:
-    n_workers: int
-    target_adj_pct: float
-    request_cpu_time_seconds: float
-    task_real_time_seconds: float
-
-
-def get_task_sleep_seconds(config: TaskSleepConfig) -> float:
-    # https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#about-secondary-rate-limits
-    rate_limit_seconds_per_60_seconds = 90
-    target_cpu_time_per_60_seconds = (
-        rate_limit_seconds_per_60_seconds * config.target_adj_pct
-    )
-    task_sleep_seconds = (
-        1
-        / (
-            (target_cpu_time_per_60_seconds)
-            / (config.request_cpu_time_seconds * 60 * config.n_workers)
-        )
-        - config.task_real_time_seconds
-    ) / config.n_workers
-    return task_sleep_seconds
-
-
-def get_github_api_header():
-    return {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-
-
-def get_user(user_id: int) -> Optional[User]:
-    results = handle_api_response(
-        APIRequest(
-            url=f"https://api.github.com/user/{user_id}",
-            max_requests=3,
-            max_errors=1,
-            headers=get_github_api_header(),
-        )
-    )
-    if len(results) > 1:
-        raise ValueError("expecting one result")
-
-    results = results[0]
-    time.sleep(
-        get_task_sleep_seconds(
-            TaskSleepConfig(
-                n_workers=2,
-                target_adj_pct=0.9,
-                request_cpu_time_seconds=0.25,
-                task_real_time_seconds=0.3,
-            )
-        )
-    )
-    return User(
-        user_id=results["id"],
-        user_name=results["login"],
-        full_name=results["name"],
-        company=results["company"],
-        avatar_url=results["avatar_url"],
-        repos_count=results["public_repos"],
-        followers_count=results["followers"],
-        following_count=results["following"],
-        created_at=results["created_at"],
-        updated_at=results["updated_at"],
-        retrieved_at=get_current_time(),
-    )
 
 
 def get_user_ids() -> list[int]:
@@ -586,6 +177,376 @@ def get_stale_followers_user_ids() -> list[int]:
     return user_ids
 
 
+def handle_api_response(config: APIRequest) -> list[dict]:
+    url = config.url
+    n_requests = 0
+    errors = 0
+
+    results = []
+    while n_requests < config.max_requests:
+        response = requests.get(url=url, headers=config.headers, params=config.parameters)
+        n_requests += 1
+
+        response_json = response.json()
+        response_json["ampere_timestamp"] = get_current_time()
+        n_requests += 1
+        if response.status_code in [403, 429]:
+            errors += 1
+            if errors > config.max_errors:
+                break
+            response_text = str(response_json)
+
+            if "secondary" in response_text:
+                time.sleep(60 * config.max_errors)
+            else:
+                time.sleep(get_rate_limit_reset_sleep_seconds())
+            continue
+
+        if response.status_code != 200:
+            raise ValueError(response.status_code)
+
+        results.append(response_json)
+
+        # exit if no links section to contain a continuation link
+        if not response.links:
+            break
+
+        # exit if termination condition met
+        if (
+            config.termination_key is not None
+            and config.termination_value is not None
+            and response_json[config.termination_key] == config.termination_value
+        ):
+            break
+
+        # exit if no more continuation tokens
+        requests_finished = "next" not in response.links
+        if requests_finished:
+            break
+
+        url = response.links["next"]["url"]
+    return results
+
+
+def get_forks(owner_name: str, repo: Repo) -> list[Fork]:
+    print("getting forks...")
+    output = []
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/forks",
+            parameters={"per_page": 100},
+        )
+    )
+    for result in results:
+        output.append(
+            Fork(
+                repo_id=repo.repo_id,
+                fork_id=result["id"],
+                owner_id=result["owner"]["id"],
+                created_at=result["created_at"],
+                retrieved_at=get_current_time(),
+            )
+        )
+    return output
+
+
+def get_stargazers(owner_name: str, repo: Repo) -> list[Stargazer]:
+    # https://docs.github.com/en/rest/activity/starring?apiVersion=2022-11-28
+    print("getting stargazers...")
+    output = []
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/stargazers",
+            parameters={"per_page": 100},
+        )
+    )
+    for result in results:
+        output.append(
+            Stargazer(
+                repo_id=repo.repo_id,
+                user_id=result["user"]["id"],
+                starred_at=result["starred_at"],
+                retrieved_at=get_current_time(),
+            )
+        )
+    return output
+
+
+def get_repo_language(owner_name: str, repo_name: str) -> list[Language]:
+    result = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo_name}/languages",
+            max_requests=1,
+            max_errors=0,
+        )
+    )[0]
+
+    return [Language(name=k, size_bytes=v) for k, v in result.items()]
+
+
+def get_repos(org_name: str) -> list[Repo]:
+    print("getting repos")
+    output = []
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/orgs/{org_name}/repos",
+            max_requests=1,
+        )
+    )[0]
+
+    for result in results:
+        language = get_repo_language(owner_name=org_name, repo_name=result["name"])
+        repo_license = None
+        if result["license"] is not None:
+            repo_license = result["license"]["name"]
+        output.append(
+            Repo(
+                repo_id=result["id"],
+                repo_name=result["name"],
+                license=repo_license,
+                topics=result["topics"],
+                language=language,
+                repo_size=result["size"],
+                forks_count=result["forks_count"],
+                stargazers_count=result["stargazers_count"],
+                open_issues_count=result["open_issues_count"],
+                pushed_at=result["pushed_at"],
+                created_at=result["updated_at"],
+                updated_at=result["updated_at"],
+                retrieved_at=get_current_time(),
+            )
+        )
+
+    return output
+
+
+def get_releases(owner_name: str, repo: Repo) -> list[Release]:
+    print("getting releases...")
+    output = []
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/releases",
+            parameters={"per_page": 100},
+        )
+    )
+    for result in results:
+        output.append(
+            Release(
+                repo_id=repo.repo_id,
+                release_id=result["id"],
+                release_name=result["name"],
+                tag_name=result["tag_name"],
+                release_body=result["body"],
+                created_at=result["created_at"],
+                published_at=result["published_at"],
+                retrieved_at=get_current_time(),
+            )
+        )
+
+    return output
+
+
+def get_commit_stats(
+    owner_name: str, repo_name: str, commit_id: str
+) -> list[CommitStats]:
+    output = []
+    result = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo_name}/commits/{commit_id}",
+            max_requests=1,
+            max_errors=0,
+        )
+    )[0]
+
+    for f in result["files"]:
+        output.append(
+            CommitStats(
+                filename=f["filename"],
+                additions=f["additions"],
+                deletions=f["deletions"],
+                changes=f["changes"],
+                status=f["status"],
+            )
+        )
+
+    return output
+
+
+def get_commits(owner_name: str, repo: Repo) -> list[Commit]:
+    print("getting commits...")
+    # by default, sorts by created descending
+    output = []
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/commits",
+            parameters={"per_page": 100},
+            termination_key="sha",
+            termination_value=get_latest_commit(repo),
+        )
+    )
+
+    for result in results:
+        commit_stats = get_commit_stats(owner_name, repo.repo_name, result["sha"])
+        if result["author"] is not None:
+            author_id = result["author"]["id"]
+        elif result["committer"] is not None:
+            author_id = result["committer"]["id"]
+        else:
+            author_id = None
+
+        output.append(
+            Commit(
+                repo_id=repo.repo_id,
+                commit_id=result["sha"],
+                author_id=author_id,
+                comment_count=result["commit"]["comment_count"],
+                message=result["commit"]["message"],
+                stats=commit_stats,
+                committed_at=result["commit"]["author"]["date"],
+                retrieved_at=get_current_time(),
+            )
+        )
+
+    return output
+
+
+def get_pull_requests(owner_name: str, repo: Repo) -> list[PullRequest]:
+    print("getting prs...")
+    output = []
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/pulls",
+            parameters={"per_page": 100, "state": "all"},
+        )
+    )
+    for result in results:
+        output.append(
+            PullRequest(
+                repo_id=repo.repo_id,
+                pr_id=result["id"],
+                pr_number=result["number"],
+                pr_title=result["title"],
+                pr_state=result["state"],
+                pr_body=result["body"],
+                author_id=result["user"]["id"],
+                created_at=result["created_at"],
+                updated_at=result["updated_at"],
+                closed_at=result["closed_at"],
+                merged_at=result["merged_at"],
+                retrieved_at=get_current_time(),
+            )
+        )
+
+    return output
+
+
+def get_issues(owner_name: str, repo: Repo) -> list[Issue]:
+    print("getting issues...")
+    output = []
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/issues",
+            parameters={"per_page": 100, "state": "all"},
+        )
+    )
+    for result in results:
+        output.append(
+            Issue(
+                repo_id=repo.repo_id,
+                issue_id=result["id"],
+                issue_number=result["number"],
+                issue_title=result["title"],
+                issue_body=result["body"],
+                author_id=result["user"]["id"],
+                state=result["state"],
+                state_reason=result["state_reason"],
+                comments_count=result["comments"],
+                created_at=result["created_at"],
+                updated_at=result["updated_at"],
+                closed_at=result["closed_at"],
+                retrieved_at=get_current_time(),
+            )
+        )
+    return output
+
+    return output
+
+
+def get_followers(user_id: int, endpoint: str) -> list[Follower]:
+    if endpoint not in ["followers", "following"]:
+        raise ValueError("expecting one of ['followers', 'following']")
+
+    print(f"getting {endpoint} ...")
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/user/{user_id}/{endpoint}",
+            max_requests=5000,
+            parameters={"per_page": 100},
+        )
+    )
+    time.sleep(
+        get_task_sleep_seconds(
+            TaskSleepConfig(
+                n_workers=2,
+                target_adj_pct=0.9,
+                request_cpu_time_seconds=0.25,
+                task_real_time_seconds=0.3,
+            )
+        )
+    )
+    if endpoint == "followers":
+        output = [
+            Follower(
+                user_id=user_id, follower_id=i["id"], retrieved_at=i["ampere_timestamp"]
+            )
+            for i in results
+        ]
+    else:
+        output = [
+            Follower(
+                user_id=i["id"], follower_id=user_id, retrieved_at=i["ampere_timestamp"]
+            )
+            for i in results
+        ]
+    return output
+
+
+def get_user(user_id: int) -> Optional[User]:
+    results = handle_api_response(
+        APIRequest(
+            url=f"https://api.github.com/user/{user_id}",
+            max_requests=3,
+        )
+    )
+    if len(results) > 1:
+        raise ValueError("expecting one result")
+
+    results = results[0]
+    time.sleep(
+        get_task_sleep_seconds(
+            TaskSleepConfig(
+                n_workers=2,
+                target_adj_pct=0.9,
+                request_cpu_time_seconds=0.25,
+                task_real_time_seconds=0.3,
+            )
+        )
+    )
+    return User(
+        user_id=results["id"],
+        user_name=results["login"],
+        full_name=results["name"],
+        company=results["company"],
+        avatar_url=results["avatar_url"],
+        repos_count=results["public_repos"],
+        followers_count=results["followers"],
+        following_count=results["following"],
+        created_at=results["created_at"],
+        updated_at=results["updated_at"],
+        retrieved_at=get_current_time(),
+    )
+
+
 def refresh_github_table(
     owner_name: str,
     repos: list[Repo],
@@ -638,13 +599,13 @@ def refresh_followers(
         header_text = f"[{i:04d}/{len(user_ids):04d}] {user_id}"
         print(create_header(80, header_text, True, "-"))
         try:
-            follower_result = get_followers(user_id)
+            follower_result = get_followers(user_id, "followers")
             all_results.extend(follower_result)
         except Exception as e:
             print(e)
 
         try:
-            following_result = get_following(user_id)
+            following_result = get_followers(user_id, "following")
             all_results.extend(following_result)
         except Exception as e:
             print(e)
