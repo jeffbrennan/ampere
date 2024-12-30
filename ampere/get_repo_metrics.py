@@ -1,3 +1,4 @@
+import datetime
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -32,7 +33,13 @@ from ampere.models import (
 )
 
 
-@dataclass(frozen=True)
+@dataclass
+class Termination:
+    key: str
+    value: str
+
+
+@dataclass
 class APIRequest:
     url: str
     max_requests: int = 50
@@ -45,8 +52,13 @@ class APIRequest:
         }
     )
     parameters: Optional[dict] = None
-    termination_key: Optional[str] = None
-    termination_value: Optional[str] = None
+    termination: Optional[Termination] = None
+
+
+@dataclass
+class APIResponse:
+    results: list[dict]
+    timestamp: datetime.datetime
 
 
 @dataclass
@@ -64,7 +76,7 @@ def get_rate_limit_reset_sleep_seconds() -> int:
             max_requests=1,
             max_errors=0,
         )
-    )[0]
+    )[0].results[0]
 
     reset = int(result["resources"]["core"]["reset"])
     seconds_to_sleep = reset - int(time.time()) + 1
@@ -177,19 +189,17 @@ def get_stale_followers_user_ids() -> list[int]:
     return user_ids
 
 
-def handle_api_response(config: APIRequest) -> list[dict]:
+def handle_api_response(config: APIRequest) -> list[APIResponse]:
     url = config.url
     n_requests = 0
     errors = 0
 
-    results = []
+    output: list[APIResponse] = []
     while n_requests < config.max_requests:
         response = requests.get(url=url, headers=config.headers, params=config.parameters)
         n_requests += 1
 
         response_json = response.json()
-        response_json["ampere_timestamp"] = get_current_time()
-        n_requests += 1
         if response.status_code in [403, 429]:
             errors += 1
             if errors > config.max_errors:
@@ -205,18 +215,20 @@ def handle_api_response(config: APIRequest) -> list[dict]:
         if response.status_code != 200:
             raise ValueError(response.status_code)
 
-        results.append(response_json)
+        if not isinstance(response_json, list):
+            response_json = [response_json]
 
-        # exit if no links section to contain a continuation link
+        if config.termination is None:
+            output.append(APIResponse(response_json, get_current_time()))
+        else:
+            valid_results = []
+            for result in response_json:
+                if result[config.termination.key] == config.termination.value:
+                    break
+                valid_results.append(result)
+            output.append(APIResponse(valid_results, get_current_time()))
+
         if not response.links:
-            break
-
-        # exit if termination condition met
-        if (
-            config.termination_key is not None
-            and config.termination_value is not None
-            and response_json[config.termination_key] == config.termination_value
-        ):
             break
 
         # exit if no more continuation tokens
@@ -225,28 +237,30 @@ def handle_api_response(config: APIRequest) -> list[dict]:
             break
 
         url = response.links["next"]["url"]
-    return results
+    return output
 
 
 def get_forks(owner_name: str, repo: Repo) -> list[Fork]:
     print("getting forks...")
     output = []
-    results = handle_api_response(
+    responses = handle_api_response(
         APIRequest(
             url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/forks",
             parameters={"per_page": 100},
         )
     )
-    for result in results:
-        output.append(
-            Fork(
-                repo_id=repo.repo_id,
-                fork_id=result["id"],
-                owner_id=result["owner"]["id"],
-                created_at=result["created_at"],
-                retrieved_at=get_current_time(),
+
+    for response in responses:
+        for result in response.results:
+            output.append(
+                Fork(
+                    repo_id=repo.repo_id,
+                    fork_id=result["id"],
+                    owner_id=result["owner"]["id"],
+                    created_at=result["created_at"],
+                    retrieved_at=response.timestamp,
+                )
             )
-        )
     return output
 
 
@@ -254,21 +268,22 @@ def get_stargazers(owner_name: str, repo: Repo) -> list[Stargazer]:
     # https://docs.github.com/en/rest/activity/starring?apiVersion=2022-11-28
     print("getting stargazers...")
     output = []
-    results = handle_api_response(
+    responses = handle_api_response(
         APIRequest(
             url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/stargazers",
             parameters={"per_page": 100},
         )
     )
-    for result in results:
-        output.append(
-            Stargazer(
-                repo_id=repo.repo_id,
-                user_id=result["user"]["id"],
-                starred_at=result["starred_at"],
-                retrieved_at=get_current_time(),
+    for response in responses:
+        for result in response.results:
+            output.append(
+                Stargazer(
+                    repo_id=repo.repo_id,
+                    user_id=result["user"]["id"],
+                    starred_at=result["starred_at"],
+                    retrieved_at=response.timestamp,
+                )
             )
-        )
     return output
 
 
@@ -279,7 +294,7 @@ def get_repo_language(owner_name: str, repo_name: str) -> list[Language]:
             max_requests=1,
             max_errors=0,
         )
-    )[0]
+    )[0].results[0]
 
     return [Language(name=k, size_bytes=v) for k, v in result.items()]
 
@@ -287,14 +302,14 @@ def get_repo_language(owner_name: str, repo_name: str) -> list[Language]:
 def get_repos(org_name: str) -> list[Repo]:
     print("getting repos")
     output = []
-    results = handle_api_response(
+    response = handle_api_response(
         APIRequest(
             url=f"https://api.github.com/orgs/{org_name}/repos",
             max_requests=1,
         )
     )[0]
 
-    for result in results:
+    for result in response.results:
         language = get_repo_language(owner_name=org_name, repo_name=result["name"])
         repo_license = None
         if result["license"] is not None:
@@ -313,7 +328,7 @@ def get_repos(org_name: str) -> list[Repo]:
                 pushed_at=result["pushed_at"],
                 created_at=result["updated_at"],
                 updated_at=result["updated_at"],
-                retrieved_at=get_current_time(),
+                retrieved_at=response.timestamp,
             )
         )
 
@@ -323,25 +338,26 @@ def get_repos(org_name: str) -> list[Repo]:
 def get_releases(owner_name: str, repo: Repo) -> list[Release]:
     print("getting releases...")
     output = []
-    results = handle_api_response(
+    responses = handle_api_response(
         APIRequest(
             url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/releases",
             parameters={"per_page": 100},
         )
     )
-    for result in results:
-        output.append(
-            Release(
-                repo_id=repo.repo_id,
-                release_id=result["id"],
-                release_name=result["name"],
-                tag_name=result["tag_name"],
-                release_body=result["body"],
-                created_at=result["created_at"],
-                published_at=result["published_at"],
-                retrieved_at=get_current_time(),
+    for response in responses:
+        for result in response.results:
+            output.append(
+                Release(
+                    repo_id=repo.repo_id,
+                    release_id=result["id"],
+                    release_name=result["name"],
+                    tag_name=result["tag_name"],
+                    release_body=result["body"],
+                    created_at=result["created_at"],
+                    published_at=result["published_at"],
+                    retrieved_at=response.timestamp,
+                )
             )
-        )
 
     return output
 
@@ -356,7 +372,7 @@ def get_commit_stats(
             max_requests=1,
             max_errors=0,
         )
-    )[0]
+    )[0].results[0]
 
     for f in result["files"]:
         output.append(
@@ -376,36 +392,44 @@ def get_commits(owner_name: str, repo: Repo) -> list[Commit]:
     print("getting commits...")
     # by default, sorts by created descending
     output = []
-    results = handle_api_response(
-        APIRequest(
-            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/commits",
-            parameters={"per_page": 100},
-            termination_key="sha",
-            termination_value=get_latest_commit(repo),
-        )
+    latest_commit = get_latest_commit(repo)
+
+    config = APIRequest(
+        url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/commits",
+        parameters={"per_page": 100},
     )
 
-    for result in results:
-        commit_stats = get_commit_stats(owner_name, repo.repo_name, result["sha"])
-        if result["author"] is not None:
-            author_id = result["author"]["id"]
-        elif result["committer"] is not None:
-            author_id = result["committer"]["id"]
-        else:
-            author_id = None
+    if latest_commit is not None:
+        config.termination = Termination(key="sha", value=latest_commit)
 
-        output.append(
-            Commit(
-                repo_id=repo.repo_id,
-                commit_id=result["sha"],
-                author_id=author_id,
-                comment_count=result["commit"]["comment_count"],
-                message=result["commit"]["message"],
-                stats=commit_stats,
-                committed_at=result["commit"]["author"]["date"],
-                retrieved_at=get_current_time(),
+    responses = handle_api_response(config)
+    for response in responses:
+        for result in response.results:
+            commit_stats = get_commit_stats(
+                owner_name,
+                repo.repo_name,
+                result["sha"],
             )
-        )
+
+            if result["author"] is not None:
+                author_id = result["author"]["id"]
+            elif result["committer"] is not None:
+                author_id = result["committer"]["id"]
+            else:
+                author_id = None
+
+            output.append(
+                Commit(
+                    repo_id=repo.repo_id,
+                    commit_id=result["sha"],
+                    author_id=author_id,
+                    comment_count=result["commit"]["comment_count"],
+                    message=result["commit"]["message"],
+                    stats=commit_stats,
+                    committed_at=result["commit"]["author"]["date"],
+                    retrieved_at=response.timestamp,
+                )
+            )
 
     return output
 
@@ -413,29 +437,31 @@ def get_commits(owner_name: str, repo: Repo) -> list[Commit]:
 def get_pull_requests(owner_name: str, repo: Repo) -> list[PullRequest]:
     print("getting prs...")
     output = []
-    results = handle_api_response(
+    responses = handle_api_response(
         APIRequest(
             url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/pulls",
             parameters={"per_page": 100, "state": "all"},
         )
     )
-    for result in results:
-        output.append(
-            PullRequest(
-                repo_id=repo.repo_id,
-                pr_id=result["id"],
-                pr_number=result["number"],
-                pr_title=result["title"],
-                pr_state=result["state"],
-                pr_body=result["body"],
-                author_id=result["user"]["id"],
-                created_at=result["created_at"],
-                updated_at=result["updated_at"],
-                closed_at=result["closed_at"],
-                merged_at=result["merged_at"],
-                retrieved_at=get_current_time(),
+
+    for response in responses:
+        for result in response.results:
+            output.append(
+                PullRequest(
+                    repo_id=repo.repo_id,
+                    pr_id=result["id"],
+                    pr_number=result["number"],
+                    pr_title=result["title"],
+                    pr_state=result["state"],
+                    pr_body=result["body"],
+                    author_id=result["user"]["id"],
+                    created_at=result["created_at"],
+                    updated_at=result["updated_at"],
+                    closed_at=result["closed_at"],
+                    merged_at=result["merged_at"],
+                    retrieved_at=response.timestamp,
+                )
             )
-        )
 
     return output
 
@@ -443,32 +469,31 @@ def get_pull_requests(owner_name: str, repo: Repo) -> list[PullRequest]:
 def get_issues(owner_name: str, repo: Repo) -> list[Issue]:
     print("getting issues...")
     output = []
-    results = handle_api_response(
+    responses = handle_api_response(
         APIRequest(
             url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/issues",
             parameters={"per_page": 100, "state": "all"},
         )
     )
-    for result in results:
-        output.append(
-            Issue(
-                repo_id=repo.repo_id,
-                issue_id=result["id"],
-                issue_number=result["number"],
-                issue_title=result["title"],
-                issue_body=result["body"],
-                author_id=result["user"]["id"],
-                state=result["state"],
-                state_reason=result["state_reason"],
-                comments_count=result["comments"],
-                created_at=result["created_at"],
-                updated_at=result["updated_at"],
-                closed_at=result["closed_at"],
-                retrieved_at=get_current_time(),
+    for response in responses:
+        for result in response.results:
+            output.append(
+                Issue(
+                    repo_id=repo.repo_id,
+                    issue_id=result["id"],
+                    issue_number=result["number"],
+                    issue_title=result["title"],
+                    issue_body=result["body"],
+                    author_id=result["user"]["id"],
+                    state=result["state"],
+                    state_reason=result["state_reason"],
+                    comments_count=result["comments"],
+                    created_at=result["created_at"],
+                    updated_at=result["updated_at"],
+                    closed_at=result["closed_at"],
+                    retrieved_at=response.timestamp,
+                )
             )
-        )
-    return output
-
     return output
 
 
@@ -477,7 +502,8 @@ def get_followers(user_id: int, endpoint: str) -> list[Follower]:
         raise ValueError("expecting one of ['followers', 'following']")
 
     print(f"getting {endpoint} ...")
-    results = handle_api_response(
+    output = []
+    responses = handle_api_response(
         APIRequest(
             url=f"https://api.github.com/user/{user_id}/{endpoint}",
             max_requests=5000,
@@ -495,33 +521,37 @@ def get_followers(user_id: int, endpoint: str) -> list[Follower]:
         )
     )
     if endpoint == "followers":
-        output = [
-            Follower(
-                user_id=user_id, follower_id=i["id"], retrieved_at=i["ampere_timestamp"]
-            )
-            for i in results
-        ]
+        for response in responses:
+            for result in response.results:
+                output.append(
+                    Follower(
+                        user_id=user_id,
+                        follower_id=result["id"],
+                        retrieved_at=response.timestamp,
+                    )
+                )
     else:
-        output = [
-            Follower(
-                user_id=i["id"], follower_id=user_id, retrieved_at=i["ampere_timestamp"]
-            )
-            for i in results
-        ]
+        for response in responses:
+            for result in response.results:
+                output.append(
+                    Follower(
+                        user_id=result["id"],
+                        follower_id=user_id,
+                        retrieved_at=response.timestamp,
+                    )
+                )
+
     return output
 
 
 def get_user(user_id: int) -> Optional[User]:
-    results = handle_api_response(
+    response = handle_api_response(
         APIRequest(
             url=f"https://api.github.com/user/{user_id}",
             max_requests=3,
         )
-    )
-    if len(results) > 1:
-        raise ValueError("expecting one result")
+    )[0]
 
-    results = results[0]
     time.sleep(
         get_task_sleep_seconds(
             TaskSleepConfig(
@@ -532,6 +562,8 @@ def get_user(user_id: int) -> Optional[User]:
             )
         )
     )
+
+    results = response.results[0]
     return User(
         user_id=results["id"],
         user_name=results["login"],
@@ -543,7 +575,7 @@ def get_user(user_id: int) -> Optional[User]:
         following_count=results["following"],
         created_at=results["created_at"],
         updated_at=results["updated_at"],
-        retrieved_at=get_current_time(),
+        retrieved_at=response.timestamp,
     )
 
 
