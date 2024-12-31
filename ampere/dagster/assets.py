@@ -252,7 +252,7 @@ def dagster_refresh_star_network(context: AssetExecutionContext) -> None:
     compute_kind="python",
     key=["refresh_follower_network"],
     deps=["int_network_follower_details"],
-    group_name="github_followers_daily",
+    group_name="github_metrics_daily_4",
 )
 def dagster_refresh_follower_network(context: AssetExecutionContext) -> None:
     start_time = time.time()
@@ -264,24 +264,42 @@ def dagster_refresh_follower_network(context: AssetExecutionContext) -> None:
     compute_kind="python",
     key=["followers"],
     deps=["stg_users"],
-    group_name="github_followers_daily",
+    group_name="github_metrics_daily_4",
 )
 def dagster_get_followers(context: AssetExecutionContext) -> None:
-    n = 0
-    user_ids = get_stale_followers_user_ids()
-    user_ids_chunked = list(divide_chunks(user_ids, 1000))
+    user_ids = get_stale_followers_user_ids("followers")
+    n = refresh_followers(
+        user_ids,
+        DeltaWriteConfig(
+            table_dir="bronze",
+            table_name=Follower.__tablename__,  # pyright: ignore [reportArgumentType]
+            pks=get_model_primary_key(Follower),
+            mode=DeltaTableWriteMode.APPEND,
+        ),
+        "followers",
+    )
 
-    for user_ids_chunk in user_ids_chunked:
-        records_updated = refresh_followers(
-            user_ids_chunk,
-            DeltaWriteConfig(
-                table_dir="bronze",
-                table_name=Follower.__tablename__,  # pyright: ignore [reportArgumentType]
-                pks=get_model_primary_key(Follower),
-                mode=DeltaTableWriteMode.APPEND,
-            ),
-        )
-        n += records_updated
+    context.add_output_metadata({"n_records": n})
+
+
+@asset(
+    compute_kind="python",
+    key=["following"],
+    deps=["stg_users"],
+    group_name="github_metrics_daily_4",
+)
+def dagster_get_following(context: AssetExecutionContext) -> None:
+    user_ids = get_stale_followers_user_ids("following")
+    n = refresh_followers(
+        user_ids,
+        DeltaWriteConfig(
+            table_dir="bronze",
+            table_name=Follower.__tablename__,  # pyright: ignore [reportArgumentType]
+            pks=get_model_primary_key(Follower),
+            mode=DeltaTableWriteMode.APPEND,
+        ),
+        "following",
+    )
 
     context.add_output_metadata({"n_records": n})
 
