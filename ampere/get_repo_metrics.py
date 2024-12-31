@@ -152,10 +152,15 @@ def get_org_user_ids() -> list[int]:
     return user_ids
 
 
-def get_stale_followers_user_ids() -> list[int]:
+def get_stale_followers_user_ids(endpoint: str) -> list[int]:
+    # TODO: make enum
+    if endpoint not in ["followers", "following"]:
+        raise ValueError("expecting one of ['followers', 'following']")
+
     con = get_db_con()
-    stale_hours = 20
-    query = f"""
+    stale_hours = 24
+    if endpoint == "followers":
+        query = f"""
         select 
         a.user_id
         from stg_users a
@@ -163,8 +168,11 @@ def get_stale_followers_user_ids() -> list[int]:
             on a.user_id = b.user_id
         where 
             b.user_id is null
-            or b.retrieved_at < current_time() - interval {stale_hours} hour
-        union
+            or b.retrieved_at < now() - interval {stale_hours} hour 
+    """
+
+    else:
+        query = f"""
         select 
         a.user_id
         from stg_users a
@@ -172,14 +180,15 @@ def get_stale_followers_user_ids() -> list[int]:
             on a.user_id = b.follower_id
         where 
             b.follower_id is null
-            or b.retrieved_at < current_time() - interval {stale_hours} hour
-    """
+            or b.retrieved_at < now() - interval {stale_hours} hour
+        """
 
     try:
         user_ids = con.sql(query).to_df().squeeze().tolist()
     except duckdb.CatalogException as e:
-        print(e)
-        return get_org_user_ids()
+        if "does not exist" in str(e):
+            return get_org_user_ids()
+        raise Exception(e)
 
     return user_ids
 
