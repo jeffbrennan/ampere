@@ -46,6 +46,7 @@ class APIRequest:
         }
     )
     parameters: Optional[dict] = None
+    wait_for_quota: bool = True
 
 
 @dataclass
@@ -76,6 +77,10 @@ def get_rate_limit_reset_sleep_seconds() -> int:
     seconds_to_sleep = reset - int(time.time()) + 1
 
     print("sleeping for", seconds_to_sleep, "seconds")
+    print(
+        "requests will resume at",
+        datetime.datetime.now() + datetime.timedelta(seconds_to_sleep),
+    )
     return seconds_to_sleep
 
 
@@ -203,7 +208,7 @@ def handle_api_response(config: APIRequest) -> list[APIResponse]:
     while n_requests < config.max_requests:
         response = requests.get(url=url, headers=config.headers, params=config.parameters)
         n_requests += 1
-        print(f"[{endpoint}] requests: {n_requests}")
+        print(f"[{endpoint}] requests: {n_requests}", end="\r", flush=True)
 
         response_json = response.json()
         if response.status_code == 404:
@@ -217,8 +222,18 @@ def handle_api_response(config: APIRequest) -> list[APIResponse]:
             errors += 1
             if errors > config.max_errors:
                 break
+
+            if not config.wait_for_quota:
+                # return single response with the rate limit status code to exclude incomplete output downstream
+                return [
+                    APIResponse(
+                        [response_json],
+                        get_current_time(),
+                        status_code=response.status_code,
+                    )
+                ]
+
             response_text = str(response_json)
-            print(response_text)
             if "secondary" in response_text:
                 print("hit secondary rate limit")
                 time.sleep(60 * errors)
@@ -508,7 +523,8 @@ def get_issues(owner_name: str, repo: Repo) -> list[Issue]:
     return output
 
 
-def get_followers(user_id: int, endpoint: str) -> list[Follower]:
+def get_followers(user_id: int, endpoint: str) -> tuple[list[Follower], bool]:
+    # returns tuple of follower list and termination indicator
     if endpoint not in ["followers", "following"]:
         raise ValueError("expecting one of ['followers', 'following']")
 
@@ -519,20 +535,20 @@ def get_followers(user_id: int, endpoint: str) -> list[Follower]:
             url=f"https://api.github.com/user/{user_id}/{endpoint}",
             max_requests=5000,
             parameters={"per_page": 100},
+            wait_for_quota=False,
         )
     )
-    time.sleep(
-        get_task_sleep_seconds(
-            TaskSleepConfig(
-                n_workers=2,
-                target_adj_pct=0.9,
-                request_cpu_time_seconds=0.25,
-                task_real_time_seconds=0.3,
-            )
-        )
-    )
+
+    skips = 0
+    terminate_requests = False
     if endpoint == "followers":
         for response in responses:
+            if response.status_code != 200:
+                if response.status_code in [403, 429]:
+                    terminate_requests = True
+                print(f"skipping {response.status_code} | n skips = {skips}")
+                skips += 1
+                continue
             for result in response.results:
                 output.append(
                     Follower(
@@ -543,6 +559,12 @@ def get_followers(user_id: int, endpoint: str) -> list[Follower]:
                 )
     else:
         for response in responses:
+            if response.status_code != 200:
+                if response.status_code in [403, 429]:
+                    terminate_requests = True
+                print(f"skipping {response.status_code} | n skips = {skips}")
+                skips += 1
+                continue
             for result in response.results:
                 output.append(
                     Follower(
@@ -552,7 +574,7 @@ def get_followers(user_id: int, endpoint: str) -> list[Follower]:
                     )
                 )
 
-    return output
+    return output, terminate_requests
 
 
 def get_user(user_id: int) -> Optional[User]:
@@ -636,28 +658,26 @@ def refresh_users(
 
 
 def refresh_followers(
-    user_ids: list[int],
-    config: DeltaWriteConfig,
+    user_ids: list[int], config: DeltaWriteConfig, endpoint: str
 ) -> int:
     all_results = []
     start_time = time.time()
+    if any(not isinstance(i, int) for i in user_ids):
+        raise TypeError("expecting user id of type `int`")
+
     for i, user_id in enumerate(user_ids, 1):
         header_text = f"[{i:04d}/{len(user_ids):04d}] {user_id}"
         print(create_header(80, header_text, True, "-"))
-        try:
-            follower_result = get_followers(user_id, "followers")
-            all_results.extend(follower_result)
-        except Exception as e:
-            print(e)
+        result, terminate_requests = get_followers(user_id, endpoint)
 
-        try:
-            following_result = get_followers(user_id, "following")
-            all_results.extend(following_result)
-        except Exception as e:
-            print(e)
+        if terminate_requests:
+            break
+
+        all_results.extend(result)
 
     elapsed_time = time.time() - start_time
-    if len(all_results) == 0:
+    valid_results = [i for i in all_results if i is not None]
+    if len(valid_results) == 0:
         print("no results obtained")
         return 0
 
@@ -665,7 +685,6 @@ def refresh_followers(
 
     print(f"elapsed time: {elapsed_time:.2f} seconds")
     print(f"average time per user: {avg_time_per_user:.2f} seconds")
-    valid_results = [i for i in all_results if i is not None]
 
     write_delta_table(records=valid_results, config=config)
-    return len(all_results)
+    return len(valid_results)
