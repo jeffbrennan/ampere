@@ -44,7 +44,7 @@ class APIRequest:
     url: str
     max_requests: int = 50
     max_errors: int = 1
-    headers: Optional[dict] = field(
+    headers: dict = field(
         default_factory=lambda: {
             "Accept": "application/vnd.github+json",
             "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
@@ -268,12 +268,14 @@ def get_stargazers(owner_name: str, repo: Repo) -> list[Stargazer]:
     # https://docs.github.com/en/rest/activity/starring?apiVersion=2022-11-28
     print("getting stargazers...")
     output = []
-    responses = handle_api_response(
-        APIRequest(
-            url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/stargazers",
-            parameters={"per_page": 100},
-        )
+    config = APIRequest(
+        url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/stargazers",
+        parameters={"per_page": 100},
     )
+    config.headers["Accept"] = "application/vnd.github.star+json"
+
+    responses = handle_api_response(config)
+
     for response in responses:
         for result in response.results:
             output.append(
