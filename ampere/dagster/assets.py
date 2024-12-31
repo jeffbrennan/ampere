@@ -18,12 +18,12 @@ from ampere.get_repo_metrics import (
     get_commits,
     get_forks,
     get_issues,
+    get_org_user_ids,
     get_pull_requests,
     get_releases,
     get_repos,
     get_stale_followers_user_ids,
     get_stargazers,
-    get_user_ids,
     read_repos,
     refresh_followers,
     refresh_github_table,
@@ -212,11 +212,17 @@ def dagster_get_commits(context: AssetExecutionContext) -> None:
 @asset(
     compute_kind="python",
     key=["users"],
-    deps=["stg_repos"],
+    deps=[
+        "stg_stargazers",
+        "stg_forks",
+        "stg_commits",
+        "stg_issues",
+        "stg_pull_requests",
+    ],
     group_name="github_metrics_daily_4",
 )
 def dagster_get_users(context: AssetExecutionContext) -> None:
-    user_ids = get_user_ids()
+    user_ids = get_org_user_ids()
     n = refresh_users(
         user_ids,
         DeltaWriteConfig(
