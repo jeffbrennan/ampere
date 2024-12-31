@@ -5,6 +5,7 @@ from .assets import (
     ampere_dbt_assets,
     dagster_get_commits,
     dagster_get_followers,
+    dagster_get_following,
     dagster_get_forks,
     dagster_get_issues,
     dagster_get_pull_requests,
@@ -31,9 +32,10 @@ defs = Definitions(
         dagster_get_users,
         dagster_get_commits,
         dagster_get_followers,
+        dagster_get_following,
         dagster_get_pypi_downloads,
         dagster_refresh_star_network,
-        dagster_refresh_follower_network
+        dagster_refresh_follower_network,
     ],
     schedules=schedules,
     resources={
