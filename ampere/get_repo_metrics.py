@@ -124,29 +124,32 @@ def get_latest_commit_timestamp(repo: Repo) -> datetime.datetime | None:
     return latest_commit[0]
 
 
-def get_user_ids() -> list[int]:
-    user_models = [Stargazer, Fork, Commit, Issue, PullRequest]
+def get_org_user_ids() -> list[int]:
+    """
+    gets unique list of user ids from tracked tables to be added to the `users` table
+    """
+    con = get_db_con()
+    user_ids = (
+        con.sql(
+            """
+            select user_id from stg_stargazers
+            union
+            select owner_id as user_id from stg_forks
+            union
+            select author_id as user_id from stg_commits
+            union
+            select author_id as user_id from stg_issues
+            union
+            select author_id as user_id from stg_pull_requests
+        """
+        )
+        .to_df()
+        .squeeze()
+        .tolist()
+    )
 
-    users = []
-    print("getting user ids from existing tables")
-    for model in user_models:
-        print("-", model.__name__)
-        table_path = Path(__file__).parents[1] / "data" / "bronze" / model.__tablename__
-        delta_dir_path = table_path / "_delta_log"
-        if not delta_dir_path.exists():
-            print("not a delta table:", table_path)
-            continue
-        user_col = get_model_foreign_key(model, "user.user_id")
-        if user_col is None:
-            print("missing user id foreign key")
-            continue
-
-        df = DeltaTable(table_path).to_pandas(columns=[user_col])
-        users.extend(df.squeeze().tolist())
-
-    unique_users = sorted(set(users))
-    print(f"got {len(unique_users)} unique users")
-    return unique_users
+    print(f"got {len(user_ids)} unique users")
+    return user_ids
 
 
 def get_stale_followers_user_ids() -> list[int]:
@@ -194,6 +197,13 @@ def handle_api_response(config: APIRequest) -> list[APIResponse]:
         print(f"[{endpoint}] requests: {n_requests}")
 
         response_json = response.json()
+        if response.status_code == 404:
+            return [
+                APIResponse(
+                    [response_json], get_current_time(), status_code=response.status_code
+                )
+            ]
+
         if response.status_code in [403, 429]:
             errors += 1
             if errors > config.max_errors:
@@ -537,6 +547,7 @@ def get_followers(user_id: int, endpoint: str) -> list[Follower]:
 
 
 def get_user(user_id: int) -> Optional[User]:
+    print(user_id)
     response = handle_api_response(
         APIRequest(
             url=f"https://api.github.com/user/{user_id}",
@@ -554,6 +565,8 @@ def get_user(user_id: int) -> Optional[User]:
             )
         )
     )
+    if response.status_code != 200:
+        return None
 
     results = response.results[0]
     return User(
