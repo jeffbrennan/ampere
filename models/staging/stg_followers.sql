@@ -1,3 +1,5 @@
+ -- depends_on: {{ source('dagster', 'following') }}
+
 {{ config(materialized='table') }}
 with base as (
     select
