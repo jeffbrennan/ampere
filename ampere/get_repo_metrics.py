@@ -34,12 +34,6 @@ from ampere.models import (
 
 
 @dataclass
-class Termination:
-    key: str
-    value: str
-
-
-@dataclass
 class APIRequest:
     url: str
     max_requests: int = 50
@@ -52,13 +46,13 @@ class APIRequest:
         }
     )
     parameters: Optional[dict] = None
-    termination: Optional[Termination] = None
 
 
 @dataclass
 class APIResponse:
     results: list[dict]
     timestamp: datetime.datetime
+    status_code: int
 
 
 @dataclass
@@ -109,14 +103,12 @@ def read_repos() -> list[Repo]:
     return repos
 
 
-def get_latest_commit(repo: Repo) -> str | None:
+def get_latest_commit_timestamp(repo: Repo) -> datetime.datetime | None:
     con = get_db_con()
     query = f"""
-        select commit_id
+        select max(committed_at)
         from stg_commits 
-        where committed_at = (
-            select max(committed_at) from stg_commits where repo_id = {repo.repo_id}
-        )
+        where repo_id = {repo.repo_id}
         """
 
     try:
@@ -184,13 +176,14 @@ def get_stale_followers_user_ids() -> list[int]:
         user_ids = con.sql(query).to_df().squeeze().tolist()
     except duckdb.CatalogException as e:
         print(e)
-        return get_user_ids()
+        return get_org_user_ids()
 
     return user_ids
 
 
 def handle_api_response(config: APIRequest) -> list[APIResponse]:
     url = config.url
+    endpoint = config.url.split("api.github.com")[-1]
     n_requests = 0
     errors = 0
 
@@ -198,6 +191,7 @@ def handle_api_response(config: APIRequest) -> list[APIResponse]:
     while n_requests < config.max_requests:
         response = requests.get(url=url, headers=config.headers, params=config.parameters)
         n_requests += 1
+        print(f"[{endpoint}] requests: {n_requests}")
 
         response_json = response.json()
         if response.status_code in [403, 429]:
@@ -205,9 +199,10 @@ def handle_api_response(config: APIRequest) -> list[APIResponse]:
             if errors > config.max_errors:
                 break
             response_text = str(response_json)
-
+            print(response_text)
             if "secondary" in response_text:
-                time.sleep(60 * config.max_errors)
+                print("hit secondary rate limit")
+                time.sleep(60 * errors)
             else:
                 time.sleep(get_rate_limit_reset_sleep_seconds())
             continue
@@ -218,15 +213,9 @@ def handle_api_response(config: APIRequest) -> list[APIResponse]:
         if not isinstance(response_json, list):
             response_json = [response_json]
 
-        if config.termination is None:
-            output.append(APIResponse(response_json, get_current_time()))
-        else:
-            valid_results = []
-            for result in response_json:
-                if result[config.termination.key] == config.termination.value:
-                    break
-                valid_results.append(result)
-            output.append(APIResponse(valid_results, get_current_time()))
+        output.append(
+            APIResponse(response_json, get_current_time(), response.status_code)
+        )
 
         if not response.links:
             break
@@ -394,15 +383,16 @@ def get_commits(owner_name: str, repo: Repo) -> list[Commit]:
     print("getting commits...")
     # by default, sorts by created descending
     output = []
-    latest_commit = get_latest_commit(repo)
+    latest_commit_timestamp = get_latest_commit_timestamp(repo)
 
     config = APIRequest(
         url=f"https://api.github.com/repos/{owner_name}/{repo.repo_name}/commits",
         parameters={"per_page": 100},
     )
 
-    if latest_commit is not None:
-        config.termination = Termination(key="sha", value=latest_commit)
+    if latest_commit_timestamp is not None and config.parameters is not None:
+        latest_commit_timestamp = latest_commit_timestamp + datetime.timedelta(seconds=1)
+        config.parameters["since"] = latest_commit_timestamp
 
     responses = handle_api_response(config)
     for response in responses:
