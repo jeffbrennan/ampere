@@ -67,7 +67,7 @@ models:
   - name: stg_followers
     meta:
       dagster:
-        group: github_followers_daily
+        group: github_metrics_daily_4
     config:
       contract:
         enforced: true

@@ -9,13 +9,6 @@ github_metrics_daily_4 = ScheduleDefinition(
     default_status=DefaultScheduleStatus.STOPPED,
 )
 
-github_followers_daily = ScheduleDefinition(
-    name="github_followers_daily",
-    target=AssetSelection.groups("github_followers_daily"),
-    cron_schedule="0 8 * * *",  # daily at 8am utc
-    default_status=DefaultScheduleStatus.STOPPED,
-)
-
 bigquery_daily = ScheduleDefinition(
     name="bigquery_daily",
     target=AssetSelection.groups("bigquery_daily"),
@@ -24,6 +17,6 @@ bigquery_daily = ScheduleDefinition(
 )
 schedules = [
     github_metrics_daily_4,
-    github_followers_daily,
+    github_metrics_daily_4,
     bigquery_daily,
 ]
