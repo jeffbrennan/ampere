@@ -1,5 +1,12 @@
 version: 2
 sources:
+  # pseudo table for dag generation
+  - name: dagster
+    tables:
+      - name: following
+        meta:
+          dagster:
+            asset_key: ["following"]
   - name: main
     tables:
       - name: pypi_downloads
@@ -38,10 +45,6 @@ sources:
         meta:
           dagster:
             asset_key: ["users"]
-      - name: watchers
-        meta:
-          dagster:
-            asset_key: ["watchers"]
       - name: followers
         meta:
           dagster:

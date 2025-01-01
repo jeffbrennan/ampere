@@ -22,14 +22,10 @@ def record_pypi_query(query: PyPIQueryConfig) -> None:
         table_dir="bronze",
         table_name=PyPIQueryConfig.__tablename__,  # pyright: ignore [reportArgumentType]
         pks=get_model_primary_key(PyPIQueryConfig),
+        mode=DeltaTableWriteMode.APPEND,
     )
 
-    write_delta_table(
-        [query],
-        config.table_dir,
-        config.table_name,
-        config.pks,
-    )
+    write_delta_table([query], config)
 
 
 def get_pypi_downloads_from_bigquery(
@@ -85,13 +81,7 @@ def refresh_pypi_downloads_from_bigquery(
         print("no results to write!")
         return 0
 
-    write_delta_table(
-        results,
-        write_config.table_dir,
-        write_config.table_name,
-        write_config.pks,
-        mode=DeltaTableWriteMode.APPEND, # less resource intensive than merge
-    )
+    write_delta_table(results, write_config)
 
     record_pypi_query(query_config)
     return len(results)
@@ -149,14 +139,14 @@ def get_repos_with_releases() -> list[str]:
             release_repos as (
                 select distinct
                     repo_id
-                from releases
+                from stg_releases
             ),
             repo_details as (
                 select
                     a.repo_id,
                     a.repo_name,
                     unnest(a.language) as "language"
-                from repos               a
+                from stg_repos               a
                 inner join release_repos b
                 on a.repo_id = b.repo_id
             )
@@ -255,6 +245,7 @@ def refresh_all_pypi_downloads(
         table_dir="bronze",
         table_name=PyPIDownload.__tablename__,  # pyright: ignore [reportArgumentType]
         pks=get_model_primary_key(PyPIDownload),
+        mode=DeltaTableWriteMode.APPEND,  # less resource intensive than merge
     )
 
     if queries is None:

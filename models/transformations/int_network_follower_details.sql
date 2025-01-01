@@ -6,7 +6,7 @@ user_stats as (
         full_name,
         followers_count,
         following_count
-    from users
+    from {{ ref("stg_users") }}
 ),
 
 internal_followers as (
@@ -14,7 +14,7 @@ internal_followers as (
         a.user_id,
         list(b.user_name) as followers
     from {{ ref("stg_followers") }} as a
-    inner join users as b on a.follower_id = b.user_id
+    inner join {{ ref("stg_users") }} as b on a.follower_id = b.user_id
     group by a.user_id
 ),
 
@@ -23,7 +23,7 @@ internal_following as (
         a.follower_id as user_id,
         list(b.user_name) as following --noqa
     from {{ ref("stg_followers") }} as a
-    inner join users as b on a.user_id = b.user_id
+    inner join {{ ref("stg_users") }} as b on a.user_id = b.user_id
     group by a.follower_id
 ),
 

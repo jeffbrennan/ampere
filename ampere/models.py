@@ -12,14 +12,7 @@ class Stargazer(SQLModel):
     repo_id: int = Field(primary_key=True, foreign_key="repo.repo_id")
     user_id: int = Field(primary_key=True, foreign_key="user.user_id")
     starred_at: datetime.datetime
-    retrieved_at: datetime.datetime
-
-
-class Watcher(SQLModel):
-    __tablename__ = "watchers"  # pyright: ignore [reportAssignmentType]
-    repo_id: int = Field(primary_key=True, foreign_key="repo.repo_id")
-    user_id: int = Field(primary_key=True, foreign_key="user.user_id")
-    retrieved_at: datetime.datetime
+    retrieved_at: datetime.datetime = Field(primary_key=True)
 
 
 @dataclass
@@ -37,13 +30,12 @@ class Repo(SQLModel):
     language: Optional[list[Language]] = None
     repo_size: int
     forks_count: int
-    watchers_count: int
     stargazers_count: int
     open_issues_count: int
     pushed_at: datetime.datetime
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    retrieved_at: datetime.datetime
+    retrieved_at: datetime.datetime = Field(primary_key=True)
 
 
 class Fork(SQLModel):
@@ -52,15 +44,18 @@ class Fork(SQLModel):
     fork_id: int = Field(primary_key=True)
     owner_id: int = Field(primary_key=True, foreign_key="user.user_id")
     created_at: datetime.datetime
-    retrieved_at: datetime.datetime
+    retrieved_at: datetime.datetime = Field(primary_key=True)
 
 
 # https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#list-commits
 # https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#get-a-commit
 @dataclass
 class CommitStats:
+    filename: str
     additions: int
     deletions: int
+    changes: int
+    status: str
 
 
 class Commit(SQLModel):
@@ -70,10 +65,9 @@ class Commit(SQLModel):
     author_id: Optional[int] = Field(foreign_key="user.user_id")
     comment_count: int
     message: str
-    additions_count: int
-    deletions_count: int
+    stats: list[CommitStats]
     committed_at: datetime.datetime
-    retrieved_at: datetime.datetime
+    retrieved_at: datetime.datetime = Field(primary_key=True)
 
 
 # https://docs.github.com/en/rest/issues/issues?apiVersion=2022-11-28#list-repository-issues
@@ -91,17 +85,7 @@ class Issue(SQLModel):
     created_at: datetime.datetime
     updated_at: Optional[datetime.datetime] = None
     closed_at: Optional[datetime.datetime] = None
-    retrieved_at: datetime.datetime
-
-
-# https://docs.github.com/en/rest/metrics/traffic?apiVersion=2022-11-28#get-page-views
-class View(SQLModel):
-    __tablename__ = "views"  # pyright: ignore [reportAssignmentType]
-    repo_id: int = Field(primary_key=True, foreign_key="repo.repo_id")
-    view_count: int
-    unique_view_count: int
-    view_date: datetime.date
-    retrieved_at: datetime.datetime
+    retrieved_at: datetime.datetime = Field(primary_key=True)
 
 
 # https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#list-pull-requests
@@ -118,7 +102,7 @@ class PullRequest(SQLModel):
     updated_at: datetime.datetime
     closed_at: Optional[datetime.datetime] = None
     merged_at: Optional[datetime.datetime] = None
-    retrieved_at: datetime.datetime
+    retrieved_at: datetime.datetime = Field(primary_key=True)
 
 
 # https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-a-user
@@ -134,7 +118,7 @@ class User(SQLModel):
     following_count: int
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    retrieved_at: datetime.datetime
+    retrieved_at: datetime.datetime = Field(primary_key=True)
 
 
 # https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#list-releases
@@ -147,14 +131,14 @@ class Release(SQLModel):
     release_body: Optional[str] = None
     created_at: datetime.datetime
     published_at: datetime.datetime
-    retrieved_at: datetime.datetime
+    retrieved_at: datetime.datetime = Field(primary_key=True)
 
 
 class Follower(SQLModel):
     __tablename__ = "followers"  # pyright: ignore [reportAssignmentType]
     user_id: int = Field(primary_key=True, foreign_key="users.user_id")
     follower_id: int = Field(primary_key=True, foreign_key="users.user_id")
-    retrieved_at: datetime.datetime
+    retrieved_at: datetime.datetime = Field(primary_key=True)
 
 
 class PyPIDownload(SQLModel):

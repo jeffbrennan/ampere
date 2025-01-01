@@ -13,19 +13,10 @@ dash.register_page(__name__, name="network", top_nav=True, order=1)
 
 def create_stargazers_table() -> pd.DataFrame:
     con = get_db_con()
+    # select * because columns are dynamically generated
     return con.sql(
         """
-        select
-            user_name,
-            name,
-            followers,
-            "starred repos",
-            "spark-daria",
-            quinn,
-            "spark-fast-tests",
-            jodie,
-            levi,
-            falsa
+        select *
         from mart_stargazers_pivoted
         order by followers desc
         """

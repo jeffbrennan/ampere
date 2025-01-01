@@ -35,7 +35,7 @@ def create_repo_table() -> pd.DataFrame:
             round(date_part('day', current_date - created_at) / 365, 1)                         as "age (years)",
             strftime(created_at, '%Y-%m-%d')                                                    as created,
             strftime(updated_at, '%Y-%m-%d')                                                    as updated,
-        from main.repos
+        from stg_repos
         order by stargazers_count desc
         """
     ).to_df()

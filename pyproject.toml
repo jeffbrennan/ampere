@@ -32,6 +32,7 @@ sqlfluff = "^3.2.5"
 dagster-dbt = "^0.25.3"
 dbt-duckdb = "^1.9.0"
 typer = "^0.15.1"
+pypalettes = "^0.1.4"
 
 
 [build-system]

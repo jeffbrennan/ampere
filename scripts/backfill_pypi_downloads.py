@@ -30,7 +30,7 @@ def backfill(
     else:
         con = get_db_con()
         min_date_dt = con.sql(
-            f"select created_at from repos where repo_name = '{repo_dependency}'"
+            f"select created_at from stg_repos where repo_name = '{repo_dependency}'"
         ).fetchall()[0][0]
 
     if max_date is not None:

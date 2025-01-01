@@ -1,5 +1,5 @@
 models:
-  - name: stg_downloads_inc
+  - name: stg_pypi_downloads
     config:
       contract:
         enforced: true
@@ -52,7 +52,7 @@ models:
         data_type: timestamp with time zone
         constraints:
           - type: not_null
-    tests:
+    data_tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns:
             - project
@@ -65,21 +65,274 @@ models:
             - system_name
             - system_release
   - name: stg_followers
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [user_id, follower_id]
     columns:
       - name: user_id
         data_tests:
           - not_null
+        data_type: bigint
       - name: follower_id
         data_tests:
           - not_null
+        data_type: bigint
+      - name: retrieved_at
+        data_type: timestamp with time zone
   - name: stg_stargazers
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [repo_id, user_id]
     columns:
       - name: repo_id
         data_tests:
           - not_null
+        data_type: bigint
       - name: user_id
         data_tests:
           - not_null
+        data_type: bigint
       - name: starred_at
         data_tests:
           - not_null
+        data_type: timestamp with time zone
+      - name: retrieved_at
+        data_type: timestamp with time zone
+  - name: stg_commits
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: ['repo_id', 'commit_id']
+    columns:
+      - name: repo_id
+        data_type: bigint
+      - name: commit_id
+        data_type: string
+      - name: author_id
+        data_type: bigint
+      - name: comment_count
+        data_type: bigint
+      - name: message
+        data_type: string
+      - name: stats
+        data_type: struct(additions bigint, changes bigint, deletions bigint, filename string, status string)[]
+      - name: committed_at
+        data_type: timestamp with time zone
+      - name: retrieved_at
+        data_type: timestamp with time zone
+  - name: stg_forks
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [repo_id, fork_id]
+    columns:
+      - name: repo_id
+        data_type: bigint
+      - name: fork_id
+        data_type: bigint
+      - name: owner_id
+        data_type: bigint
+      - name: created_at
+        data_type: timestamp with time zone
+      - name: retrieved_at
+        data_type: timestamp with time zone
+  - name: stg_issues
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [repo_id, issue_id]
+    columns:
+      - name: repo_id
+        data_type: bigint
+      - name: issue_id
+        data_type: bigint
+      - name: issue_number
+        data_type: bigint
+      - name: issue_title
+        data_type: string
+      - name: issue_body
+        data_type: string
+      - name: author_id
+        data_type: bigint
+      - name: state
+        data_type: string
+      - name: state_reason
+        data_type: string
+      - name: comments_count
+        data_type: bigint
+      - name: created_at
+        data_type: timestamp with time zone
+      - name: updated_at
+        data_type: timestamp with time zone
+      - name: closed_at
+        data_type: timestamp with time zone
+      - name: retrieved_at
+        data_type: timestamp with time zone
+  - name: stg_pull_requests
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [repo_id, pr_id]
+    columns:
+      - name: repo_id
+        data_type: bigint
+      - name: pr_id
+        data_type: bigint
+      - name: pr_number
+        data_type: bigint
+      - name: pr_title
+        data_type: string 
+      - name: pr_state
+        data_type: string 
+      - name: pr_body
+        data_type: string 
+      - name: author_id
+        data_type: bigint
+      - name: created_at
+        data_type: timestamp with time zone
+      - name: updated_at
+        data_type: timestamp with time zone
+      - name: closed_at
+        data_type: timestamp with time zone
+      - name: merged_at
+        data_type: timestamp with time zone
+      - name: retrieved_at
+        data_type: timestamp with time zone
+  - name: stg_releases
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [repo_id, release_id]
+    columns:
+      - name: repo_id
+        data_type: bigint
+      - name: release_id
+        data_type: bigint
+      - name: release_name
+        data_type: string 
+      - name: tag_name
+        data_type: string 
+      - name: release_body
+        data_type: string 
+      - name: created_at
+        data_type: timestamp with time zone
+      - name: published_at
+        data_type: timestamp with time zone
+      - name: retrieved_at
+        data_type: timestamp with time zone
+  - name: stg_repos
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [repo_id]
+    columns:
+      - name: repo_id
+        data_type: bigint
+      - name: repo_name
+        data_type: string
+      - name: license
+        data_type: string
+      - name: topics
+        data_type: string[]
+      - name: language
+        data_type: struct(name string, size_bytes bigint)[]
+      - name: repo_size
+        data_type: bigint
+      - name: forks_count
+        data_type: bigint
+      - name: stargazers_count
+        data_type: bigint
+      - name: open_issues_count
+        data_type: bigint
+      - name: pushed_at
+        data_type: timestamp with time zone
+      - name: created_at
+        data_type: timestamp with time zone
+      - name: updated_at
+        data_type: timestamp with time zone
+      - name: retrieved_at
+        data_type: timestamp with time zone
+  - name: stg_users
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [user_id]
+    columns:
+      - name: user_id
+        data_type: bigint
+      - name: user_name
+        data_type: string 
+      - name: full_name
+        data_type: string
+      - name: company
+        data_type: string
+      - name: avatar_url
+        data_type: string
+      - name: repos_count
+        data_type: bigint
+      - name: followers_count
+        data_type: bigint
+      - name: following_count
+        data_type: bigint
+      - name: created_at
+        data_type: timestamp with time zone
+      - name: updated_at
+        data_type: timestamp with time zone
+      - name: retrieved_at
+        data_type: timestamp with time zone

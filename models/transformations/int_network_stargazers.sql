@@ -2,10 +2,10 @@ with repos_agg as (
     select
         a.user_id,
         list(c.repo_name) as repo_name_list
-    from users as a
-    inner join stargazers as b
+    from {{ref('stg_users')}} as a
+    inner join {{ref('stg_stargazers')}} as b
         on a.user_id = b.user_id
-    inner join repos as c
+    inner join {{ref('stg_repos')}} as c
         on b.repo_id = c.repo_id
     group by a.user_id
 )
@@ -19,10 +19,10 @@ select distinct
     b.retrieved_at,
     c.repo_name,
     d.repo_name_list
-from users as a
-inner join stargazers as b
+from {{ref('stg_users')}} as a
+inner join {{ref('stg_stargazers')}}  as b
     on a.user_id = b.user_id
-inner join repos as c
+inner join {{ref('stg_repos')}} as c
     on b.repo_id = c.repo_id
 inner join repos_agg as d
     on a.user_id = d.user_id

@@ -26,6 +26,9 @@ models:
       contract:
         enforced: true
       on_schema_change: append_new_columns
+    meta:
+      dagster:
+        group: github_metrics_daily_4
     constraints:
       - type: primary_key
         columns: [repo_name, user_name, event_id, event_type, event_action]
@@ -49,6 +52,10 @@ models:
       - name: event_link
         data_type: string
   - name: mart_feed_events_agg
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+
     config:
       contract:
         enforced: true
@@ -66,6 +73,10 @@ models:
       - name: event_count
         data_type: bigint
   - name: mart_issues
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+
     config:
       contract:
         enforced: true
@@ -89,6 +100,10 @@ models:
       - name: '"days old"'
         data_type: bigint
   - name: mart_issues_summary
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+
     config:
       contract:
         enforced: true
@@ -108,7 +123,17 @@ models:
       - name: '"closed issues (this month)"'
         data_type: bigint
   - name: mart_stargazers_pivoted
+    meta:
+      dagster:
+        group: github_metrics_daily_4
     columns:
       - name: user_name
         data_tests:
           - unique
+  - name: mart_repo_summary
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    constraints:
+      - type: primary_key
+        columns: [repo_id, metric_type, metric_date, metric_id]
