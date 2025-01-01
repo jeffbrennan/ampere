@@ -15,7 +15,7 @@ from ampere.common import (
     get_current_time,
     get_db_con,
     get_model_foreign_key,
-    get_token,
+    get_secret,
     timeit,
     write_delta_table,
 )
@@ -42,7 +42,7 @@ class APIRequest:
     headers: dict = field(
         default_factory=lambda: {
             "Accept": "application/vnd.github+json",
-            "Authorization": f'Bearer {get_token("GITHUB_TOKEN")}',
+            "Authorization": f'Bearer {get_secret("GITHUB_TOKEN")}',
             "X-GitHub-Api-Version": "2022-11-28",
         }
     )
