@@ -13,7 +13,7 @@ bigquery_daily = ScheduleDefinition(
     name="bigquery_daily",
     target=AssetSelection.groups("bigquery_daily"),
     cron_schedule="0 10 * * *",  # daily 10am utc
-    default_status=DefaultScheduleStatus.STOPPED,
+    default_status=DefaultScheduleStatus.RUNNING,
 )
 schedules = [
     github_metrics_daily_4,
