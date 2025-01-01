@@ -6,7 +6,7 @@ github_metrics_daily_4 = ScheduleDefinition(
     name="github_metrics_daily_4",
     target=AssetSelection.groups("github_metrics_daily_4"),
     cron_schedule="0 0,6,12,18 * * *",  # every 6 hours, starting at midnight
-    default_status=DefaultScheduleStatus.STOPPED,
+    default_status=DefaultScheduleStatus.RUNNING,
 )
 
 bigquery_daily = ScheduleDefinition(
