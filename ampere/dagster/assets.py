@@ -308,3 +308,8 @@ def dagster_get_following(context: AssetExecutionContext) -> None:
 def dagster_get_pypi_downloads(context: AssetExecutionContext) -> None:
     records_added = refresh_all_pypi_downloads(dry_run=False)
     context.add_output_metadata({"n_records": records_added})
+
+
+@asset(compute_kind="python", key=["will_fail"], group_name="temp")
+def dagster_test_run_fail() -> None:
+    assert False
