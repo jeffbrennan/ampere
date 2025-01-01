@@ -16,6 +16,7 @@ from ampere.common import (
     get_db_con,
     get_model_foreign_key,
     get_token,
+    timeit,
     write_delta_table,
 )
 from ampere.models import (
@@ -129,23 +130,31 @@ def get_latest_commit_timestamp(repo: Repo) -> datetime.datetime | None:
     return latest_commit[0]
 
 
+@timeit
 def get_org_user_ids() -> list[int]:
     """
     gets unique list of user ids from tracked tables to be added to the `users` table
+    if `stg_users` is available, only returns user_ids that have not been refreshed in past `stale_hours` hours
     """
     con = get_db_con()
+    stale_hours = 24
     user_ids = (
         con.sql(
             """
-            select user_id from stg_stargazers
-            union
-            select owner_id as user_id from stg_forks
-            union
-            select author_id as user_id from stg_commits
-            union
-            select author_id as user_id from stg_issues
-            union
-            select author_id as user_id from stg_pull_requests
+            with combined as (
+                select user_id from stg_stargazers
+                union
+                select owner_id as user_id from stg_forks
+                union
+                select author_id as user_id from stg_commits
+                union
+                select author_id as user_id from stg_issues
+                union
+                select author_id as user_id from stg_pull_requests
+            )
+            select distinct user_id::bigint as user_id
+            from combined 
+            where user_id is not null
         """
         )
         .to_df()
@@ -153,12 +162,31 @@ def get_org_user_ids() -> list[int]:
         .tolist()
     )
 
-    print(f"got {len(user_ids)} unique users")
-    return user_ids
+    try:
+        fresh_user_ids = (
+            con.sql(
+                f"""
+                select distinct user_id
+                from stg_users
+                where retrieved_at >= now() - interval {stale_hours} hour
+            """
+            )
+            .to_df()
+            .squeeze()
+            .tolist()
+        )
+        stale_user_ids = sorted(set(user_ids) - set(fresh_user_ids))
+
+    except duckdb.CatalogException as e:
+        print(e)
+        stale_user_ids = user_ids
+
+    print(f"got {len(stale_user_ids)} stale users")
+    return stale_user_ids
 
 
+@timeit
 def get_stale_followers_user_ids(endpoint: str) -> list[int]:
-    # TODO: make enum
     if endpoint not in ["followers", "following"]:
         raise ValueError("expecting one of ['followers', 'following']")
 
@@ -166,7 +194,7 @@ def get_stale_followers_user_ids(endpoint: str) -> list[int]:
     stale_hours = 24
     if endpoint == "followers":
         query = f"""
-        select 
+        select distinct
         a.user_id
         from stg_users a
         left join stg_followers b 
@@ -178,7 +206,7 @@ def get_stale_followers_user_ids(endpoint: str) -> list[int]:
 
     else:
         query = f"""
-        select 
+        select distinct
         a.user_id
         from stg_users a
         left join stg_followers b 
@@ -208,7 +236,8 @@ def handle_api_response(config: APIRequest) -> list[APIResponse]:
     while n_requests < config.max_requests:
         response = requests.get(url=url, headers=config.headers, params=config.parameters)
         n_requests += 1
-        print(f"[{endpoint}] requests: {n_requests}", end="\r", flush=True)
+        print(f"[{endpoint}] requests: {n_requests}")
+        # print(f"[{endpoint}] requests: {n_requests}", end="\r", flush=True)
 
         response_json = response.json()
         if response.status_code == 404:
@@ -546,8 +575,8 @@ def get_followers(user_id: int, endpoint: str) -> tuple[list[Follower], bool]:
             if response.status_code != 200:
                 if response.status_code in [403, 429]:
                     terminate_requests = True
-                print(f"skipping {response.status_code} | n skips = {skips}")
                 skips += 1
+                print(f"skipping {response.status_code} | n skips = {skips}")
                 continue
             for result in response.results:
                 output.append(
@@ -562,8 +591,8 @@ def get_followers(user_id: int, endpoint: str) -> tuple[list[Follower], bool]:
             if response.status_code != 200:
                 if response.status_code in [403, 429]:
                     terminate_requests = True
-                print(f"skipping {response.status_code} | n skips = {skips}")
                 skips += 1
+                print(f"skipping {response.status_code} | n skips = {skips}")
                 continue
             for result in response.results:
                 output.append(
@@ -578,7 +607,6 @@ def get_followers(user_id: int, endpoint: str) -> tuple[list[Follower], bool]:
 
 
 def get_user(user_id: int) -> Optional[User]:
-    print(user_id)
     response = handle_api_response(
         APIRequest(
             url=f"https://api.github.com/user/{user_id}",
@@ -642,11 +670,22 @@ def refresh_users(
     user_ids: list[int],
     config: DeltaWriteConfig,
 ) -> int:
+    if any(not isinstance(i, int) for i in user_ids):
+        raise TypeError("expecting user id of type `int`")
+
+    if len(user_ids) == 0:
+        print("no user ids to process. exiting early")
+        return 0
+
     start_time = time.time()
     with ThreadPoolExecutor(max_workers=2) as executor:
         raw_results = list(executor.map(get_user, user_ids))
 
     all_results = [i for i in raw_results if i is not None]
+    if len(all_results) == 0:
+        print("no results obtained")
+        return 0
+
     elapsed_time = time.time() - start_time
     avg_time_per_user = elapsed_time / len(user_ids)
 
@@ -664,6 +703,10 @@ def refresh_followers(
     start_time = time.time()
     if any(not isinstance(i, int) for i in user_ids):
         raise TypeError("expecting user id of type `int`")
+
+    if len(user_ids) == 0:
+        print("no user ids to process. exiting early")
+        return 0
 
     for i, user_id in enumerate(user_ids, 1):
         header_text = f"[{i:04d}/{len(user_ids):04d}] {user_id}"
