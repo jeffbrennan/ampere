@@ -3,7 +3,7 @@ from typing import Annotated, Optional
 
 import typer
 
-from ampere.common import get_db_con
+from ampere.common import get_backend_db_con
 from ampere.get_pypi_downloads import add_backfill_to_table
 
 app = typer.Typer()
@@ -28,7 +28,7 @@ def backfill(
             tzinfo=datetime.timezone.utc
         )
     else:
-        con = get_db_con()
+        con = get_backend_db_con()
         min_date_dt = con.sql(
             f"select created_at from stg_repos where repo_name = '{repo_dependency}'"
         ).fetchall()[0][0]
