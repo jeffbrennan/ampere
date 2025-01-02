@@ -7,10 +7,11 @@ from dagster_dbt import DbtCliResource, dbt_assets
 from ampere.common import (
     DeltaTableWriteMode,
     DeltaWriteConfig,
-    divide_chunks,
+    get_backend_db_con,
     get_model_primary_key,
     write_delta_table,
 )
+from ampere.create_network_graph import create_follower_network, create_star_network
 from ampere.get_pypi_downloads import (
     refresh_all_pypi_downloads,
 )
@@ -29,6 +30,7 @@ from ampere.get_repo_metrics import (
     refresh_github_table,
     refresh_users,
 )
+from ampere.maintenance import copy_backend_to_frontend
 from ampere.models import (
     Commit,
     Follower,
@@ -44,7 +46,7 @@ from ampere.viz import viz_follower_network, viz_star_network
 
 from .project import ampere_project
 
-db_path = ampere_project.project_dir.joinpath("data/ampere.duckdb")
+db_path = ampere_project.project_dir.joinpath("data/backend.duckdb")
 
 
 @dbt_assets(manifest=ampere_project.manifest_path)
@@ -78,7 +80,7 @@ def dagster_get_repos(context: AssetExecutionContext) -> None:
     group_name="github_metrics_daily_4",
 )
 def dagster_get_stargazers(context: AssetExecutionContext) -> None:
-    repos = read_repos()
+    repos = read_repos(get_backend_db_con())
     owner_name = "mrpowers-io"
     n = refresh_github_table(
         owner_name,
@@ -101,7 +103,7 @@ def dagster_get_stargazers(context: AssetExecutionContext) -> None:
     group_name="github_metrics_daily_4",
 )
 def dagster_get_forks(context: AssetExecutionContext) -> None:
-    repos = read_repos()
+    repos = read_repos(get_backend_db_con())
     owner_name = "mrpowers-io"
     n = refresh_github_table(
         owner_name,
@@ -124,7 +126,7 @@ def dagster_get_forks(context: AssetExecutionContext) -> None:
     group_name="github_metrics_daily_4",
 )
 def dagster_get_releases(context: AssetExecutionContext) -> None:
-    repos = read_repos()
+    repos = read_repos(get_backend_db_con())
     owner_name = "mrpowers-io"
     n = refresh_github_table(
         owner_name,
@@ -147,7 +149,7 @@ def dagster_get_releases(context: AssetExecutionContext) -> None:
     group_name="github_metrics_daily_4",
 )
 def dagster_get_pull_requests(context: AssetExecutionContext) -> None:
-    repos = read_repos()
+    repos = read_repos(get_backend_db_con())
     owner_name = "mrpowers-io"
     n = refresh_github_table(
         owner_name,
@@ -170,7 +172,7 @@ def dagster_get_pull_requests(context: AssetExecutionContext) -> None:
     group_name="github_metrics_daily_4",
 )
 def dagster_get_issues(context: AssetExecutionContext) -> None:
-    repos = read_repos()
+    repos = read_repos(get_backend_db_con())
     owner_name = "mrpowers-io"
     n = refresh_github_table(
         owner_name,
@@ -193,7 +195,7 @@ def dagster_get_issues(context: AssetExecutionContext) -> None:
     group_name="github_metrics_daily_4",
 )
 def dagster_get_commits(context: AssetExecutionContext) -> None:
-    repos = read_repos()
+    repos = read_repos(get_backend_db_con())
     owner_name = "mrpowers-io"
     n = refresh_github_table(
         owner_name,
@@ -244,7 +246,7 @@ def dagster_get_users(context: AssetExecutionContext) -> None:
 )
 def dagster_refresh_star_network(context: AssetExecutionContext) -> None:
     start_time = time.time()
-    _ = viz_star_network(use_cache=False, show_fig=False)
+    create_star_network()
     context.add_output_metadata({"elapsed time": time.time() - start_time})
 
 
@@ -256,7 +258,7 @@ def dagster_refresh_star_network(context: AssetExecutionContext) -> None:
 )
 def dagster_refresh_follower_network(context: AssetExecutionContext) -> None:
     start_time = time.time()
-    _ = viz_follower_network(use_cache=False, show_fig=False)
+    create_follower_network()
     context.add_output_metadata({"elapsed time": time.time() - start_time})
 
 
@@ -308,6 +310,39 @@ def dagster_get_following(context: AssetExecutionContext) -> None:
 def dagster_get_pypi_downloads(context: AssetExecutionContext) -> None:
     records_added = refresh_all_pypi_downloads(dry_run=False)
     context.add_output_metadata({"n_records": records_added})
+
+
+@asset(
+    compute_kind="python",
+    key=["github_metrics_backend_to_frontend"],
+    deps=[
+        "stg_repos",
+        "int_network_stargazers",
+        "int_network_follower_details",
+        "mart_feed_events",
+        "mart_issues",
+        "mart_issues_summary",
+        "mart_stargazers_pivoted",
+        "mart_repo_summary",
+    ],
+    group_name="github_metrics_daily_4",
+)
+def github_metrics_table_copy(context: AssetExecutionContext) -> None:
+    start_time = time.time()
+    copy_backend_to_frontend()
+    context.add_output_metadata({"elapsed_time": time.time() - start_time})
+
+
+@asset(
+    compute_kind="python",
+    key=["bigquery_backend_to_frontend"],
+    deps=["mart_downloads_summary"],
+    group_name="bigquery_daily",
+)
+def bigquery_table_copy(context: AssetExecutionContext) -> None:
+    start_time = time.time()
+    copy_backend_to_frontend()
+    context.add_output_metadata({"elapsed_time": time.time() - start_time})
 
 
 @asset(compute_kind="python", key=["will_pass"], group_name="test")
