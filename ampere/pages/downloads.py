@@ -10,16 +10,16 @@ import pytz
 from dash import Input, Output, callback, dcc, html
 from plotly.graph_objects import Figure
 
-from ampere.common import get_db_con
+from ampere.common import get_backend_db_con, get_frontend_db_con
 from ampere.styling import AmperePalette
 
 dash.register_page(__name__, name="downloads", top_nav=True, order=1)
 
 
 def create_downloads_summary() -> pd.DataFrame:
-    con = get_db_con()
-    return con.sql(
-        """
+    with get_frontend_db_con() as con:
+        df = con.sql(
+            """
             select
             repo,
             download_date,
@@ -29,8 +29,10 @@ def create_downloads_summary() -> pd.DataFrame:
             from mart_downloads_summary
             where group_name <> 'system_name'
             order by download_date, download_count
-            """
-    ).to_df()
+            """,
+        ).to_df()
+
+    return df
 
 
 def viz_line(df: pd.DataFrame, group_name: str) -> Figure:
@@ -158,9 +160,15 @@ def viz_area(
 
 
 def get_valid_repos() -> list[str]:
-    con = get_db_con()
-    result = con.sql("select distinct repo from mart_downloads_summary").to_df()
-    return result.squeeze().tolist()
+    with get_frontend_db_con() as con:
+        repos = (
+            con.sql("select distinct repo from mart_downloads_summary")
+            .to_df()
+            .squeeze()
+            .tolist()
+        )
+
+    return repos
 
 
 @callback(

@@ -9,8 +9,8 @@ from google.cloud import bigquery
 from ampere.common import (
     DeltaTableWriteMode,
     DeltaWriteConfig,
+    get_backend_db_con,
     get_current_time,
-    get_db_con,
     get_model_primary_key,
     write_delta_table,
 )
@@ -90,7 +90,7 @@ def refresh_pypi_downloads_from_bigquery(
 def get_pypi_download_query_dates() -> list[PyPIQueryConfig]:
     max_query_days = 45
 
-    con = get_db_con()
+    con = get_backend_db_con()
 
     query_dates = con.sql(
         """
@@ -132,7 +132,7 @@ def get_pypi_download_query_dates() -> list[PyPIQueryConfig]:
 
 
 def get_repos_with_releases() -> list[str]:
-    con = get_db_con()
+    con = get_backend_db_con()
     records = con.sql(
         """
         with

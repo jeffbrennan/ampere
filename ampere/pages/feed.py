@@ -5,16 +5,16 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
-from ampere.common import get_db_con
+from ampere.common import get_frontend_db_con
 from ampere.styling import AmpereDTStyle
 
 dash.register_page(__name__, name="feed", top_nav=True, order=3)
 
 
 def create_feed_table() -> pd.DataFrame:
-    con = get_db_con()
-    return con.sql(
-        """    
+    with get_frontend_db_con() as con:
+        df = con.sql(
+            """    
         select
             strftime(event_timestamp, '%Y-%m-%d')                                   as "date",
             strftime(event_timestamp, '%H:%M')                                      as "time",
@@ -27,8 +27,9 @@ def create_feed_table() -> pd.DataFrame:
             event_link
         from main.mart_feed_events
         order by "date" desc, "time" desc
-        """
-    ).to_df()
+        """,
+        ).to_df()
+    return df
 
 
 @callback(

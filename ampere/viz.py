@@ -1,6 +1,4 @@
-import datetime
 import pickle
-import random
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -12,24 +10,10 @@ import plotly.graph_objects as go
 import pypalettes
 from plotly.graph_objs import Figure
 
-from ampere.common import get_db_con, timeit
+from ampere.common import get_frontend_db_con, timeit
 from ampere.get_repo_metrics import read_repos
+from ampere.models import Followers, StargazerNetworkRecord
 from ampere.styling import AmperePalette, ScreenWidth
-
-
-@dataclass(slots=True, frozen=True)
-class StargazerNetworkRecord:
-    user_name: str
-    followers_count: int
-    starred_at: datetime.datetime
-    retrieved_at: datetime.datetime
-    repo_name: str
-
-
-@dataclass(slots=True, frozen=True)
-class Followers:
-    user_id: str
-    follower_id: int
 
 
 @dataclass(slots=True, frozen=True)
@@ -46,8 +30,15 @@ class FollowerDetails:
     internal_following_pct: float
 
 
+@timeit
 def generate_repo_palette() -> dict[str, str]:
-    repos = sorted(read_repos(), key=lambda x: x.stargazers_count, reverse=True)
+    with get_frontend_db_con() as con:
+        repos = sorted(
+            read_repos(con),
+            key=lambda x: x.stargazers_count,
+            reverse=True,
+        )
+
     n_colors = 10
     n_repos = len(repos)
     repeats = (n_repos // n_colors) + 1
@@ -62,78 +53,6 @@ def generate_repo_palette() -> dict[str, str]:
         output[repo.repo_name] = f"rgb({rgb_string})"
 
     return output
-
-
-@timeit
-def create_star_network(
-    repos: list[str], stargazers: list[StargazerNetworkRecord], out_dir: Path
-) -> nx.Graph:
-    print("creating star network...")
-    random.seed(42)
-    added_repos = []
-    current_user = stargazers[0].user_name
-
-    graph = nx.Graph()
-    for repo in repos:
-        graph.add_node(repo, node_type="repo", repo=repo)
-
-    for record in stargazers:
-        if record.user_name != current_user:
-            added_repos = []
-        node_name = f"{record.user_name}_{record.repo_name}"
-        graph.add_node(
-            node_name,
-            followers_count=record.followers_count,
-            node_type="user_repo",
-            repo=record.repo_name,
-        )
-        graph.add_edge(node_name, record.repo_name, weight=50, edge_type="user_repo")
-        if len(added_repos) > 0:
-            for added_repo in added_repos:
-                graph.add_edge(
-                    node_name,
-                    f"{record.user_name}_{added_repo}",
-                    edge_type="user_user",
-                    weight=0.1,
-                )
-        added_repos.append(record.repo_name)
-        current_user = record.user_name
-
-    pos = nx.spring_layout(graph)
-    nx.set_node_attributes(graph, pos, "pos")
-
-    out_dir.mkdir(exist_ok=True, parents=True)
-    out_path = out_dir / "star_network.pkl"
-    with out_path.open("wb") as f:
-        pickle.dump(graph, f)
-
-    return graph
-
-
-@timeit
-def create_follower_network(follower_info: list[Followers], out_dir: Path) -> nx.Graph:
-    random.seed(42)
-    added_nodes = []
-    graph = nx.Graph()
-    for record in follower_info:
-        if record.user_id not in added_nodes:
-            graph.add_node(record.user_id)
-            added_nodes.append(record.user_id)
-
-        if record.follower_id not in added_nodes:
-            graph.add_node(record.follower_id)
-            added_nodes.append(record.follower_id)
-
-        graph.add_edge(record.user_id, record.follower_id, weight=0.03)
-    pos = nx.spring_layout(graph)
-    nx.set_node_attributes(graph, pos, "pos")
-
-    out_dir.mkdir(exist_ok=True, parents=True)
-    out_path = out_dir / "follower_network.pkl"
-    with out_path.open("wb") as f:
-        pickle.dump(graph, f)
-
-    return graph
 
 
 @timeit
@@ -198,6 +117,7 @@ def create_star_network_plot(
     node_df["size_group"] = pd.qcut(node_df["size"], 6, labels=False, duplicates="drop")
     node_df["size_group"] = (node_df["size_group"] + 1) * 5
 
+    repo_palette = generate_repo_palette()
     all_node_traces = []
     for repo in repos:
         repo_df = node_df.query(f"repo == '{repo}'")
@@ -205,7 +125,7 @@ def create_star_network_plot(
             x=repo_df.x,
             y=repo_df.y,
             marker_size=repo_df.size_group,
-            marker_color=REPO_PALETTE[repo],
+            marker_color=repo_palette[repo],
             mode="markers",
             hoverinfo="text",
             hovertext=repo_df.text,
@@ -344,35 +264,35 @@ def create_follower_network_plot(
     return fig
 
 
+def read_network_graph_pickle(pkl_name: str) -> nx.Graph:
+    out_dir = Path(__file__).parents[1] / "data" / "viz"
+    out_path = out_dir / f"{pkl_name}.pkl"
+    with out_path.open("rb") as f:
+        network = pickle.load(f)
+    return network
+
+
 @timeit
 def viz_star_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
-    con = get_db_con()
-    stargazers = con.sql(
-        """
+    with get_frontend_db_con() as con:
+        stargazers = con.sql(
+            """
         select
             user_name,
             followers_count,
             starred_at,
             retrieved_at,
             repo_name
-        from int_network_stargazers
-    """
-    ).to_df()
+        from int_network_stargazers,
+    """,
+        ).to_df()
 
     stargazers = list(StargazerNetworkRecord(*record) for record in stargazers.values)
     repos_with_stargazers = list(set(i.repo_name for i in stargazers))
-    repos = [i for i in REPO_PALETTE if i in repos_with_stargazers]
-    out_dir = Path(__file__).parents[1] / "data" / "viz"
-    out_path = out_dir / "star_network.pkl"
+    repo_palette = generate_repo_palette()
+    repos = [i for i in repo_palette if i in repos_with_stargazers]
 
-    if use_cache and out_path.exists():
-        print("loading from cache")
-        with out_path.open("rb") as f:
-            network = pickle.load(f)
-    else:
-        print("creating from scratch")
-        network = create_star_network(repos, stargazers, out_dir)
-
+    network = read_network_graph_pickle("star_network")
     fig = create_star_network_plot(network, repos, stargazers)
     if show_fig:
         fig.show()
@@ -381,18 +301,17 @@ def viz_star_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
 
 
 @timeit
-def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figure:
-    con = get_db_con()
-    followers = (
-        con.sql("select user_id, follower_id from int_internal_followers")
-        .to_df()
-        .to_dict(orient="records")
-    )
-    followers = list(Followers(**record) for record in followers)  # type: ignore
+def viz_follower_network(show_fig: bool = False) -> Figure:
+    with get_frontend_db_con() as con:
+        followers = (
+            con.sql("select user_id, follower_id from int_internal_followers")
+            .to_df()
+            .to_dict(orient="records")
+        )
 
-    follower_details_dict = (
-        con.sql(
-            """
+        follower_details_dict = (
+            con.sql(
+                """
         select
         user_id,
         user_name,
@@ -405,22 +324,18 @@ def viz_follower_network(use_cache: bool = True, show_fig: bool = False) -> Figu
         internal_followers_pct,
         internal_following_pct
         from int_network_follower_details
-        """
+        """,
+            )
+            .to_df()
+            .to_dict(orient="records")
         )
-        .to_df()
-        .to_dict(orient="records")
-    )
+
+    followers = [Followers(**record) for record in followers]  # type: ignore
     follower_details_dc = [FollowerDetails(**i) for i in follower_details_dict]  # type: ignore
     follower_details = {i.user_id: i for i in follower_details_dc}
 
-    out_dir = Path(__file__).parents[1] / "data" / "viz"
-    out_path = out_dir / "follower_network.pkl"
-    if use_cache and out_path.exists():
-        with out_path.open("rb") as f:
-            network = pickle.load(f)
-    else:
-        print("creating follower network...")
-        network = create_follower_network(followers, out_dir)
+    # reads precomputed network graph from scheduled job
+    network = read_network_graph_pickle("follower_network")
 
     print("creating plot..")
     fig = create_follower_network_plot(network, followers, follower_details)
@@ -462,6 +377,7 @@ def viz_summary(
             "pull requests",
         ]
 
+    repo_palette = generate_repo_palette()
     fig = px.line(
         df,
         x="metric_date",
@@ -472,13 +388,13 @@ def viz_summary(
         template="simple_white",
         hover_name="repo_name",
         markers=True,
-        color_discrete_map=REPO_PALETTE,
+        color_discrete_map=repo_palette,
         height=550 * 6 // facet_col_wrap,
         facet_col_spacing=0.08,
         facet_row_spacing=facet_row_spacing,
         category_orders={
             "metric_type": metric_type_order,
-            "repo_name": REPO_PALETTE.keys(),
+            "repo_name": repo_palette.keys(),
         },
     )
 
@@ -544,8 +460,6 @@ def viz_summary(
 
     return fig
 
-
-REPO_PALETTE = generate_repo_palette()
 
 NETWORK_LAYOUT = go.Layout(
     showlegend=True,

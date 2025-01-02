@@ -4,7 +4,7 @@ import pandas as pd
 from dash import Input, Output, callback, dash_table, dcc, html
 from plotly.graph_objects import Figure
 
-from ampere.common import get_db_con
+from ampere.common import get_frontend_db_con
 from ampere.styling import AmpereDTStyle
 from ampere.viz import viz_follower_network
 
@@ -12,9 +12,9 @@ dash.register_page(__name__)
 
 
 def create_followers_table() -> pd.DataFrame:
-    con = get_db_con()
-    df = con.sql(
-        """
+    with get_frontend_db_con() as con:
+        df = con.sql(
+            """
         select
             concat('[', user_name, ']', '(https://www.github.com/', user_name, ')') as user_name,
             full_name                                                               as name,
@@ -27,7 +27,7 @@ def create_followers_table() -> pd.DataFrame:
         from int_network_follower_details
         order by followers_count desc
         """
-    ).to_df()
+        ).to_df()
     return df
 
 

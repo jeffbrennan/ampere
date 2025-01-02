@@ -2,19 +2,16 @@ import datetime
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Callable, Optional
 
 import duckdb
 import requests
-from deltalake import DeltaTable
 
 from ampere.common import (
     DeltaWriteConfig,
     create_header,
+    get_backend_db_con,
     get_current_time,
-    get_db_con,
-    get_model_foreign_key,
     get_secret,
     timeit,
     write_delta_table,
@@ -102,15 +99,14 @@ def get_task_sleep_seconds(config: TaskSleepConfig) -> float:
     return task_sleep_seconds
 
 
-def read_repos() -> list[Repo]:
-    con = get_db_con()
+def read_repos(con: duckdb.DuckDBPyConnection) -> list[Repo]:
     repos_dict = con.sql("select * from stg_repos").to_df().to_dict("records")
     repos = [Repo.model_validate(i) for i in repos_dict]
     return repos
 
 
 def get_latest_commit_timestamp(repo: Repo) -> datetime.datetime | None:
-    con = get_db_con()
+    con = get_backend_db_con()
     query = f"""
         select max(committed_at)
         from stg_commits 
@@ -136,7 +132,7 @@ def get_org_user_ids() -> list[int]:
     gets unique list of user ids from tracked tables to be added to the `users` table
     if `stg_users` is available, only returns user_ids that have not been refreshed in past `stale_hours` hours
     """
-    con = get_db_con()
+    con = get_backend_db_con()
     stale_hours = 24
     user_ids = (
         con.sql(
@@ -190,7 +186,7 @@ def get_stale_followers_user_ids(endpoint: str) -> list[int]:
     if endpoint not in ["followers", "following"]:
         raise ValueError("expecting one of ['followers', 'following']")
 
-    con = get_db_con()
+    con = get_backend_db_con()
     stale_hours = 24
     if endpoint == "followers":
         query = f"""

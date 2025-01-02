@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
-from ampere.common import get_db_con
+from ampere.common import get_frontend_db_con
 from ampere.styling import (
     AmpereDTStyle,
     ColumnInfo,
@@ -17,9 +17,9 @@ dash.register_page(__name__, name="feed", top_nav=True, order=3)
 
 
 def create_issues_table() -> pd.DataFrame:
-    con = get_db_con()
-    return con.sql(
-        """
+    with get_frontend_db_con() as con:
+        df = con.sql(
+            """
        select
            repo,
            author,
@@ -30,14 +30,15 @@ def create_issues_table() -> pd.DataFrame:
            "comments"
        from mart_issues
        order by repo, "days old"
-        """
-    ).to_df()
+        """,
+        ).to_df()
+    return df
 
 
 def create_issues_summary_table() -> pd.DataFrame:
-    con = get_db_con()
-    return con.sql(
-        """
+    with get_frontend_db_con() as con:
+        df = con.sql(
+            """
         select repo,
             "open issues",
             "median issue age (days)",
@@ -46,7 +47,8 @@ def create_issues_summary_table() -> pd.DataFrame:
         from mart_issues_summary
         order by "open issues" desc
         """
-    ).to_df()
+        ).to_df()
+    return df
 
 
 @callback(
