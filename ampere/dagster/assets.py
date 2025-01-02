@@ -310,6 +310,16 @@ def dagster_get_pypi_downloads(context: AssetExecutionContext) -> None:
     context.add_output_metadata({"n_records": records_added})
 
 
-@asset(compute_kind="python", key=["will_fail"], group_name="temp")
+@asset(compute_kind="python", key=["will_pass"], group_name="test")
+def dagster_test_run_pass() -> None:
+    assert True
+
+
+@asset(compute_kind="python", key=["will_fail1"], deps=["will_pass"], group_name="test")
 def dagster_test_run_fail() -> None:
-    assert False
+    raise AssertionError("failed on line 42: this asset always fails. asset1")
+
+
+@asset(compute_kind="python", key=["will_fail2"], deps=["will_pass"], group_name="test")
+def dagster_test_run_fail2() -> None:
+    raise AssertionError("failed on line 42: this asset always fails. asset2")

@@ -17,6 +17,8 @@ from .assets import (
     dagster_refresh_follower_network,
     dagster_refresh_star_network,
     dagster_test_run_fail,
+    dagster_test_run_fail2,
+    dagster_test_run_pass,
 )
 from .project import ampere_project
 from .schedules import schedules
@@ -39,6 +41,8 @@ defs = Definitions(
         dagster_refresh_star_network,
         dagster_refresh_follower_network,
         dagster_test_run_fail,
+        dagster_test_run_fail2,
+        dagster_test_run_pass,
     ],
     schedules=schedules,
     resources={
