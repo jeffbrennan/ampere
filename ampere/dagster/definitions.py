@@ -16,9 +16,13 @@ from .assets import (
     dagster_get_users,
     dagster_refresh_follower_network,
     dagster_refresh_star_network,
+    dagster_test_run_fail,
+    dagster_test_run_fail2,
+    dagster_test_run_pass,
 )
 from .project import ampere_project
 from .schedules import schedules
+from .sensors import email_on_run_failure
 
 defs = Definitions(
     assets=[
@@ -36,9 +40,13 @@ defs = Definitions(
         dagster_get_pypi_downloads,
         dagster_refresh_star_network,
         dagster_refresh_follower_network,
+        dagster_test_run_fail,
+        dagster_test_run_fail2,
+        dagster_test_run_pass,
     ],
     schedules=schedules,
     resources={
         "dbt": DbtCliResource(project_dir=ampere_project),
     },
+    sensors=[email_on_run_failure],
 )

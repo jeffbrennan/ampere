@@ -59,12 +59,12 @@ def create_header(header_length: int, title: str, center: bool, spacer: str):
     return output
 
 
-def get_token(secret_name: str) -> str:
+def get_secret(secret_name: str) -> str:
     dotenv.load_dotenv()
-    token = os.environ.get(secret_name)
-    if token is None:
+    secret = os.environ.get(secret_name)
+    if secret is None:
         raise ValueError()
-    return token
+    return secret
 
 
 def get_current_time() -> datetime.datetime:

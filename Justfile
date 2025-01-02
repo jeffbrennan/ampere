@@ -1,8 +1,8 @@
 
 set dotenv-load
 
-@up:
-    docker compose up --build -d
+@up *FLAGS:
+    docker compose up --build {{FLAGS}}
 
 @down:
     docker compose down
