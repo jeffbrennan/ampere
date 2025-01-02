@@ -164,3 +164,19 @@ class PyPIQueryConfig(SQLModel):
     retrieved_at: datetime.datetime = Field(primary_key=True)
     min_date: str
     max_date: Optional[str]
+
+
+# viz model dataclases
+@dataclass(slots=True, frozen=True)
+class StargazerNetworkRecord:
+    user_name: str
+    followers_count: int
+    starred_at: datetime.datetime
+    retrieved_at: datetime.datetime
+    repo_name: str
+
+
+@dataclass(slots=True, frozen=True)
+class Followers:
+    user_id: str
+    follower_id: int
