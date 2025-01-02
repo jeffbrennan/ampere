@@ -1,15 +1,11 @@
 import datetime
-import sqlite3
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Callable, Optional
 
 import duckdb
-import pandas as pd
 import requests
-from deltalake import DeltaTable
 
 from ampere.common import (
     DeltaWriteConfig,
@@ -107,6 +103,7 @@ def read_repos(con: duckdb.DuckDBPyConnection) -> list[Repo]:
     repos_dict = con.sql("select * from stg_repos").to_df().to_dict("records")
     repos = [Repo.model_validate(i) for i in repos_dict]
     return repos
+
 
 def get_latest_commit_timestamp(repo: Repo) -> datetime.datetime | None:
     con = get_backend_db_con()
