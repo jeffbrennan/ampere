@@ -6,27 +6,26 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
-from ampere.common import get_db_con
+from ampere.common import get_frontend_db_con
 from ampere.styling import AmpereDTStyle
 
 dash.register_page(__name__, name="about", top_nav=True, order=2)
 
 
 def get_last_updated() -> datetime.datetime:
-    con = get_db_con()
-    max_retrieved_at = (
-        con.sql("select max(retrieved_at) as last_updated from main.repos")
-        .to_df()
-        .squeeze()
-    )
-
-    return max_retrieved_at
+    with get_frontend_db_con() as con:
+        last_updated = (
+            con.sql("select max(retrieved_at) as last_updated from stg_repos")
+            .to_df()
+            .squeeze()
+        )
+    return last_updated
 
 
 def create_repo_table() -> pd.DataFrame:
-    con = get_db_con()
-    return con.sql(
-        """
+    with get_frontend_db_con() as con:
+        df = con.sql(
+            """
         select
             concat('[', repo_name, ']', '(https://www.github.com/mrpowers-io/', repo_name, ')') as repo_name,
             forks_count                                                                         as forks,
@@ -37,8 +36,10 @@ def create_repo_table() -> pd.DataFrame:
             strftime(updated_at, '%Y-%m-%d')                                                    as updated,
         from stg_repos
         order by stargazers_count desc
-        """
-    ).to_df()
+        """,
+        ).to_df()
+
+    return df
 
 
 @callback(

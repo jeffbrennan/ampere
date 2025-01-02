@@ -8,7 +8,7 @@ import pytz
 from dash import Input, Output, callback, dcc, html
 from plotly.graph_objs import Figure
 
-from ampere.common import get_db_con
+from ampere.common import get_frontend_db_con
 from ampere.styling import AmperePalette, ScreenWidth
 from ampere.viz import viz_summary
 
@@ -86,19 +86,19 @@ def get_summary_date_ranges(
 
 
 def get_summary_data() -> list[dict[Any, Any]]:
-    con = get_db_con()
-    df = con.sql(
-        """
-    select
-        repo_id,
-        metric_type,
-        metric_date,
-        metric_count,
-        repo_name
-    from main.mart_repo_summary
-    order by metric_date
-    """
-    ).to_df()
+    with get_frontend_db_con() as con:
+        df = con.sql(
+            """
+        select
+            repo_id,
+            metric_type,
+            metric_date,
+            metric_count,
+            repo_name
+        from main.mart_repo_summary
+        order by metric_date
+    """,
+        ).to_df()
 
     return df.to_dict("records")
 

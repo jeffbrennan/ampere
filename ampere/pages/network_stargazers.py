@@ -4,7 +4,7 @@ import pandas as pd
 from dash import Input, Output, callback, dash_table, dcc, html
 from plotly.graph_objects import Figure
 
-from ampere.common import get_db_con
+from ampere.common import get_frontend_db_con
 from ampere.styling import AmpereDTStyle
 from ampere.viz import viz_star_network
 
@@ -12,15 +12,16 @@ dash.register_page(__name__, name="network", top_nav=True, order=1)
 
 
 def create_stargazers_table() -> pd.DataFrame:
-    con = get_db_con()
-    # select * because columns are dynamically generated
-    return con.sql(
-        """
+    with get_frontend_db_con() as con:
+        # select * because columns are dynamically generated
+        df = con.sql(
+            """
         select *
         from mart_stargazers_pivoted
         order by followers desc
-        """
-    ).to_df()
+        """,
+        ).to_df()
+    return df
 
 
 @callback(
