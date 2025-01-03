@@ -90,11 +90,10 @@ def get_summary_data() -> list[dict[Any, Any]]:
         df = con.sql(
             """
         select
-            repo_id,
+            repo_name,
             metric_type,
             metric_date,
             metric_count,
-            repo_name
         from main.mart_repo_summary
         order by metric_date
     """,

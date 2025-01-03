@@ -354,28 +354,30 @@ def viz_summary(
         "stars",
         "issues",
         "commits",
-        "lines of code",
-        "forks",
-        "pull requests",
+        # "lines of code",
+        # "forks",
+        # "pull requests",
     ]
 
-    if screen_width in [ScreenWidth.xs, ScreenWidth.sm]:
-        facet_col_wrap = 1
-        facet_row_spacing = 0.04
-    elif screen_width in [ScreenWidth.md, ScreenWidth.lg]:
-        facet_col_wrap = 2
-        facet_row_spacing = 0.10
-    else:
-        facet_col_wrap = 3
-        facet_row_spacing = 0.10
-        metric_type_order = [
-            "stars",
-            "forks",
-            "commits",
-            "lines of code",
-            "issues",
-            "pull requests",
-        ]
+    facet_row_spacing = 0.10
+    facet_col_wrap = 1
+    # if screen_width in [ScreenWidth.xs, ScreenWidth.sm]:
+    #     facet_col_wrap = 1
+    #     facet_row_spacing = 0.04
+    # elif screen_width in [ScreenWidth.md, ScreenWidth.lg]:
+    #     facet_col_wrap = 2
+    #     facet_row_spacing = 0.10
+    # else:
+    #     facet_col_wrap = 3
+    #     facet_row_spacing = 0.10
+    #     metric_type_order = [
+    #         "stars",
+    #         "forks",
+    #         "commits",
+    #         # "lines of code",
+    #         # "issues",
+    #         # "pull requests",
+    #     ]
 
     repo_palette = generate_repo_palette()
     fig = px.line(
