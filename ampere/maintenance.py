@@ -28,6 +28,7 @@ def create_new_frontend_db():
 def write_backend_tables_to_frontend() -> None:
     tables = [
         "int_network_stargazers",
+        "int_internal_followers",
         "int_network_follower_details",
         "stg_repos",
         "mart_downloads_summary",
