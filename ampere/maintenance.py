@@ -1,26 +1,19 @@
-import datetime
-import os
-import time
 from pathlib import Path
 
 import duckdb
 
-from ampere.common import get_backend_db_con, get_frontend_db_con
+from ampere.common import get_backend_db_con, get_frontend_db_con, timeit
 
 
 def create_new_frontend_db():
     base_dir = Path(__file__).parents[1] / "data"
-    new_db_dir = base_dir / "frontend_versioned"
-    new_db_dir.mkdir(exist_ok=True)
+    db_path = base_dir / "frontend.duckdb"
 
-    today_str = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+    print("deleting existing file...")
+    db_path.unlink(missing_ok=True)
 
-    new_db = new_db_dir / f"frontend_{today_str}.duckdb"
-    symlink_db = base_dir / "frontend.duckdb"
-
-    os.symlink(new_db, str(symlink_db) + "_tmp")
-    os.rename(str(symlink_db) + "_tmp", symlink_db)
-    print(f"{time.ctime()}: Symlink updated to point to {new_db}")
+    print("creating new file...")
+    get_frontend_db_con(read_only=False)
 
 
 def write_backend_tables_to_frontend() -> None:
@@ -45,24 +38,11 @@ def write_backend_tables_to_frontend() -> None:
         duckdb.sql(f"CREATE TABLE {table} AS SELECT * FROM df", connection=frontend_con)
 
 
-def cleanup_frontend_versions() -> None:
-    max_num_versions =  5
-    base_dir = Path(__file__).parents[1] / "data" / "frontend_versioned"
-
-    all_versions = sorted(base_dir.glob("*.duckdb"))
-    if len(all_versions) < max_num_versions:
-        print("no versions to delete. exiting early")
-        return
-    
-    versions_to_delete = all_versions[0:-max_num_versions]
-    for version in versions_to_delete:
-        print("deleting", version.as_posix())
-        version.unlink()
-
+@timeit
 def copy_backend_to_frontend() -> None:
     create_new_frontend_db()
     write_backend_tables_to_frontend()
-    cleanup_frontend_versions()
+
 
 if __name__ == "__main__":
     copy_backend_to_frontend()
