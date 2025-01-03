@@ -18,8 +18,6 @@ def create_new_frontend_db():
     new_db = new_db_dir / f"frontend_{today_str}.duckdb"
     symlink_db = base_dir / "frontend.duckdb"
 
-    symlink_db.touch(exist_ok=True)
-
     os.symlink(new_db, str(symlink_db) + "_tmp")
     os.rename(str(symlink_db) + "_tmp", symlink_db)
     print(f"{time.ctime()}: Symlink updated to point to {new_db}")
@@ -47,10 +45,24 @@ def write_backend_tables_to_frontend() -> None:
         duckdb.sql(f"CREATE TABLE {table} AS SELECT * FROM df", connection=frontend_con)
 
 
+def cleanup_frontend_versions() -> None:
+    max_num_versions =  5
+    base_dir = Path(__file__).parents[1] / "data" / "frontend_versioned"
+
+    all_versions = sorted(base_dir.glob("*.duckdb"))
+    if len(all_versions) < max_num_versions:
+        print("no versions to delete. exiting early")
+        return
+    
+    versions_to_delete = all_versions[0:-max_num_versions]
+    for version in versions_to_delete:
+        print("deleting", version.as_posix())
+        version.unlink()
+
 def copy_backend_to_frontend() -> None:
     create_new_frontend_db()
     write_backend_tables_to_frontend()
-
+    cleanup_frontend_versions()
 
 if __name__ == "__main__":
     copy_backend_to_frontend()
