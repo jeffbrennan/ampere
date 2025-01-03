@@ -136,4 +136,4 @@ models:
         group: github_metrics_daily_4
     constraints:
       - type: primary_key
-        columns: [repo_name metric_type, metric_date]
+        columns: [repo_name, metric_type, metric_date]

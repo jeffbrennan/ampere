@@ -351,8 +351,6 @@ def viz_summary(
     screen_width: ScreenWidth = ScreenWidth.lg,
 ) -> Figure:
     metric_type_order = ["stars", "issues", "commits"]
-    facet_row_spacing = 0.10
-    facet_col_wrap = 1
 
     repo_palette = generate_repo_palette()
     fig = px.area(
@@ -361,12 +359,11 @@ def viz_summary(
         y="metric_count",
         color="repo_name",
         facet_col="metric_type",
-        facet_col_wrap=facet_col_wrap,
+        facet_col_wrap=1,
         template="simple_white",
         hover_name="repo_name",
         color_discrete_map=repo_palette,
-        height=750 * len(metric_type_order) // facet_col_wrap,
-        facet_row_spacing=facet_row_spacing,
+        height=750 * len(metric_type_order),
         category_orders={
             "metric_type": metric_type_order,
             "repo_name": repo_palette.keys(),
