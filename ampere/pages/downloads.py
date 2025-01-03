@@ -325,10 +325,10 @@ def get_downloads_summary_date_ranges(
         date_slider_marks,
     )
 
+def layout():
+    date_slider_step_seconds = 60 * 60 * 24 * 7
 
-date_slider_step_seconds = 60 * 60 * 24 * 7
-
-layout = [
+    return  [
     html.Br(),
     dcc.Store("downloads-df"),
     dbc.Row(
