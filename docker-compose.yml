@@ -41,7 +41,22 @@ services:
       - ampere_data:/ampere/data
     networks:
       - jb-proxy
-
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile-frontend
+    deploy:
+        mode: replicated
+        replicas: 3
+    volumes:
+      - ampere_data:/ampere/data
+    labels:
+        - "traefik.http.routers.panoctagon_frontend.rule=Host(`ampere.jeffbrennan.dev`)"
+        - "traefik.enable=true"
+        - "traefik.http.routers.panoctagon_frontend.entrypoints=websecure"
+        - "traefik.http.routers.panoctagon_frontend.tls.certresolver=myresolver"
+    networks:
+        - jb-proxy
 volumes:
   letsencrypt:
     external: true
