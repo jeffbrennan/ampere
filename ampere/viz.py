@@ -349,38 +349,13 @@ def viz_summary(
     df: pd.DataFrame,
     show_fig: bool = False,
     screen_width: ScreenWidth = ScreenWidth.lg,
-):
-    metric_type_order = [
-        "stars",
-        "issues",
-        "commits",
-        # "lines of code",
-        # "forks",
-        # "pull requests",
-    ]
-
+) -> Figure:
+    metric_type_order = ["stars", "issues", "commits"]
     facet_row_spacing = 0.10
     facet_col_wrap = 1
-    # if screen_width in [ScreenWidth.xs, ScreenWidth.sm]:
-    #     facet_col_wrap = 1
-    #     facet_row_spacing = 0.04
-    # elif screen_width in [ScreenWidth.md, ScreenWidth.lg]:
-    #     facet_col_wrap = 2
-    #     facet_row_spacing = 0.10
-    # else:
-    #     facet_col_wrap = 3
-    #     facet_row_spacing = 0.10
-    #     metric_type_order = [
-    #         "stars",
-    #         "forks",
-    #         "commits",
-    #         # "lines of code",
-    #         # "issues",
-    #         # "pull requests",
-    #     ]
 
     repo_palette = generate_repo_palette()
-    fig = px.line(
+    fig = px.area(
         df,
         x="metric_date",
         y="metric_count",
@@ -389,10 +364,8 @@ def viz_summary(
         facet_col_wrap=facet_col_wrap,
         template="simple_white",
         hover_name="repo_name",
-        markers=True,
         color_discrete_map=repo_palette,
-        height=550 * 6 // facet_col_wrap,
-        facet_col_spacing=0.08,
+        height=750 * len(metric_type_order) // facet_col_wrap,
         facet_row_spacing=facet_row_spacing,
         category_orders={
             "metric_type": metric_type_order,
@@ -401,9 +374,7 @@ def viz_summary(
     )
 
     fig.update_yaxes(matches=None, showticklabels=True)
-    fig.update_traces(
-        line=dict(width=1), marker=dict(size=5), hovertemplate="<b>%{x}</b><br>n=%{y}"
-    )
+    fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
 
     fig_legend_y = {ScreenWidth.xs: 1.04, ScreenWidth.sm: 1.02}
     if screen_width in [ScreenWidth.xs, ScreenWidth.sm]:
