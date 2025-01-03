@@ -25,7 +25,7 @@ metric_dates as (
     select
         repo_id,
         metric_type,
-        time_bucket('7 day', metric_timestamp) as metric_date,
+        time_bucket('1 day', metric_timestamp) as metric_date,
         max(metric_id) as metric_id,
         max(user_id) as user_id,
         max(metric_count) as metric_count
@@ -42,7 +42,7 @@ metric_dates_complete as (
         b.user_id,
         b.metric_count
     from date_spine_full as a
-    left join
+    left join 
         metric_dates as b
         on
             a.metric_date = b.metric_date
@@ -91,7 +91,39 @@ metrics_filled_down as (
             partition by repo_id, metric_type, metric_count_group
         ) as metric_count
     from metrics_fill_prep
+),
+
+metrics_trunc_old as (
+    select
+    repo_id,
+    metric_type,
+    time_bucket('45 day', metric_date) as metric_date,
+    min(metric_id) as metric_id,
+    min(user_id) as user_id,
+    min(metric_count) as metric_count
+    from metrics_filled_down
+    where metric_date < (select max(metric_date) - interval 365 days from metrics_filled_down)
+    group by all
+),
+metrics_trunc_new as (
+    select
+    repo_id,
+    metric_type,
+    time_bucket('7 day', metric_date) as metric_date,
+    min(metric_id) as metric_id,
+    min(user_id) as user_id,
+    min(metric_count) as metric_count
+    from metrics_filled_down
+    where metric_date >= (select max(metric_date) - interval 365 days from metrics_filled_down)
+    group by all
+),
+
+metrics_trunc as (
+    select * from metrics_trunc_old
+    union all
+    select * from metrics_trunc_new
 )
+
 
 select --noqa
     repo_id,
@@ -100,4 +132,4 @@ select --noqa
     coalesce(metric_id, 'N/A') as metric_id,
     user_id::bigint as user_id,
     metric_count::bigint as metric_count
-from metrics_filled_down
+from metrics_trunc
