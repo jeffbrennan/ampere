@@ -138,9 +138,9 @@ def show_summary_graph(
     config = {"displayModeBar": breakpoint_name != "sm"}
     return fig, config, {}, True
 
-
-date_slider_step_seconds = 60 * 60 * 24 * 7
-layout = [
+def layout():
+    date_slider_step_seconds = 60 * 60 * 24 * 7
+    return [
     dcc.Store("summary-df", data=get_summary_data()),
     dbc.Row(
         [
@@ -173,3 +173,4 @@ layout = [
         is_in=False,
     ),
 ]
+    return layout
