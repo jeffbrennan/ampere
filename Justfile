@@ -17,3 +17,9 @@ set dotenv-load
 
 @mirror:
     poetry run python ampere/maintenance.py
+
+@front:
+    poetry run duckdb -readonly data/frontend.duckdb
+
+@back:
+    poetry run duckdb data/backend.duckdb
