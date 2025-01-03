@@ -33,6 +33,7 @@ dagster-dbt = "^0.25.3"
 dbt-duckdb = "^1.9.0"
 typer = "^0.15.1"
 pypalettes = "^0.1.4"
+gunicorn = "^23.0.0"
 
 
 [build-system]
