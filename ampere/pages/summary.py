@@ -77,7 +77,7 @@ def get_summary_date_ranges(
         },
     }
 
-    return (  # pyright: ignore [reportReturnType]
+    return (
         min_date_seconds,
         max_date_seconds,
         [min_date_seconds, max_date_seconds],
@@ -117,7 +117,7 @@ def get_summary_data() -> list[dict[Any, Any]]:
 )
 def show_summary_graph(
     df_data: list[dict[Any, Any]],
-    date_range,
+    date_range: tuple[float, float],
     breakpoint_name: str,
 ) -> tuple[Figure, dict[str, bool], dict, bool]:
     df = pd.DataFrame(df_data)
@@ -137,39 +137,39 @@ def show_summary_graph(
     config = {"displayModeBar": breakpoint_name != "sm"}
     return fig, config, {}, True
 
+
 def layout():
     date_slider_step_seconds = 60 * 60 * 24 * 7
     return [
-    dcc.Store("summary-df", data=get_summary_data()),
-    dbc.Row(
-        [
-            dbc.Col(
-                html.Div(
-                    dcc.RangeSlider(
-                        id="summary-date-slider",
-                        step=date_slider_step_seconds,
-                        allowCross=False,
+        dcc.Store("summary-df", data=get_summary_data()),
+        dbc.Row(
+            [
+                dbc.Col(
+                    html.Div(
+                        dcc.RangeSlider(
+                            id="summary-date-slider",
+                            step=date_slider_step_seconds,
+                            allowCross=False,
+                        ),
+                        style={"whiteSpace": "nowrap", "paddingLeft": "5%"},
                     ),
-                    style={"whiteSpace": "nowrap", "paddingLeft": "5%"},
+                    width=3,
                 ),
-                width=3,
-            ),
-            dbc.Col(width=8),
-        ],
-        style={
-            "position": "sticky",
-            "z-index": "100",
-            "top": "60px",
-        },
-    ),
-    dbc.Fade(
-        id="summary-graph-fade",
-        children=dcc.Graph(
-            id="summary-graph",
-            style={"visibility": "hidden"},
+                dbc.Col(width=8),
+            ],
+            style={
+                "position": "sticky",
+                "z-index": "100",
+                "top": "60px",
+            },
         ),
-        style={"transition": "opacity 1000ms ease"},
-        is_in=False,
-    ),
-]
-    return layout
+        dbc.Fade(
+            id="summary-graph-fade",
+            children=dcc.Graph(
+                id="summary-graph",
+                style={"visibility": "hidden"},
+            ),
+            style={"transition": "opacity 1000ms ease"},
+            is_in=False,
+        ),
+    ]
