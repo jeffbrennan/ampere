@@ -360,6 +360,6 @@ def layout():
             color=AmperePalette.PAGE_ACCENT_COLOR2,
             type="grow",
             delay_show=100,
-            spinner_style={"width": "2rem", "height": "2rem"}
+            spinner_style={"width": "2rem", "height": "2rem"},
         ),
     ]
