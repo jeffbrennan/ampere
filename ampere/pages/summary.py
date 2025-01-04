@@ -6,6 +6,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dcc, html
 
+from ampere.app_shared import cache
 from ampere.common import get_frontend_db_con
 from ampere.styling import AmperePalette, ScreenWidth
 from ampere.viz import viz_summary
@@ -21,6 +22,7 @@ dash.register_page(__name__, name="summary", path="/", top_nav=True, order=0)
         Input("summary-date-slider", "value"),
     ],
 )
+@cache.memoize()
 def toggle_slider_tooltip_visibility(
     min_date_seconds: int, max_date_seconds: int, date_range: list[int]
 ) -> dict[Any, Any]:
@@ -53,6 +55,7 @@ def toggle_slider_tooltip_visibility(
         Input("summary-df", "data"),
     ],
 )
+@cache.memoize()
 def get_summary_date_ranges(
     df_data: list[dict],
 ) -> tuple[int, int, list[int], dict[Any, dict[str, Any]]]:
@@ -83,6 +86,7 @@ def get_summary_date_ranges(
     )
 
 
+@cache.memoize()
 def get_summary_data() -> list[dict[Any, Any]]:
     with get_frontend_db_con() as con:
         df = con.sql(
@@ -103,7 +107,6 @@ def get_summary_data() -> list[dict[Any, Any]]:
 @callback(
     [
         Output("summary-stars", "figure"),
-        Output("summary-stars", "style"),
         Output("summary-graph-fade", "is_in"),
     ],
     [
@@ -112,6 +115,7 @@ def get_summary_data() -> list[dict[Any, Any]]:
         Input("summary-date-slider", "value"),
     ],
 )
+@cache.memoize()
 def viz_summary_stars(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
     df = pd.DataFrame(df_data)
     fig = viz_summary(
@@ -120,86 +124,87 @@ def viz_summary_stars(df_data: list[dict], breakpoint_name: str, date_range: lis
         date_range=date_range,
         screen_width=ScreenWidth(breakpoint_name),
     )
-    return fig, {}, True
+    return fig, True
 
 
 @callback(
-    [
-        Output("summary-issues", "figure"),
-        Output("summary-issues", "style"),
-    ],
+    Output("summary-issues", "figure"),
     [
         Input("summary-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
         Input("summary-date-slider", "value"),
     ],
 )
+@cache.memoize()
 def viz_summary_issues(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
     df = pd.DataFrame(df_data)
-    fig = viz_summary(
+    return viz_summary(
         df=df,
         metric_type="issues",
         date_range=date_range,
         screen_width=ScreenWidth(breakpoint_name),
     )
-    return fig, {}
 
 
 @callback(
-    [
-        Output("summary-commits", "figure"),
-        Output("summary-commits", "style"),
-    ],
+    Output("summary-commits", "figure"),
     [
         Input("summary-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
         Input("summary-date-slider", "value"),
     ],
 )
+@cache.memoize()
 def viz_summary_commits(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
     df = pd.DataFrame(df_data)
-    fig = viz_summary(
+    return viz_summary(
         df=df,
         metric_type="commits",
         date_range=date_range,
         screen_width=ScreenWidth(breakpoint_name),
     )
-    return fig, {}
 
 
 def layout():
-    date_slider_step_seconds = 60 * 60 * 24
     return [
         dcc.Store("summary-df", data=get_summary_data()),
-        dbc.Row(
-            [
-                dbc.Col(
-                    html.Div(
-                        dcc.RangeSlider(
-                            id="summary-date-slider",
-                            step=date_slider_step_seconds,
-                            allowCross=False,
-                        ),
-                        style={"whiteSpace": "nowrap", "paddingLeft": "5%"},
+        dcc.Loading(
+            dbc.Fade(
+                id="summary-graph-fade",
+                children=[
+                    dbc.Row(
+                        [
+                            dbc.Col(
+                                html.Div(
+                                    dcc.RangeSlider(
+                                        id="summary-date-slider",
+                                        step=86400,  # daily
+                                        allowCross=False,
+                                    ),
+                                    style={
+                                        "whiteSpace": "nowrap",
+                                        "paddingLeft": "5%",
+                                    },
+                                ),
+                                width=3,
+                            ),
+                            dbc.Col(width=8),
+                        ],
+                        style={
+                            "position": "sticky",
+                            "z-index": "100",
+                            "top": "60px",
+                        },
                     ),
-                    width=3,
-                ),
-                dbc.Col(width=8),
-            ],
-            style={
-                "position": "sticky",
-                "z-index": "100",
-                "top": "60px",
-            },
-        ),
-        dbc.Fade(
-            id="summary-graph-fade",
-            children=[
-                dcc.Graph("summary-stars", style={"visibility": "hidden"}),
-                dcc.Graph("summary-issues", style={"visibility": "hidden"}),
-                dcc.Graph("summary-commits", style={"visibility": "hidden"}),
-            ],
-            style={"transition": "opacity 1000ms ease"},
-            is_in=False,
+                    dcc.Graph("summary-stars"),
+                    dcc.Graph("summary-issues"),
+                    dcc.Graph("summary-commits"),
+                ],
+                style={"transition": "opacity 500ms ease-in"},
+                is_in=False,
+            ),
+            fullscreen=True,
+            color=AmperePalette.PAGE_ACCENT_COLOR2,
+            type="dot",
         ),
     ]
