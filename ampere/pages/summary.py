@@ -1,13 +1,11 @@
-import datetime
 from typing import Any
 
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
-import pytz
 from dash import Input, Output, callback, dcc, html
-from plotly.graph_objs import Figure
 
+from ampere.app_shared import cache
 from ampere.common import get_frontend_db_con
 from ampere.styling import AmperePalette, ScreenWidth
 from ampere.viz import viz_summary
@@ -23,6 +21,7 @@ dash.register_page(__name__, name="summary", path="/", top_nav=True, order=0)
         Input("summary-date-slider", "value"),
     ],
 )
+@cache.memoize()
 def toggle_slider_tooltip_visibility(
     min_date_seconds: int, max_date_seconds: int, date_range: list[int]
 ) -> dict[Any, Any]:
@@ -55,6 +54,7 @@ def toggle_slider_tooltip_visibility(
         Input("summary-df", "data"),
     ],
 )
+@cache.memoize()
 def get_summary_date_ranges(
     df_data: list[dict],
 ) -> tuple[int, int, list[int], dict[Any, dict[str, Any]]]:
@@ -77,7 +77,7 @@ def get_summary_date_ranges(
         },
     }
 
-    return (  # pyright: ignore [reportReturnType]
+    return (
         min_date_seconds,
         max_date_seconds,
         [min_date_seconds, max_date_seconds],
@@ -85,16 +85,16 @@ def get_summary_date_ranges(
     )
 
 
+@cache.memoize()
 def get_summary_data() -> list[dict[Any, Any]]:
     with get_frontend_db_con() as con:
         df = con.sql(
             """
         select
-            repo_id,
+            repo_name,
             metric_type,
             metric_date,
             metric_count,
-            repo_name
         from main.mart_repo_summary
         order by metric_date
     """,
@@ -105,72 +105,107 @@ def get_summary_data() -> list[dict[Any, Any]]:
 
 @callback(
     [
-        Output("summary-graph", "figure"),
-        Output("summary-graph", "config"),
-        Output("summary-graph", "style"),
+        Output("summary-stars", "figure"),
         Output("summary-graph-fade", "is_in"),
     ],
     [
         Input("summary-df", "data"),
-        Input("summary-date-slider", "value"),
         Input("breakpoints", "widthBreakpoint"),
+        Input("summary-date-slider", "value"),
     ],
 )
-def show_summary_graph(
-    df_data: list[dict[Any, Any]],
-    date_range,
-    breakpoint_name: str,
-) -> tuple[Figure, dict[str, bool], dict, bool]:
+@cache.memoize()
+def viz_summary_stars(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
     df = pd.DataFrame(df_data)
-    filter_date_min = datetime.datetime.fromtimestamp(
-        date_range[0], tz=pytz.timezone("America/New_York")
+    fig = viz_summary(
+        df=df,
+        metric_type="stars",
+        date_range=date_range,
+        screen_width=ScreenWidth(breakpoint_name),
     )
-    filter_date_max = datetime.datetime.fromtimestamp(
-        date_range[1], tz=pytz.timezone("America/New_York")
+    return fig, True
+
+
+@callback(
+    Output("summary-issues", "figure"),
+    [
+        Input("summary-df", "data"),
+        Input("breakpoints", "widthBreakpoint"),
+        Input("summary-date-slider", "value"),
+    ],
+)
+@cache.memoize()
+def viz_summary_issues(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
+    df = pd.DataFrame(df_data)
+    return viz_summary(
+        df=df,
+        metric_type="issues",
+        date_range=date_range,
+        screen_width=ScreenWidth(breakpoint_name),
     )
 
-    df_filtered = df.query(f"metric_date >= '{filter_date_min}'").query(
-        f"metric_date <= '{filter_date_max}'"
+
+@callback(
+    Output("summary-commits", "figure"),
+    [
+        Input("summary-df", "data"),
+        Input("breakpoints", "widthBreakpoint"),
+        Input("summary-date-slider", "value"),
+    ],
+)
+@cache.memoize()
+def viz_summary_commits(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
+    df = pd.DataFrame(df_data)
+    return viz_summary(
+        df=df,
+        metric_type="commits",
+        date_range=date_range,
+        screen_width=ScreenWidth(breakpoint_name),
     )
 
-    fig = viz_summary(df_filtered, screen_width=ScreenWidth(breakpoint_name))
-
-    config = {"displayModeBar": breakpoint_name != "sm"}
-    return fig, config, {}, True
 
 def layout():
-    date_slider_step_seconds = 60 * 60 * 24 * 7
     return [
-    dcc.Store("summary-df", data=get_summary_data()),
-    dbc.Row(
-        [
-            dbc.Col(
-                html.Div(
-                    dcc.RangeSlider(
-                        id="summary-date-slider",
-                        step=date_slider_step_seconds,
-                        allowCross=False,
+        dcc.Store("summary-df", data=get_summary_data()),
+        dbc.Spinner(
+            dbc.Fade(
+                id="summary-graph-fade",
+                children=[
+                    dbc.Row(
+                        [
+                            dbc.Col(
+                                html.Div(
+                                    dcc.RangeSlider(
+                                        id="summary-date-slider",
+                                        step=86400,  # daily
+                                        allowCross=False,
+                                    ),
+                                    style={
+                                        "whiteSpace": "nowrap",
+                                        "paddingLeft": "5%",
+                                    },
+                                ),
+                                width=3,
+                            ),
+                            dbc.Col(width=8),
+                        ],
+                        style={
+                            "position": "sticky",
+                            "z-index": "100",
+                            "top": "60px",
+                        },
                     ),
-                    style={"whiteSpace": "nowrap", "paddingLeft": "5%"},
-                ),
-                width=3,
+                    dcc.Graph("summary-stars"),
+                    dcc.Graph("summary-issues"),
+                    dcc.Graph("summary-commits"),
+                ],
+                style={"transition": "opacity 500ms ease-in"},
+                is_in=False,
             ),
-            dbc.Col(width=8),
-        ],
-        style={
-            "position": "sticky",
-            "z-index": "100",
-            "top": "60px",
-        },
-    ),
-    dbc.Fade(
-        id="summary-graph-fade",
-        children=dcc.Graph(
-            id="summary-graph",
-            style={"visibility": "hidden"},
+            fullscreen=True,
+            color=AmperePalette.PAGE_ACCENT_COLOR2,
+            type="grow",
+            delay_show=100,
+            spinner_style={"width": "2rem", "height": "2rem"}
         ),
-        style={"transition": "opacity 1000ms ease"},
-        is_in=False,
-    ),
-]
-    return layout
+    ]

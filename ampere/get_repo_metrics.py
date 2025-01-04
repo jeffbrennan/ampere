@@ -132,6 +132,7 @@ def get_org_user_ids() -> list[int]:
     gets unique list of user ids from tracked tables to be added to the `users` table
     if `stg_users` is available, only returns user_ids that have not been refreshed in past `stale_hours` hours
     """
+    print("getting user ids from org tables...")
     con = get_backend_db_con()
     stale_hours = 24
     user_ids = (
@@ -214,7 +215,10 @@ def get_stale_followers_user_ids(endpoint: str) -> list[int]:
 
     try:
         user_ids = con.sql(query).to_df().squeeze().tolist()
-    except duckdb.CatalogException as e:
+        if isinstance(user_ids, int):
+            user_ids = [user_ids]
+        print("got stale followers from stg_followers table")
+    except Exception as e:
         if "does not exist" in str(e):
             return get_org_user_ids()
         raise Exception(e)
@@ -666,12 +670,12 @@ def refresh_users(
     user_ids: list[int],
     config: DeltaWriteConfig,
 ) -> int:
-    if any(not isinstance(i, int) for i in user_ids):
-        raise TypeError("expecting user id of type `int`")
-
     if len(user_ids) == 0:
         print("no user ids to process. exiting early")
         return 0
+
+    if any(not isinstance(i, int) for i in user_ids):
+        raise TypeError("expecting user id of type `int`")
 
     start_time = time.time()
     with ThreadPoolExecutor(max_workers=2) as executor:
@@ -697,12 +701,12 @@ def refresh_followers(
 ) -> int:
     all_results = []
     start_time = time.time()
-    if any(not isinstance(i, int) for i in user_ids):
-        raise TypeError("expecting user id of type `int`")
-
     if len(user_ids) == 0:
         print("no user ids to process. exiting early")
         return 0
+
+    if any(not isinstance(i, int) for i in user_ids):
+        raise TypeError("expecting user id of type `int`")
 
     for i, user_id in enumerate(user_ids, 1):
         header_text = f"[{i:04d}/{len(user_ids):04d}] {user_id}"

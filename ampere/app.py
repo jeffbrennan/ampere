@@ -3,14 +3,19 @@ import dash_bootstrap_components as dbc
 import dash_breakpoints
 from dash import Input, Output, callback, dcc, html
 
+from ampere.app_shared import cache
 from ampere.styling import AmperePalette, ScreenWidth
 
 app = dash.Dash(
     use_pages=True,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     suppress_callback_exceptions=True,
+    compress=True,
+    update_title='',
+    serve_locally=False
 )
-server=app.server
+server = app.server
+cache.init_app(server)
 
 
 @callback(
@@ -136,4 +141,4 @@ app.layout = dbc.Container(
 )
 
 if __name__ == "__main__":
-    app.run_server(debug=True, host="0.0.0.0", port=8050)
+    app.run(host="0.0.0.0")

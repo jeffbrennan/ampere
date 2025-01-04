@@ -3,7 +3,7 @@ ampere:
   outputs:
     dev:
       type: duckdb
-      path: "data/ampere.duckdb"
+      path: "data/backend.duckdb"
       extensions:
         - delta
       threads: 8

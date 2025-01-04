@@ -1,5 +1,4 @@
 import datetime
-import time
 from typing import Any, Optional
 
 import dash
@@ -10,67 +9,11 @@ import pytz
 from dash import Input, Output, callback, dcc, html
 from plotly.graph_objects import Figure
 
-from ampere.common import get_backend_db_con, get_frontend_db_con
+from ampere.app_shared import cache
+from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import AmperePalette
 
 dash.register_page(__name__, name="downloads", top_nav=True, order=1)
-
-
-def create_downloads_summary() -> pd.DataFrame:
-    with get_frontend_db_con() as con:
-        df = con.sql(
-            """
-            select
-            repo,
-            download_date,
-            group_name,
-            group_value,
-            download_count
-            from mart_downloads_summary
-            where group_name <> 'system_name'
-            order by download_date, download_count
-            """,
-        ).to_df()
-
-    return df
-
-
-def viz_line(df: pd.DataFrame, group_name: str) -> Figure:
-    df_filtered = df.query(f"group_name=='{group_name}'")
-    print(df_filtered.shape)
-    fig = px.line(
-        df_filtered,
-        x="download_date",
-        y="download_count",
-        color="group_value",
-        title=group_name,
-        template="simple_white",
-    )
-    fig.for_each_yaxis(
-        lambda y: y.update(
-            title="",
-            showline=True,
-            linewidth=1,
-            linecolor="black",
-            mirror=True,
-            tickfont_size=14,
-        )
-    )
-    fig.for_each_xaxis(
-        lambda x: x.update(
-            title="",
-            showline=True,
-            linewidth=1,
-            linecolor="black",
-            mirror=True,
-            showticklabels=True,
-            tickfont_size=14,
-        )
-    )
-    fig.update_yaxes(matches=None, showticklabels=True)
-
-    fig.update_layout(margin=dict(l=0, r=0))
-    return fig
 
 
 def viz_area(
@@ -159,6 +102,7 @@ def viz_area(
     return fig
 
 
+@cache.memoize()
 def get_valid_repos() -> list[str]:
     with get_frontend_db_con() as con:
         repos = (
@@ -174,21 +118,46 @@ def get_valid_repos() -> list[str]:
 @callback(
     [
         Output("downloads-overall", "figure"),
-        Output("downloads-overall", "style"),
-        Output("downloads-overall-fade", "is_in"),
+        Output("downloads-fade", "is_in"),
     ],
     [
         Input("downloads-df", "data"),
-        Input("breakpoints", "widthBreakpoint"),
         Input("date-slider", "value"),
     ],
 )
-def viz_downloads_overall(
-    df_data: list[dict], breakpoint_name: str, date_range: list[int]
-) -> tuple[Figure, dict, bool]:
+@cache.memoize()
+def viz_downloads_overall(df_data: list[dict], date_range: list[int]):
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "overall", date_range)
-    return fig, {}, True
+    return fig, True
+
+
+@callback(
+    Output("downloads-package-version", "figure"),
+    [
+        Input("downloads-df", "data"),
+        Input("date-slider", "value"),
+    ],
+)
+@cache.memoize()
+def viz_downloads_by_package_version(df_data: list[dict], date_range: list[int]):
+    df = pd.DataFrame(df_data)
+    fig = viz_area(df, "package_version", date_range)
+    return fig
+
+
+@callback(
+    Output("downloads-python-version", "figure"),
+    [
+        Input("downloads-df", "data"),
+        Input("date-slider", "value"),
+    ],
+)
+@cache.memoize()
+def viz_downloads_by_python_version(df_data: list[dict], date_range: list[int]):
+    df = pd.DataFrame(df_data)
+    fig = viz_area(df, "python_version", date_range)
+    return fig
 
 
 @callback(
@@ -198,12 +167,12 @@ def viz_downloads_overall(
     ],
     [
         Input("downloads-df", "data"),
-        Input("breakpoints", "widthBreakpoint"),
         Input("date-slider", "value"),
     ],
 )
+@cache.memoize()
 def viz_downloads_by_cloud_provider(
-    df_data: list[dict], breakpoint_name: str, date_range: list[int]
+    df_data: list[dict], date_range: list[int]
 ) -> tuple[Figure, dict]:
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "system_release", date_range)
@@ -211,51 +180,29 @@ def viz_downloads_by_cloud_provider(
 
 
 @callback(
-    [
-        Output("downloads-python-version", "figure"),
-        Output("downloads-python-version", "style"),
-    ],
-    [
-        Input("downloads-df", "data"),
-        Input("breakpoints", "widthBreakpoint"),
-        Input("date-slider", "value"),
-    ],
-)
-def viz_downloads_by_python_version(
-    df_data: list[dict], breakpoint_name: str, date_range: list[int]
-) -> tuple[Figure, dict]:
-    time.sleep(0.1)
-    df = pd.DataFrame(df_data)
-    fig = viz_area(df, "python_version", date_range)
-    return fig, {}
-
-
-@callback(
-    [
-        Output("downloads-package-version", "figure"),
-        Output("downloads-package-version", "style"),
-    ],
-    [
-        Input("downloads-df", "data"),
-        Input("breakpoints", "widthBreakpoint"),
-        Input("date-slider", "value"),
-    ],
-)
-def viz_downloads_by_package_version(
-    df_data: list[dict], breakpoint_name: str, date_range: list[int]
-) -> tuple[Figure, dict]:
-    df = pd.DataFrame(df_data)
-    fig = viz_area(df, "package_version", date_range)
-    return fig, {}
-
-
-@callback(
     Output("downloads-df", "data"),
     Input("repo-selection", "value"),
 )
+@cache.memoize()
 def get_downloads_summary(repo_name: str) -> list[dict]:
-    df = create_downloads_summary()
-    return df.query(f"repo=='{repo_name}'").to_dict("records")
+    print(f"cache miss: computing get_downloads_summary for {repo_name}")
+
+    with get_frontend_db_con() as con:
+        df = con.sql(
+            f"""
+            select
+            repo,
+            download_date,
+            group_name,
+            group_value,
+            download_count
+            from mart_downloads_summary
+            where repo = '{repo_name}'
+            order by download_date, download_count
+            """,
+        ).to_df()
+
+    return df.to_dict("records")
 
 
 @callback(
@@ -266,6 +213,7 @@ def get_downloads_summary(repo_name: str) -> list[dict]:
         Input("date-slider", "value"),
     ],
 )
+@cache.memoize()
 def toggle_slider_tooltip_visibility(
     min_date_seconds: int, max_date_seconds: int, date_range: list[int]
 ) -> dict[Any, Any]:
@@ -298,9 +246,11 @@ def toggle_slider_tooltip_visibility(
         Input("downloads-df", "data"),
     ],
 )
+@cache.memoize()
 def get_downloads_summary_date_ranges(
     df_data: list[dict],
 ) -> tuple[int, int, list[int], dict[Any, dict[str, Any]]]:
+    print("cache miss: computing date ranges")
     df = pd.DataFrame(df_data)
     df["download_date"] = pd.to_datetime(df["download_date"], utc=True)
     min_timestamp = df["download_date"].min().timestamp()
@@ -325,63 +275,71 @@ def get_downloads_summary_date_ranges(
         date_slider_marks,
     )
 
-def layout():
-    date_slider_step_seconds = 60 * 60 * 24 * 7
 
-    return  [
-    html.Br(),
-    dcc.Store("downloads-df"),
-    dbc.Row(
-        children=[
-            dbc.Col(
-                dcc.Dropdown(
-                    get_valid_repos(),
-                    placeholder="quinn",
-                    value="quinn",
-                    clearable=False,
-                    searchable=False,
-                    id="repo-selection",
-                    style={
-                        "background": AmperePalette.PAGE_ACCENT_COLOR2,
-                        "border": AmperePalette.PAGE_ACCENT_COLOR2,
-                        "borderRadius": "10px",
-                        "fontSize": "20px",
-                        "marginRight": "10%",
-                        "marginTop": "2%",
-                        "paddingBottom": "2px",
-                        "paddingTop": "2px",
-                    },
-                ),
-                width=1,
-            ),
-            dbc.Col(
-                html.Div(
-                    dcc.RangeSlider(
-                        id="date-slider",
-                        step=date_slider_step_seconds,
-                        allowCross=False,
+def layout():
+    return [
+        dcc.Store("downloads-df"),
+        dbc.Spinner(
+            dbc.Fade(
+                id="downloads-fade",
+                children=[
+                    dbc.Row(
+                        children=[
+                            dbc.Col(
+                                dcc.Dropdown(
+                                    get_valid_repos(),
+                                    placeholder="quinn",
+                                    value="quinn",
+                                    clearable=False,
+                                    searchable=False,
+                                    id="repo-selection",
+                                    style={
+                                        "background": AmperePalette.PAGE_ACCENT_COLOR2,
+                                        "border": AmperePalette.PAGE_ACCENT_COLOR2,
+                                        "borderRadius": "10px",
+                                        "fontSize": "20px",
+                                        "marginRight": "10%",
+                                        "marginTop": "2%",
+                                        "paddingBottom": "2px",
+                                        "paddingTop": "2px",
+                                    },
+                                ),
+                                width=1,
+                            ),
+                            dbc.Col(
+                                html.Div(
+                                    dcc.RangeSlider(
+                                        id="date-slider",
+                                        step=86400,  # daily
+                                        allowCross=False,
+                                    ),
+                                    style={
+                                        "whiteSpace": "nowrap",
+                                        "paddingLeft": "5%",
+                                    },
+                                ),
+                                width=3,
+                            ),
+                            dbc.Col(width=8),
+                        ],
+                        style={
+                            "position": "sticky",
+                            "z-index": "100",
+                            "top": "60px",
+                        },
                     ),
-                    style={"whiteSpace": "nowrap", "paddingLeft": "5%"},
-                ),
-                width=3,
+                    dcc.Graph("downloads-overall"),
+                    dcc.Graph("downloads-package-version"),
+                    dcc.Graph("downloads-python-version"),
+                    dcc.Graph("downloads-cloud"),
+                ],
+                style={"transition": "opacity 500ms ease-in"},
+                is_in=False,
             ),
-            dbc.Col(width=8),
-        ],
-        style={
-            "position": "sticky",
-            "z-index": "100",
-            "top": "60px",
-        },
-    ),
-    dbc.Fade(
-        id="downloads-overall-fade",
-        children=[
-            dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
-            dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
-            dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
-            dcc.Graph("downloads-cloud", style={"visibility": "hidden"}),
-        ],
-        style={"transition": "opacity 1000ms ease"},
-        is_in=False,
-    ),
-]
+            fullscreen=True,
+            color=AmperePalette.PAGE_ACCENT_COLOR2,
+            type="grow",
+            delay_show=100,
+            spinner_style={"width": "2rem", "height": "2rem"},
+        ),
+    ]

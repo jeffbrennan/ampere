@@ -108,7 +108,7 @@ def layout():
                 ),
                 html.P(f"last updated: {last_updated_str}"),
             ],
-            style={"transition": "opacity 1000ms ease"},
+            style={"transition": "opacity 300ms ease-in"},
             is_in=False,
         )
     ]

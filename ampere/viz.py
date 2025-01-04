@@ -1,3 +1,4 @@
+import datetime
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
@@ -8,6 +9,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import pypalettes
+import pytz
 from plotly.graph_objs import Figure
 
 from ampere.common import get_frontend_db_con, timeit
@@ -347,61 +349,51 @@ def viz_follower_network(show_fig: bool = False) -> Figure:
 
 def viz_summary(
     df: pd.DataFrame,
+    metric_type: str,
+    date_range: Optional[list[int]] = None,
     show_fig: bool = False,
     screen_width: ScreenWidth = ScreenWidth.lg,
-):
-    metric_type_order = [
-        "stars",
-        "issues",
-        "commits",
-        "lines of code",
-        "forks",
-        "pull requests",
-    ]
+) -> Figure:
+    df_filtered = df.query(f"metric_type == '{metric_type}'").sort_values("metric_date")
+    if date_range is not None:
+        filter_date_min = datetime.datetime.fromtimestamp(
+            date_range[0], tz=pytz.timezone("America/New_York")
+        )
+        filter_date_max = datetime.datetime.fromtimestamp(
+            date_range[1], tz=pytz.timezone("America/New_York")
+        )
 
-    if screen_width in [ScreenWidth.xs, ScreenWidth.sm]:
-        facet_col_wrap = 1
-        facet_row_spacing = 0.04
-    elif screen_width in [ScreenWidth.md, ScreenWidth.lg]:
-        facet_col_wrap = 2
-        facet_row_spacing = 0.10
-    else:
-        facet_col_wrap = 3
-        facet_row_spacing = 0.10
-        metric_type_order = [
-            "stars",
-            "forks",
-            "commits",
-            "lines of code",
-            "issues",
-            "pull requests",
-        ]
+        df_filtered = df_filtered.query(f"metric_date >= '{filter_date_min}'").query(
+            f"metric_date <= '{filter_date_max}'"
+        )
 
     repo_palette = generate_repo_palette()
-    fig = px.line(
-        df,
+    fig = px.area(
+        df_filtered,
         x="metric_date",
         y="metric_count",
         color="repo_name",
-        facet_col="metric_type",
-        facet_col_wrap=facet_col_wrap,
         template="simple_white",
         hover_name="repo_name",
-        markers=True,
         color_discrete_map=repo_palette,
-        height=550 * 6 // facet_col_wrap,
-        facet_col_spacing=0.08,
-        facet_row_spacing=facet_row_spacing,
-        category_orders={
-            "metric_type": metric_type_order,
-            "repo_name": repo_palette.keys(),
-        },
+        height=500,
+        category_orders={"repo_name": repo_palette.keys()},
+        facet_col="metric_type" # single var facet col for plot title
     )
 
-    fig.update_yaxes(matches=None, showticklabels=True)
-    fig.update_traces(
-        line=dict(width=1), marker=dict(size=5), hovertemplate="<b>%{x}</b><br>n=%{y}"
+    fig.for_each_annotation(
+        lambda a: a.update(
+            text="<b>"
+            + a.text.split("=")[-1]
+            + "</b>",
+            font_size=18,
+            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
+            font_color="white",
+            borderpad=5,
+        )
     )
+    fig.update_yaxes(matches=None, showticklabels=True)
+    fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
 
     fig_legend_y = {ScreenWidth.xs: 1.04, ScreenWidth.sm: 1.02}
     if screen_width in [ScreenWidth.xs, ScreenWidth.sm]:
