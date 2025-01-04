@@ -131,9 +131,22 @@ models:
         data_tests:
           - unique
   - name: mart_repo_summary
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
     meta:
       dagster:
         group: github_metrics_daily_4
     constraints:
       - type: primary_key
         columns: [repo_name, metric_type, metric_date]
+    columns:
+      - name: repo_name
+        data_type: string
+      - name: "metric_type"
+        data_type: string
+      - name: "metric_date"
+        data_type: date
+      - name: "metric_count"
+        data_type: usmallint
