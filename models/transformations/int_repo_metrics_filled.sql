@@ -157,6 +157,19 @@ metrics_final as (
     select * from metrics_trunc
     union all
     select * from current_date_metrics
+),
+
+-- TODO: investigate cause of dupes, most likely overlap between date truncs
+metrics_final_dedupe as (
+    select
+        repo_id,
+        metric_type,
+        metric_date::date as metric_date,
+        coalesce(metric_id, 'N/A') as metric_id,
+        user_id::bigint as user_id,
+        metric_count::bigint as metric_count,
+        row_number() over (partition by repo_id, metric_type, metric_date order by metric_count desc) as rn
+    from metrics_final
 )
 
 select --noqa
@@ -166,4 +179,5 @@ select --noqa
     coalesce(metric_id, 'N/A') as metric_id,
     user_id::bigint as user_id,
     metric_count::bigint as metric_count
-from metrics_final
+from metrics_final_dedupe
+where rn = 1
