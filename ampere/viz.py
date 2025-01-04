@@ -1,3 +1,4 @@
+import datetime
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
@@ -8,6 +9,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import pypalettes
+import pytz
 from plotly.graph_objs import Figure
 
 from ampere.common import get_frontend_db_con, timeit
@@ -347,29 +349,49 @@ def viz_follower_network(show_fig: bool = False) -> Figure:
 
 def viz_summary(
     df: pd.DataFrame,
+    metric_type: str,
+    date_range: Optional[list[int]] = None,
     show_fig: bool = False,
     screen_width: ScreenWidth = ScreenWidth.lg,
 ) -> Figure:
-    metric_type_order = ["stars", "issues", "commits"]
+    df_filtered = df.query(f"metric_type == '{metric_type}'").sort_values("metric_date")
+    if date_range is not None:
+        filter_date_min = datetime.datetime.fromtimestamp(
+            date_range[0], tz=pytz.timezone("America/New_York")
+        )
+        filter_date_max = datetime.datetime.fromtimestamp(
+            date_range[1], tz=pytz.timezone("America/New_York")
+        )
+
+        df_filtered = df_filtered.query(f"metric_date >= '{filter_date_min}'").query(
+            f"metric_date <= '{filter_date_max}'"
+        )
 
     repo_palette = generate_repo_palette()
     fig = px.area(
-        df,
+        df_filtered,
         x="metric_date",
         y="metric_count",
         color="repo_name",
-        facet_col="metric_type",
-        facet_col_wrap=1,
         template="simple_white",
         hover_name="repo_name",
         color_discrete_map=repo_palette,
-        height=750 * len(metric_type_order),
-        category_orders={
-            "metric_type": metric_type_order,
-            "repo_name": repo_palette.keys(),
-        },
+        height=500,
+        category_orders={"repo_name": repo_palette.keys()},
+        facet_col="metric_type" # single var facet col for plot title
     )
 
+    fig.for_each_annotation(
+        lambda a: a.update(
+            text="<b>"
+            + a.text.split("=")[-1]
+            + "</b>",
+            font_size=18,
+            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
+            font_color="white",
+            borderpad=5,
+        )
+    )
     fig.update_yaxes(matches=None, showticklabels=True)
     fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
 

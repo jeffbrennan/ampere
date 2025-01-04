@@ -4,9 +4,7 @@ from typing import Any
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
-import pytz
 from dash import Input, Output, callback, dcc, html
-from plotly.graph_objs import Figure
 
 from ampere.common import get_frontend_db_con
 from ampere.styling import AmperePalette, ScreenWidth
@@ -104,42 +102,73 @@ def get_summary_data() -> list[dict[Any, Any]]:
 
 @callback(
     [
-        Output("summary-graph", "figure"),
-        Output("summary-graph", "config"),
-        Output("summary-graph", "style"),
+        Output("summary-stars", "figure"),
+        Output("summary-stars", "style"),
         Output("summary-graph-fade", "is_in"),
     ],
     [
         Input("summary-df", "data"),
-        Input("summary-date-slider", "value"),
         Input("breakpoints", "widthBreakpoint"),
+        Input("summary-date-slider", "value"),
     ],
 )
-def show_summary_graph(
-    df_data: list[dict[Any, Any]],
-    date_range: tuple[float, float],
-    breakpoint_name: str,
-) -> tuple[Figure, dict[str, bool], dict, bool]:
+def viz_summary_stars(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
     df = pd.DataFrame(df_data)
-    filter_date_min = datetime.datetime.fromtimestamp(
-        date_range[0], tz=pytz.timezone("America/New_York")
+    fig = viz_summary(
+        df=df,
+        metric_type="stars",
+        date_range=date_range,
+        screen_width=ScreenWidth(breakpoint_name),
     )
-    filter_date_max = datetime.datetime.fromtimestamp(
-        date_range[1], tz=pytz.timezone("America/New_York")
+    return fig, {}, True
+
+
+@callback(
+    [
+        Output("summary-issues", "figure"),
+        Output("summary-issues", "style"),
+    ],
+    [
+        Input("summary-df", "data"),
+        Input("breakpoints", "widthBreakpoint"),
+        Input("summary-date-slider", "value"),
+    ],
+)
+def viz_summary_issues(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
+    df = pd.DataFrame(df_data)
+    fig = viz_summary(
+        df=df,
+        metric_type="issues",
+        date_range=date_range,
+        screen_width=ScreenWidth(breakpoint_name),
     )
+    return fig, {}
 
-    df_filtered = df.query(f"metric_date >= '{filter_date_min}'").query(
-        f"metric_date <= '{filter_date_max}'"
+
+@callback(
+    [
+        Output("summary-commits", "figure"),
+        Output("summary-commits", "style"),
+    ],
+    [
+        Input("summary-df", "data"),
+        Input("breakpoints", "widthBreakpoint"),
+        Input("summary-date-slider", "value"),
+    ],
+)
+def viz_summary_commits(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
+    df = pd.DataFrame(df_data)
+    fig = viz_summary(
+        df=df,
+        metric_type="commits",
+        date_range=date_range,
+        screen_width=ScreenWidth(breakpoint_name),
     )
-
-    fig = viz_summary(df_filtered, screen_width=ScreenWidth(breakpoint_name))
-
-    config = {"displayModeBar": breakpoint_name != "sm"}
-    return fig, config, {}, True
+    return fig, {}
 
 
 def layout():
-    date_slider_step_seconds = 60 * 60 * 24 * 7
+    date_slider_step_seconds = 60 * 60 * 24
     return [
         dcc.Store("summary-df", data=get_summary_data()),
         dbc.Row(
@@ -165,10 +194,11 @@ def layout():
         ),
         dbc.Fade(
             id="summary-graph-fade",
-            children=dcc.Graph(
-                id="summary-graph",
-                style={"visibility": "hidden"},
-            ),
+            children=[
+                dcc.Graph("summary-stars", style={"visibility": "hidden"}),
+                dcc.Graph("summary-issues", style={"visibility": "hidden"}),
+                dcc.Graph("summary-commits", style={"visibility": "hidden"}),
+            ],
             style={"transition": "opacity 1000ms ease"},
             is_in=False,
         ),
