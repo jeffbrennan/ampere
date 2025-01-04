@@ -27,7 +27,6 @@ def create_downloads_summary() -> pd.DataFrame:
             group_value,
             download_count
             from mart_downloads_summary
-            where group_name <> 'system_name'
             order by download_date, download_count
             """,
         ).to_df()
