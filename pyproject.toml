@@ -36,6 +36,7 @@ pypalettes = "^0.1.4"
 gunicorn = "^23.0.0"
 orjson = "^3.10.13"
 flask-caching = "^2.3.0"
+flask-compress = "^1.17"
 
 
 [build-system]
