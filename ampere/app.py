@@ -10,7 +10,9 @@ app = dash.Dash(
     use_pages=True,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     suppress_callback_exceptions=True,
-    compress=True
+    compress=True,
+    update_title='',
+    serve_locally=False
 )
 server = app.server
 cache.init_app(server)
