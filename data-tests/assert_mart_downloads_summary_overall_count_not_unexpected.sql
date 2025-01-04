@@ -2,7 +2,7 @@ with
 ranked_weeks as (
     select
         repo,
-        download_count,
+        download_count::bigint as download_count,
         row_number()
             over (
                 partition by repo
