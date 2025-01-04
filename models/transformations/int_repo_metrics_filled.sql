@@ -97,19 +97,33 @@ metrics_trunc_old as (
     select
     repo_id,
     metric_type,
-    time_bucket('45 day', metric_date) as metric_date,
+    time_bucket('60 day', metric_date) as metric_date,
     min(metric_id) as metric_id,
     min(user_id) as user_id,
     min(metric_count) as metric_count
     from metrics_filled_down
-    where metric_date < (select max(metric_date) - interval 365 days from metrics_filled_down)
+    where metric_date < (select max(metric_date) - interval 730 days from metrics_filled_down)
     group by all
 ),
-metrics_trunc_new as (
+metrics_trunc_mid as (
     select
     repo_id,
     metric_type,
     time_bucket('7 day', metric_date) as metric_date,
+    min(metric_id) as metric_id,
+    min(user_id) as user_id,
+    min(metric_count) as metric_count
+    from metrics_filled_down
+    where metric_date >= (select max(metric_date) - interval 730 days from metrics_filled_down)
+    and metric_date < (select (max(metric_date)) - interval 365 days from metrics_filled_down)
+    group by all
+),
+
+metrics_trunc_new as (
+    select
+    repo_id,
+    metric_type,
+    time_bucket('1 day', metric_date) as metric_date,
     min(metric_id) as metric_id,
     min(user_id) as user_id,
     min(metric_count) as metric_count
@@ -121,15 +135,35 @@ metrics_trunc_new as (
 metrics_trunc as (
     select * from metrics_trunc_old
     union all
+    select * from metrics_trunc_mid
+    union all 
     select * from metrics_trunc_new
-)
+),
 
+current_date_metrics as (
+    select
+    repo_id,
+    metric_type,
+    time_bucket('1 day', now()) as metric_date,
+    min(metric_id) as metric_id,
+    min(user_id) as user_id,
+    min(metric_count) as metric_count
+    from metrics_filled_down
+    where metric_date = (select max(metric_date) from metrics_filled_down)
+    group by all
+),
+
+metrics_final as (
+    select * from metrics_trunc
+    union all
+    select * from current_date_metrics
+)
 
 select --noqa
     repo_id,
     metric_type,
-    metric_date,
+    metric_date::date as metric_date,
     coalesce(metric_id, 'N/A') as metric_id,
     user_id::bigint as user_id,
     metric_count::bigint as metric_count
-from metrics_trunc
+from metrics_final
