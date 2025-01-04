@@ -3,6 +3,7 @@ import dash_bootstrap_components as dbc
 import dash_breakpoints
 from dash import Input, Output, callback, dcc, html
 
+from ampere.app_shared import cache
 from ampere.styling import AmperePalette, ScreenWidth
 
 app = dash.Dash(
@@ -11,6 +12,7 @@ app = dash.Dash(
     suppress_callback_exceptions=True,
 )
 server = app.server
+cache.init_app(server)
 
 
 @callback(
