@@ -44,7 +44,7 @@ def viz_line(df: pd.DataFrame, group_name: str) -> Figure:
         color="group_value",
         title=group_name,
         template="simple_white",
-        height=500
+        height=500,
     )
     fig.for_each_yaxis(
         lambda y: y.update(
@@ -175,7 +175,6 @@ def get_valid_repos() -> list[str]:
     [
         Output("downloads-overall", "figure"),
         Output("downloads-overall", "style"),
-        Output("downloads-overall-fade", "is_in"),
     ],
     [
         Input("downloads-df", "data"),
@@ -185,48 +184,9 @@ def get_valid_repos() -> list[str]:
 )
 def viz_downloads_overall(
     df_data: list[dict], breakpoint_name: str, date_range: list[int]
-) -> tuple[Figure, dict, bool]:
+) -> tuple[Figure, dict]:
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "overall", date_range)
-    return fig, {}, True
-
-
-@callback(
-    [
-        Output("downloads-cloud", "figure"),
-        Output("downloads-cloud", "style"),
-    ],
-    [
-        Input("downloads-df", "data"),
-        Input("breakpoints", "widthBreakpoint"),
-        Input("date-slider", "value"),
-    ],
-)
-def viz_downloads_by_cloud_provider(
-    df_data: list[dict], breakpoint_name: str, date_range: list[int]
-) -> tuple[Figure, dict]:
-    df = pd.DataFrame(df_data)
-    fig = viz_area(df, "system_release", date_range)
-    return fig, {}
-
-
-@callback(
-    [
-        Output("downloads-python-version", "figure"),
-        Output("downloads-python-version", "style"),
-    ],
-    [
-        Input("downloads-df", "data"),
-        Input("breakpoints", "widthBreakpoint"),
-        Input("date-slider", "value"),
-    ],
-)
-def viz_downloads_by_python_version(
-    df_data: list[dict], breakpoint_name: str, date_range: list[int]
-) -> tuple[Figure, dict]:
-    time.sleep(0.1)
-    df = pd.DataFrame(df_data)
-    fig = viz_area(df, "python_version", date_range)
     return fig, {}
 
 
@@ -247,6 +207,45 @@ def viz_downloads_by_package_version(
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "package_version", date_range)
     return fig, {}
+
+
+@callback(
+    [
+        Output("downloads-python-version", "figure"),
+        Output("downloads-python-version", "style"),
+    ],
+    [
+        Input("downloads-df", "data"),
+        Input("breakpoints", "widthBreakpoint"),
+        Input("date-slider", "value"),
+    ],
+)
+def viz_downloads_by_python_version(
+    df_data: list[dict], breakpoint_name: str, date_range: list[int]
+) -> tuple[Figure, dict]:
+    df = pd.DataFrame(df_data)
+    fig = viz_area(df, "python_version", date_range)
+    return fig, {}
+
+
+@callback(
+    [
+        Output("downloads-cloud", "figure"),
+        Output("downloads-cloud", "style"),
+        Output("downloads-overall-fade", "is_in"),
+    ],
+    [
+        Input("downloads-df", "data"),
+        Input("breakpoints", "widthBreakpoint"),
+        Input("date-slider", "value"),
+    ],
+)
+def viz_downloads_by_cloud_provider(
+    df_data: list[dict], breakpoint_name: str, date_range: list[int]
+) -> tuple[Figure, dict, bool]:
+    df = pd.DataFrame(df_data)
+    fig = viz_area(df, "system_release", date_range)
+    return fig, {}, True
 
 
 @callback(
@@ -325,63 +324,64 @@ def get_downloads_summary_date_ranges(
         date_slider_marks,
     )
 
+
 def layout():
     date_slider_step_seconds = 60 * 60 * 24 * 7
 
-    return  [
-    html.Br(),
-    dcc.Store("downloads-df"),
-    dbc.Row(
-        children=[
-            dbc.Col(
-                dcc.Dropdown(
-                    get_valid_repos(),
-                    placeholder="quinn",
-                    value="quinn",
-                    clearable=False,
-                    searchable=False,
-                    id="repo-selection",
-                    style={
-                        "background": AmperePalette.PAGE_ACCENT_COLOR2,
-                        "border": AmperePalette.PAGE_ACCENT_COLOR2,
-                        "borderRadius": "10px",
-                        "fontSize": "20px",
-                        "marginRight": "10%",
-                        "marginTop": "2%",
-                        "paddingBottom": "2px",
-                        "paddingTop": "2px",
-                    },
-                ),
-                width=1,
-            ),
-            dbc.Col(
-                html.Div(
-                    dcc.RangeSlider(
-                        id="date-slider",
-                        step=date_slider_step_seconds,
-                        allowCross=False,
+    return [
+        html.Br(),
+        dcc.Store("downloads-df"),
+        dbc.Row(
+            children=[
+                dbc.Col(
+                    dcc.Dropdown(
+                        get_valid_repos(),
+                        placeholder="quinn",
+                        value="quinn",
+                        clearable=False,
+                        searchable=False,
+                        id="repo-selection",
+                        style={
+                            "background": AmperePalette.PAGE_ACCENT_COLOR2,
+                            "border": AmperePalette.PAGE_ACCENT_COLOR2,
+                            "borderRadius": "10px",
+                            "fontSize": "20px",
+                            "marginRight": "10%",
+                            "marginTop": "2%",
+                            "paddingBottom": "2px",
+                            "paddingTop": "2px",
+                        },
                     ),
-                    style={"whiteSpace": "nowrap", "paddingLeft": "5%"},
+                    width=1,
                 ),
-                width=3,
-            ),
-            dbc.Col(width=8),
-        ],
-        style={
-            "position": "sticky",
-            "z-index": "100",
-            "top": "60px",
-        },
-    ),
-    dbc.Fade(
-        id="downloads-overall-fade",
-        children=[
-            dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
-            dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
-            dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
-            dcc.Graph("downloads-cloud", style={"visibility": "hidden"}),
-        ],
-        style={"transition": "opacity 1000ms ease"},
-        is_in=False,
-    ),
-]
+                dbc.Col(
+                    html.Div(
+                        dcc.RangeSlider(
+                            id="date-slider",
+                            step=date_slider_step_seconds,
+                            allowCross=False,
+                        ),
+                        style={"whiteSpace": "nowrap", "paddingLeft": "5%"},
+                    ),
+                    width=3,
+                ),
+                dbc.Col(width=8),
+            ],
+            style={
+                "position": "sticky",
+                "z-index": "100",
+                "top": "60px",
+            },
+        ),
+        dbc.Fade(
+            id="downloads-overall-fade",
+            children=[
+                dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
+                dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
+                dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
+                dcc.Graph("downloads-cloud", style={"visibility": "hidden"}),
+            ],
+            style={"transition": "opacity 1000ms ease"},
+            is_in=False,
+        ),
+    ]
