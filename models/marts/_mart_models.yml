@@ -20,7 +20,7 @@ models:
       - name: group_value
         data_type: string
       - name: download_count
-        data_type: bigint
+        data_type: uinteger
   - name: mart_feed_events
     config:
       contract:
