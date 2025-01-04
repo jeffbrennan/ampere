@@ -45,6 +45,7 @@ def viz_line(df: pd.DataFrame, group_name: str) -> Figure:
         color="group_value",
         title=group_name,
         template="simple_white",
+        height=500
     )
     fig.for_each_yaxis(
         lambda y: y.update(
