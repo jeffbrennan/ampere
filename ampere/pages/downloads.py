@@ -121,7 +121,6 @@ def get_valid_repos() -> list[str]:
 @callback(
     [
         Output("downloads-overall", "figure"),
-        Output("downloads-overall", "style"),
         Output("downloads-fade", "is_in"),
     ],
     [
@@ -131,19 +130,14 @@ def get_valid_repos() -> list[str]:
 )
 @timeit
 @cache.memoize()
-def viz_downloads_overall(
-    df_data: list[dict], date_range: list[int]
-) -> tuple[Figure, dict, bool]:
+def viz_downloads_overall(df_data: list[dict], date_range: list[int]):
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "overall", date_range)
-    return fig, {}, True
+    return fig, True
 
 
 @callback(
-    [
-        Output("downloads-package-version", "figure"),
-        Output("downloads-package-version", "style"),
-    ],
+    Output("downloads-package-version", "figure"),
     [
         Input("downloads-df", "data"),
         Input("date-slider", "value"),
@@ -151,19 +145,14 @@ def viz_downloads_overall(
 )
 @timeit
 @cache.memoize()
-def viz_downloads_by_package_version(
-    df_data: list[dict], date_range: list[int]
-) -> tuple[Figure, dict]:
+def viz_downloads_by_package_version(df_data: list[dict], date_range: list[int]):
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "package_version", date_range)
-    return fig, {}
+    return fig
 
 
 @callback(
-    [
-        Output("downloads-python-version", "figure"),
-        Output("downloads-python-version", "style"),
-    ],
+    Output("downloads-python-version", "figure"),
     [
         Input("downloads-df", "data"),
         Input("date-slider", "value"),
@@ -171,12 +160,10 @@ def viz_downloads_by_package_version(
 )
 @timeit
 @cache.memoize()
-def viz_downloads_by_python_version(
-    df_data: list[dict], date_range: list[int]
-) -> tuple[Figure, dict]:
+def viz_downloads_by_python_version(df_data: list[dict], date_range: list[int]):
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "python_version", date_range)
-    return fig, {}
+    return fig
 
 
 @callback(
@@ -300,76 +287,77 @@ def get_downloads_summary_date_ranges(
 
 def layout():
     date_slider_step_seconds = 60 * 60 * 24
-
     return [
-        dbc.Spinner(
-            dbc.Fade(
-                id="downloads-fade",
-                children=[
-                    dcc.Store("downloads-df"),
-                    dbc.Row(
-                        children=[
-                            dbc.Col(
-                                dcc.Dropdown(
-                                    get_valid_repos(),
-                                    placeholder="quinn",
-                                    value="quinn",
-                                    clearable=False,
-                                    searchable=False,
-                                    id="repo-selection",
-                                    style={
-                                        "background": AmperePalette.PAGE_ACCENT_COLOR2,
-                                        "border": AmperePalette.PAGE_ACCENT_COLOR2,
-                                        "borderRadius": "10px",
-                                        "fontSize": "20px",
-                                        "marginRight": "10%",
-                                        "marginTop": "2%",
-                                        "paddingBottom": "2px",
-                                        "paddingTop": "2px",
-                                    },
-                                ),
-                                width=1,
-                            ),
-                            dbc.Col(
-                                html.Div(
-                                    dcc.RangeSlider(
-                                        id="date-slider",
-                                        step=date_slider_step_seconds,
-                                        allowCross=False,
+        dcc.Store("downloads-df"),
+        dcc.Loading(
+            [
+                dbc.Fade(
+                    id="downloads-fade",
+                    children=[
+                        dbc.Row(
+                            children=[
+                                dbc.Col(
+                                    dcc.Dropdown(
+                                        get_valid_repos(),
+                                        placeholder="quinn",
+                                        value="quinn",
+                                        clearable=False,
+                                        searchable=False,
+                                        id="repo-selection",
+                                        style={
+                                            "background": AmperePalette.PAGE_ACCENT_COLOR2,
+                                            "border": AmperePalette.PAGE_ACCENT_COLOR2,
+                                            "borderRadius": "10px",
+                                            "fontSize": "20px",
+                                            "marginRight": "10%",
+                                            "marginTop": "2%",
+                                            "paddingBottom": "2px",
+                                            "paddingTop": "2px",
+                                        },
                                     ),
-                                    style={"whiteSpace": "nowrap", "paddingLeft": "5%"},
+                                    width=1,
                                 ),
-                                width=3,
-                            ),
-                            dbc.Col(width=8),
-                        ],
-                        style={
-                            "position": "sticky",
-                            "z-index": "100",
-                            "top": "60px",
-                        },
-                    ),
-                    dbc.Row(
-                        [
-                            dcc.Graph(
-                                "downloads-overall", style={"visibility": "hidden"}
-                            ),
-                            dcc.Graph(
-                                "downloads-package-version",
-                                style={"visibility": "hidden"},
-                            ),
-                            dcc.Graph(
-                                "downloads-python-version", style={"visibility": "hidden"}
-                            ),
-                            dcc.Graph("downloads-cloud", style={"visibility": "hidden"}),
-                        ]
-                    ),
-                ],
-                style={"transition": "opacity 100ms ease-in"},
-                is_in=False,
-            ),
+                                dbc.Col(
+                                    html.Div(
+                                        dcc.RangeSlider(
+                                            id="date-slider",
+                                            step=date_slider_step_seconds,
+                                            allowCross=False,
+                                        ),
+                                        style={
+                                            "whiteSpace": "nowrap",
+                                            "paddingLeft": "5%",
+                                        },
+                                    ),
+                                    width=3,
+                                ),
+                                dbc.Col(width=8),
+                            ],
+                            style={
+                                "position": "sticky",
+                                "z-index": "100",
+                                "top": "60px",
+                            },
+                        ),
+                        dbc.Row(
+                            [
+                                dcc.Graph("downloads-overall"),
+                                dcc.Graph(
+                                    "downloads-package-version",
+                                ),
+                                dcc.Graph(
+                                    "downloads-python-version",
+                                ),
+                                dcc.Graph("downloads-cloud"),
+                            ]
+                        ),
+                    ],
+                    style={"transition": "opacity 500ms ease-in"},
+                    is_in=False,
+                ),
+            ],
             fullscreen=True,
-            delay_hide=100,
             color=AmperePalette.PAGE_ACCENT_COLOR2,
+            type='dot'
         ),
     ]
