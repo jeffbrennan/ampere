@@ -30,7 +30,7 @@ from ampere.get_repo_metrics import (
     refresh_github_table,
     refresh_users,
 )
-from ampere.maintenance import copy_backend_to_frontend
+from ampere.mirror import copy_backend_to_frontend
 from ampere.models import (
     Commit,
     Follower,
