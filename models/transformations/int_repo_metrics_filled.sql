@@ -109,7 +109,7 @@ metrics_trunc_mid as (
     select
     repo_id,
     metric_type,
-    time_bucket('7 day', metric_date) as metric_date,
+    time_bucket('30 day', metric_date) as metric_date,
     min(metric_id) as metric_id,
     min(user_id) as user_id,
     min(metric_count) as metric_count
@@ -123,7 +123,7 @@ metrics_trunc_new as (
     select
     repo_id,
     metric_type,
-    time_bucket('1 day', metric_date) as metric_date,
+    time_bucket('7 day', metric_date) as metric_date,
     min(metric_id) as metric_id,
     min(user_id) as user_id,
     min(metric_count) as metric_count
