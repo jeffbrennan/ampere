@@ -45,9 +45,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-frontend
-    deploy:
-        mode: replicated
-        replicas: 3
     volumes:
       - ampere_data:/ampere/data
     labels:
