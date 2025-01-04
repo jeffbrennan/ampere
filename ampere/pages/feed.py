@@ -190,7 +190,7 @@ def layout():
                     **feed_style,
                 ),
             ],
-            style={"transition": "opacity 1000ms ease"},
+            style={"transition": "opacity 500ms ease-in"},
             is_in=False,
         )
     ]

@@ -289,7 +289,7 @@ def layout():
     date_slider_step_seconds = 60 * 60 * 24
     return [
         dcc.Store("downloads-df"),
-        dcc.Loading(
+        dbc.Spinner(
             [
                 dbc.Fade(
                     id="downloads-fade",
@@ -358,6 +358,8 @@ def layout():
             ],
             fullscreen=True,
             color=AmperePalette.PAGE_ACCENT_COLOR2,
-            type='dot'
+            type="grow",
+            delay_show=100,
+            spinner_style={"width": "2rem", "height": "2rem"}
         ),
     ]

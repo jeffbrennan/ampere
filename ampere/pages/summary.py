@@ -168,7 +168,7 @@ def viz_summary_commits(df_data: list[dict], breakpoint_name: str, date_range: l
 def layout():
     return [
         dcc.Store("summary-df", data=get_summary_data()),
-        dcc.Loading(
+        dbc.Spinner(
             dbc.Fade(
                 id="summary-graph-fade",
                 children=[
@@ -205,6 +205,8 @@ def layout():
             ),
             fullscreen=True,
             color=AmperePalette.PAGE_ACCENT_COLOR2,
-            type="dot",
+            type="grow",
+            delay_show=100,
+            spinner_style={"width": "2rem", "height": "2rem"}
         ),
     ]
