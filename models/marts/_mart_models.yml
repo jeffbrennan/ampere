@@ -162,6 +162,10 @@ models:
       - type: primary_key
         columns: [model]
     columns:
+      - name: model_type
+        data_type: string
+      - name: model_folder
+        data_type: string
       - name: model
         data_type: string
       - name: page
@@ -173,4 +177,4 @@ models:
       - name: records
         data_type: uinteger
         data_tests:
-          - not_null
+          - not null

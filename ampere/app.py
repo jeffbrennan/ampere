@@ -105,7 +105,7 @@ navbar = dbc.NavbarSimple(
             dbc.NavLink(
                 id="status-link",
                 children="status",
-                href="about",
+                href="status",
                 style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
             )
         ),
