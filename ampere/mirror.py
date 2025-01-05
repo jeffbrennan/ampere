@@ -28,6 +28,7 @@ def write_backend_tables_to_frontend() -> None:
         "mart_issues_summary",
         "mart_stargazers_pivoted",
         "mart_repo_summary",
+        "mart_status_details"
     ]
 
     backend_con = get_backend_db_con()

@@ -1,4 +1,3 @@
-import datetime
 from copy import deepcopy
 
 import dash
@@ -10,16 +9,6 @@ from ampere.common import get_frontend_db_con
 from ampere.styling import AmpereDTStyle
 
 dash.register_page(__name__, name="about", top_nav=True, order=2)
-
-
-def get_last_updated() -> datetime.datetime:
-    with get_frontend_db_con() as con:
-        last_updated = (
-            con.sql("select max(retrieved_at) as last_updated from stg_repos")
-            .to_df()
-            .squeeze()
-        )
-    return last_updated
 
 
 def create_repo_table() -> pd.DataFrame:
@@ -52,8 +41,6 @@ def about_table_fadein(_: str) -> bool:
 
 def layout():
     df = create_repo_table()
-    last_updated = get_last_updated()
-    last_updated_str = last_updated.strftime("%Y-%m-%d")
     about_style = deepcopy(AmpereDTStyle)
     about_style["style_table"]["height"] = "50%"
     about_style["css"] = [
@@ -106,7 +93,6 @@ def layout():
                         html.Div(" contributors", style={"display": "inline"}),
                     ]
                 ),
-                html.P(f"last updated: {last_updated_str}"),
             ],
             style={"transition": "opacity 300ms ease-in"},
             is_in=False,
