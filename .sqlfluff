@@ -1,7 +1,7 @@
 [sqlfluff]
 dialect=duckdb
 templater=jinja
-exclude_rules = layout.indent, layout.cte_bracket, layout.select_targets, layout.spacing, RF06, ST06
+exclude_rules = layout.indent, layout.cte_bracket, layout.select_targets, layout.spacing, RF06, ST06, LT08
 max_line_length = 90
 
 [sqlfluff:rules]
