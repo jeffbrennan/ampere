@@ -97,8 +97,15 @@ def style_summary_table() -> dict:
 def style_details_table() -> dict:
     status_details_style = deepcopy(AmpereDTStyle)
     status_details_style["style_table"].update(
-        {"height": "75%", "maxWidth": "65vw", "width": "65vw", "marginLeft": "12vw"}
+        {
+            "maxWidth": "65vw",
+            "width": "65vw",
+            "marginLeft": "12vw",
+            "height": "85vh",
+            "maxHeight": "85vh",
+        }
     )
+
     status_details_style["style_cell"]["textAlign"] = "left"
     status_details_style["css"] = [
         dict(
