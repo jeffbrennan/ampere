@@ -9,7 +9,7 @@ models:
           group: bigquery_daily
     constraints:
       - type: primary_key
-        columns: [repo, download_timestamp, group_name, group_value]
+        columns: [ repo, download_timestamp, group_name, group_value ]
     columns:
       - name: repo
         data_tests:
@@ -33,7 +33,7 @@ models:
           group: bigquery_daily
     constraints:
       - type: primary_key
-        columns: [repo, download_date, group_name, group_value]
+        columns: [ repo, download_date, group_name, group_value ]
     columns:
       - name: repo
         data_tests:
@@ -57,7 +57,7 @@ models:
           group: bigquery_daily
     constraints:
       - type: primary_key
-        columns: [repo, download_date, group_name, group_value]
+        columns: [ repo, download_date, group_name, group_value ]
     columns:
       - name: repo
         data_tests:
@@ -71,7 +71,7 @@ models:
         data_type: string
       - name: download_count
         data_type: bigint
-        columns: [repo, download_date, group_name, group_value]
+        columns: [ repo, download_date, group_name, group_value ]
   - name: int_feed_events
     meta:
       dagster:
@@ -83,7 +83,7 @@ models:
       on_schema_change: append_new_columns
     constraints:
       - type: primary_key
-        columns: [event_type, event_action, event_timestamp, repo_id, event_id]
+        columns: [ event_type, event_action, event_timestamp, repo_id, event_id ]
     columns:
       - name: event_type
         data_type: string
@@ -110,7 +110,7 @@ models:
     on_schema_change: append_new_columns
     constraints:
       - type: primary_key
-        columns: [user_id, follower_id]
+        columns: [ user_id, follower_id ]
     columns:
       - name: user_id
         data_type: bigint
@@ -127,7 +127,7 @@ models:
     on_schema_change: append_new_columns
     constraints:
       - type: primary_key
-        columns: [user_id]
+        columns: [ user_id ]
     columns:
       - name: user_id
         data_type: bigint
@@ -162,7 +162,7 @@ models:
     on_schema_change: append_new_columns
     constraints:
       - type: primary_key
-        columns: [user_id, repo_name]
+        columns: [ user_id, repo_name ]
     columns:
       - name: user_id
         data_type: bigint
@@ -191,7 +191,7 @@ models:
     on_schema_change: append_new_columns
     constraints:
       - type: primary_key
-        columns: [repo_id, metric_type, metric_timestamp, metric_id]
+        columns: [ repo_id, metric_type, metric_timestamp, metric_id ]
     columns:
       - name: repo_id
         data_type: bigint
@@ -216,7 +216,7 @@ models:
     on_schema_change: append_new_columns
     constraints:
       - type: primary_key
-        columns: [repo_id, metric_type, metric_date, metric_id]
+        columns: [ repo_id, metric_type, metric_date, metric_id ]
     columns:
       - name: repo_id
         data_type: bigint
@@ -241,7 +241,7 @@ models:
     on_schema_change: append_new_columns
     constraints:
       - type: primary_key
-        columns: [repo_id, metric_type, metric_date, metric_id]
+        columns: [ repo_id, metric_type, metric_date, metric_id ]
     columns:
       - name: repo_id
         data_type: bigint
@@ -266,7 +266,7 @@ models:
     on_schema_change: append_new_columns
     constraints:
       - type: primary_key
-        columns: [repo_id, metric_type, metric_date, metric_id]
+        columns: [ repo_id, metric_type, metric_date, metric_id ]
     columns:
       - name: repo_id
         data_type: bigint
@@ -289,4 +289,67 @@ models:
       dagster:
         group: github_metrics_daily_4
 
+  - name: int_status_details
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    constraints:
+      - type: primary_key
+        columns: [ model ]
+    columns:
+      - name: model
+        data_type: string
+      - name: page
+        data_type: string[]
+      - name: timestamp_col
+        data_type: string
+      - name: timestamp
+        data_type: timestamp with time zone
+      - name: records
+        data_type: bigint
+        data_tests:
+          - not_null
 
+  - name: int_status_summary
+    config:
+      materialized: view
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    columns:
+      - name: page
+        data_type: string
+      - name: min_timestamp
+        data_type: timestamp with time zone
+      - name: hours_stale
+        data_type: float
+      - name: hours_stale_threshold
+        data_type: integer
+      - name: stale
+        data_type: boolean
+      - name: stale_emoji
+        data_type: string
+
+  - name: int_status_summary_pivoted
+    config:
+      materialized: view
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    columns:
+      - name: summary
+        data_type: string
+      - name: downloads
+        data_type: string
+      - name: feed
+        data_type: string
+      - name: issues
+        data_type: string
+      - name: network_followers
+        data_type: string
+      - name: network_stargazers
+        data_type: string

@@ -24,6 +24,7 @@ cache.init_app(server)
         Output("feed-link", "style"),
         Output("issues-link", "style"),
         Output("network-link", "toggle_style"),
+        Output("status-link", "style"),
         Output("about-link", "style"),
     ],
     Input("current-url", "pathname"),
@@ -35,12 +36,13 @@ def update_downloads_link_color(pathname: str):
         {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
         {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
         {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
     ]
 
     if pathname in ["/", "network"]:
         return output_styles
 
-    pages = ["downloads", "feed", "issues", "network", "about"]
+    pages = ["downloads", "feed", "issues", "network", "status", "about"]
     current_page = pathname.removeprefix("/").split("-")[0]
 
     output_styles[pages.index(current_page)] = {
@@ -99,6 +101,15 @@ navbar = dbc.NavbarSimple(
             label="networks",
             toggle_style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
         ),
+        dbc.NavItem(
+            dbc.NavLink(
+                id="status-link",
+                children="status",
+                href="status",
+                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+            )
+        ),
+
         dbc.NavItem(
             dbc.NavLink(
                 id="about-link",

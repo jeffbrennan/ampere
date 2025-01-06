@@ -21,6 +21,7 @@ def write_backend_tables_to_frontend() -> None:
         "int_network_stargazers",
         "int_internal_followers",
         "int_network_follower_details",
+        "int_status_details",
         "stg_repos",
         "mart_downloads_summary",
         "mart_feed_events",
@@ -28,6 +29,7 @@ def write_backend_tables_to_frontend() -> None:
         "mart_issues_summary",
         "mart_stargazers_pivoted",
         "mart_repo_summary",
+        "mart_status_details",
     ]
 
     backend_con = get_backend_db_con()
@@ -38,10 +40,35 @@ def write_backend_tables_to_frontend() -> None:
         duckdb.sql(f"CREATE TABLE {table} AS SELECT * FROM df", connection=frontend_con)
 
 
+def write_backend_views_to_frontend() -> None:
+    backend_con = get_backend_db_con()
+    frontend_con = get_frontend_db_con(read_only=False)
+
+    views_to_copy = [
+        "int_status_summary",
+        "int_status_summary_pivoted",
+        "mart_status_summary",
+    ]
+
+    views_to_copy_sql = "'" + "', '".join(views_to_copy) + "'"
+    views = backend_con.sql(f"""
+        select table_name, view_definition
+        from information_schema.views
+        where table_schema = 'main'
+        and table_name in ({views_to_copy_sql})
+    """).fetchall()
+
+    for view_name, view_definition in views:
+        view_definition_clean = view_definition.replace('backend', 'frontend')
+        print(f"creating view {view_name}...")
+        frontend_con.sql(f"{view_definition_clean}")
+
+
 @timeit
 def copy_backend_to_frontend() -> None:
     create_new_frontend_db()
     write_backend_tables_to_frontend()
+    write_backend_views_to_frontend()
 
 
 if __name__ == "__main__":

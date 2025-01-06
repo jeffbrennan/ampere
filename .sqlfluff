@@ -1,4 +1,12 @@
 [sqlfluff]
 dialect=duckdb
 templater=jinja
-ignore=templating,parsing
+exclude_rules = layout.indent, layout.cte_bracket, layout.select_targets, layout.spacing, RF06, ST06, LT08
+max_line_length = 90
+
+[sqlfluff:rules]
+capitalisation_policy = lower
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:convention.terminator]
+multiline_newline = True
