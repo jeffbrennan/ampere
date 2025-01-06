@@ -21,16 +21,24 @@ date_spine_full as (
     cross join repo_list as c
 ),
 
-metric_dates as (
+metric_dates_rn as (
     select
         repo_id,
         metric_type,
         time_bucket('1 day', metric_timestamp) as metric_date,
-        max(metric_id) as metric_id,
-        max(user_id) as user_id,
-        max(metric_count) as metric_count
+        metric_id,
+        user_id,
+        metric_count,
+        row_number() over (
+            partition by repo_id, metric_type, metric_date
+            order by metric_timestamp desc
+        ) as rn
     from {{ ref("int_repo_metrics") }}
-    group by all
+),
+
+metric_dates as (
+select * from metric_dates_rn
+where rn = 1
 ),
 
 metric_dates_complete as (
