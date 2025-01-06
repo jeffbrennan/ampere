@@ -51,27 +51,6 @@ models:
         data_type: timestamp with time zone
       - name: event_link
         data_type: string
-  - name: mart_feed_events_agg
-    meta:
-      dagster:
-        group: github_metrics_daily_4
-
-    config:
-      contract:
-        enforced: true
-      on_schema_change: append_new_columns
-    constraints:
-      - type: primary_key
-        columns: [repo_name, event_type, event_action]
-    columns:
-      - name: repo_name
-        data_type: string
-      - name: event_type
-        data_type: timestamp with time zone
-      - name: event_action
-        data_type: string
-      - name: event_count
-        data_type: bigint
   - name: mart_issues
     meta:
       dagster:
@@ -177,4 +156,24 @@ models:
       - name: records
         data_type: uinteger
         data_tests:
-          - not null
+          - not_null
+
+  - name: mart_status_summary
+    config:
+      materialized: view
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    columns:
+      - name: summary
+        data_type: string
+      - name: downloads
+        data_type: string
+      - name: feed
+        data_type: string
+      - name: issues
+        data_type: string
+      - name: network_followers
+        data_type: string
+      - name: network_stargazers
+        data_type: string
