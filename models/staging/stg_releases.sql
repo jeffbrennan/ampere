@@ -4,7 +4,7 @@ with base as (
         *,
         row_number() over (partition by repo_id, release_id order by retrieved_at desc) as rn
     from {{ source('main', 'releases') }}
-    where retrieved_at >= (select max(retrieved_at) - interval 3 hours from {{source('main', 'releases')}})
+    where retrieved_at >= (select max(retrieved_at) - interval 24 hours from {{source('main', 'releases')}})
 )
 select
     repo_id,
