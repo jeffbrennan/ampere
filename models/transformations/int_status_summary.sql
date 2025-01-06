@@ -28,7 +28,7 @@ with
                     )
                 then 24
                 when page in ('downloads')
-                then 168
+                then 24 * 7 + 24
             end as hours_stale_threshold,
             hours_stale > hours_stale_threshold as stale,
             case when stale then '⚠️'
