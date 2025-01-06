@@ -31,32 +31,7 @@ with downloads_melted as (
     
 ),
 
-downloads_old as (
-    select
-        repo,
-        time_bucket('70 day', download_timestamp) as download_date,
-        group_name,
-        group_value,
-        floor(sum(download_count) / 10) as download_count
-    from downloads_melted
-    where download_timestamp < (select max(download_timestamp) - interval 730 days from downloads_melted)
-    group by all
-),
-
-downloads_mid as (
-    select
-        repo,
-        time_bucket('28 day', download_timestamp) as download_date,
-        group_name,
-        group_value,
-        floor(sum(download_count) / 4) as download_count
-    from downloads_melted
-    where download_timestamp >= (select max(download_timestamp) - interval 730 days from downloads_melted)
-    and download_timestamp < (select max(download_timestamp) - interval 365 days from downloads_melted)
-    group by all
-),
-
-downloads_new as (
+downloads_trunc as (
     select
         repo,
         time_bucket('7 day', download_timestamp) as download_date,
@@ -64,16 +39,7 @@ downloads_new as (
         group_value,
         sum(download_count) as download_count
     from downloads_melted
-    where download_timestamp >= (select max(download_timestamp) - interval 365 days from downloads_melted)
-    group by all  
-),
-
-downloads_trunc as (
-    select * from downloads_old
-    union all 
-    select * from downloads_mid
-    union all
-    select * from downloads_new
+    group by all
 )
 
 select
@@ -81,9 +47,6 @@ select
     download_date,
     group_name,
     group_value,
-    sum(download_count)::bigint as download_count
+    sum(download_count)::uinteger as download_count
 from downloads_trunc 
-where
-    download_date
-    < (select coalesce(max(b.download_date), '1900-01-01') from downloads_trunc as b)
 group by all

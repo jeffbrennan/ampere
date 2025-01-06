@@ -22,7 +22,7 @@ models:
       - name: group_value
         data_type: string
       - name: download_count
-        data_type: bigint
+        data_type: uinteger
   - name: int_downloads_melted_weekly
     config:
       contract:
@@ -46,7 +46,7 @@ models:
       - name: group_value
         data_type: string
       - name: download_count
-        data_type: bigint
+        data_type: uinteger
   - name: int_downloads_summary
     config:
       contract:
@@ -70,7 +70,7 @@ models:
       - name: group_value
         data_type: string
       - name: download_count
-        data_type: bigint
+        data_type: uinteger
         columns: [ repo, download_date, group_name, group_value ]
   - name: int_feed_events
     meta:

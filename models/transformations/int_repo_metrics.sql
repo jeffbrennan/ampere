@@ -36,6 +36,20 @@ issue_metrics_closed as (
     where closed_at is not null
 ),
 
+issue_metrics_in_pr as (
+    select
+    a.repo_id,
+    b.pr_id as metric_id,
+    b.created_at + interval '1 second' as metric_timestamp,
+    b.author_id as user_id,
+    -1 as metric_count
+    from {{ ref('stg_issues') }} as a
+    inner join {{ ref('stg_pull_requests') }} as b
+    on a.repo_id = b.repo_id
+    and a.issue_number = b.pr_number
+    where b.closed_at is null
+),
+
 issue_metrics as (
     select
         repo_id,
@@ -55,6 +69,9 @@ issue_metrics as (
             union all
             select *
             from issue_metrics_closed
+            union all
+            select *
+            from issue_metrics_in_pr
         )
 ),
 
@@ -193,15 +210,15 @@ commit_metrics as (
     select
         repo_id,
         'commits' as metric_type,
-        metric_id,
-        metric_timestamp,
-        user_id,
-        count(metric_id) over (
+        commit_id as metric_id,
+        committed_at as metric_timestamp,
+        author_id as user_id,
+        count(commit_id) over (
             partition by repo_id
             order by metric_timestamp
             rows between unbounded preceding and current row
         ) as metric_count
-    from commit_metrics_combined
+    from  {{ ref('stg_commits') }}
 ),
 
 combined as (

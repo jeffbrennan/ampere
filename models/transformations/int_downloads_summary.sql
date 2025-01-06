@@ -110,5 +110,5 @@ select
     download_date,
     group_name,
     group_value,
-    download_count::bigint as download_count
+    download_count::uinteger as download_count
 from combined
