@@ -7,6 +7,7 @@ with
     oldest as (
         select page, min("timestamp") as min_timestamp
         from base
+        where "model" not like 'mart_%'
         group by page
     ),
     final as (
