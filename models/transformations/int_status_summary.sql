@@ -7,7 +7,7 @@ with
     oldest as (
         select page, min("timestamp") as min_timestamp
         from base
-        where "model" not like 'mart_%'
+        where "model" not like 'mart_%' and "model" <> 'stg_commits'
         group by page
     ),
     final as (
