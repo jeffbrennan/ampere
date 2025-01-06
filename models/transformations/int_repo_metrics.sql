@@ -193,15 +193,15 @@ commit_metrics as (
     select
         repo_id,
         'commits' as metric_type,
-        metric_id,
-        metric_timestamp,
-        user_id,
-        count(metric_id) over (
+        commit_id as metric_id,
+        committed_at as metric_timestamp,
+        author_id as user_id,
+        count(commit_id) over (
             partition by repo_id
             order by metric_timestamp
             rows between unbounded preceding and current row
         ) as metric_count
-    from commit_metrics_combined
+    from  {{ ref('stg_commits') }}
 ),
 
 combined as (

@@ -81,13 +81,13 @@ metrics_filled_down as (
         repo_id,
         metric_type,
         metric_date,
-        min(metric_id) over (
+        max(metric_id) over (
             partition by repo_id, metric_type, metric_id_group
         ) as metric_id,
-        min(user_id) over (
+        max(user_id) over (
             partition by repo_id, metric_type, user_id_group
         ) as user_id,
-        min(metric_count) over (
+        sum(metric_count) over (
             partition by repo_id, metric_type, metric_count_group
         ) as metric_count
     from metrics_fill_prep
@@ -98,9 +98,9 @@ metrics_trunc_old as (
     repo_id,
     metric_type,
     time_bucket('60 day', metric_date) as metric_date,
-    min(metric_id) as metric_id,
-    min(user_id) as user_id,
-    min(metric_count) as metric_count
+    max(metric_id) as metric_id,
+    max(user_id) as user_id,
+    max(metric_count) as metric_count
     from metrics_filled_down
     where metric_date < (select max(metric_date) - interval 730 days from metrics_filled_down)
     group by all
@@ -110,9 +110,9 @@ metrics_trunc_mid as (
     repo_id,
     metric_type,
     time_bucket('30 day', metric_date) as metric_date,
-    min(metric_id) as metric_id,
-    min(user_id) as user_id,
-    min(metric_count) as metric_count
+    max(metric_id) as metric_id,
+    max(user_id) as user_id,
+    max(metric_count) as metric_count
     from metrics_filled_down
     where metric_date >= (select max(metric_date) - interval 730 days from metrics_filled_down)
     and metric_date < (select (max(metric_date)) - interval 365 days from metrics_filled_down)
@@ -124,9 +124,9 @@ metrics_trunc_new as (
     repo_id,
     metric_type,
     time_bucket('7 day', metric_date) as metric_date,
-    min(metric_id) as metric_id,
-    min(user_id) as user_id,
-    min(metric_count) as metric_count
+    max(metric_id) as metric_id,
+    max(user_id) as user_id,
+    max(metric_count) as metric_count
     from metrics_filled_down
     where metric_date >= (select max(metric_date) - interval 365 days from metrics_filled_down)
     group by all
@@ -145,9 +145,9 @@ current_date_metrics as (
     repo_id,
     metric_type,
     time_bucket('1 day', now()) as metric_date,
-    min(metric_id) as metric_id,
-    min(user_id) as user_id,
-    min(metric_count) as metric_count
+    max(metric_id) as metric_id,
+    max(user_id) as user_id,
+    max(metric_count) as metric_count
     from metrics_filled_down
     where metric_date = (select max(metric_date) from metrics_filled_down)
     group by all
@@ -159,7 +159,6 @@ metrics_final as (
     select * from current_date_metrics
 ),
 
--- TODO: investigate cause of dupes, most likely overlap between date truncs
 metrics_final_dedupe as (
     select
         repo_id,
