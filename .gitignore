@@ -1,7 +1,8 @@
 *.env
 *.idea
 /scratch
-/data
+data/*
+!data/dagster/dagster.yaml
 
 target/
 logs/

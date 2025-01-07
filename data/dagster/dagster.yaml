@@ -1,0 +1,5 @@
+telemetry:
+    enabled: false
+run_retries:
+  enabled: true
+  max_retries: 2
