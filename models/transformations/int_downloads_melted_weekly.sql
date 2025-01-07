@@ -43,15 +43,15 @@ downloads_trunc as (
 
 select
     repo,
-    download_date,
+    download_date + interval 7 day as download_date,
     group_name,
     group_value,
     sum(download_count)::uinteger as download_count
 from downloads_trunc
 where
     download_date
-    < (
-        select coalesce(max(b.download_timestamp), date '1900-01-01') - interval 7 day
-        from {{ ref('int_downloads_melted') }} as b
+    <= (
+        select max(b.download_date) - interval 7 day
+        from downloads_trunc as b
     )
 group by all
