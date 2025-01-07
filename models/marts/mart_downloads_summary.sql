@@ -1,6 +1,6 @@
 select
     repo,
-    download_date,
+    download_date + interval 7 day as download_date,
     group_name,
     group_value,
     download_count::uinteger as download_count

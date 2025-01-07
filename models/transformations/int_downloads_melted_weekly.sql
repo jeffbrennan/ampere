@@ -6,8 +6,7 @@
           'download_date',
           'group_name',
           'group_value'
-        ],
-
+        ]
     )
 }}
 
@@ -19,16 +18,16 @@ with downloads_melted as (
         group_name,
         group_value,
         download_count
-    from {{ref('int_downloads_melted')}}
+    from {{ ref('int_downloads_melted') }}
     {% if is_incremental() %}
         where
             download_timestamp
             > (
-                select coalesce(max(download_date) + interval 7 days, '1900-01-01') -- noqa
+                select coalesce(max(download_date) + interval 7 days, date '1900-01-01') -- noqa
                 from {{ this }}
             )
     {% endif %}
-    
+
 ),
 
 downloads_trunc as (
@@ -48,5 +47,11 @@ select
     group_name,
     group_value,
     sum(download_count)::uinteger as download_count
-from downloads_trunc 
+from downloads_trunc
+where
+    download_date
+    < (
+        select coalesce(max(b.download_timestamp), date '1900-01-01') - interval 7 day
+        from {{ ref('int_downloads_melted') }} as b
+    )
 group by all
