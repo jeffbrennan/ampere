@@ -8,5 +8,5 @@ ampere:
         - delta
       threads: 8
       settings:
-        memory_limit: "4GB"
+        memory_limit: "8GB"
         max_temp_directory_size: "100GB"
