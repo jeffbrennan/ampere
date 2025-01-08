@@ -171,32 +171,15 @@ def viz_downloads_by_python_version(df_data: list[dict], date_range: list[int]):
 
 
 @callback(
-    [
-        Output("downloads-cloud", "figure"),
-        Output("downloads-cloud", "style"),
-    ],
-    [
-        Input("downloads-df", "data"),
-        Input("date-slider", "value"),
-    ],
-)
-def viz_downloads_by_cloud_provider(df_data: list[dict], date_range: list[int]):
-    df = pd.DataFrame(df_data)
-    fig = viz_area(df, "system_release", date_range)
-    return fig, {}
-
-
-@callback(
     Output("downloads-fade", "is_in"),
     [
         Input("downloads-overall", "figure"),
         Input("downloads-package-version", "figure"),
         Input("downloads-python-version", "figure"),
-        Input("downloads-cloud", "figure"),
     ],
 )
-def update_downloads_graph_fade(fig1, fig2, fig3, fig4):
-    return all([fig1, fig2, fig3, fig4])
+def update_downloads_graph_fade(fig1, fig2, fig3):
+    return all([fig1, fig2, fig3])
 
 
 @callback(
@@ -347,7 +330,6 @@ def layout():
                 dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
                 dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
                 dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
-                dcc.Graph("downloads-cloud", style={"visibility": "hidden"}),
             ],
             style={"transition": "opacity 200ms ease-in"},
             is_in=False,

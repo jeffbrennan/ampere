@@ -4,7 +4,6 @@ with expected_group_names as (
         values
         ('overall'),
         ('python_version'),
-        ('system_release'),
         ('package_version')
     ) as tmp (group_name)
 ),

@@ -65,23 +65,6 @@ python_major_minor as (
     group by all
 ),
 
-clouds as (
-    select
-        repo,
-        download_date,
-        group_name,
-        case
-            when contains(group_value, 'amzn') then 'aws'
-            when contains(group_value, 'gcp') then 'gcp'
-            when contains(group_value, 'azure') then 'azure'
-            when group_value = 'unknown' then 'unknown'
-            else 'other'
-        end as group_value,
-        sum(download_count) as download_count
-    from {{ ref('int_downloads_melted_weekly') }}
-    where group_name = 'system_release'
-    group by all
-),
 
 package_versions_major_minor_raw as (
     select
@@ -166,9 +149,6 @@ combined as (
     union all
     select *
     from python_major_minor
-    union all
-    select *
-    from clouds
     union all
     select *
     from package_versions
