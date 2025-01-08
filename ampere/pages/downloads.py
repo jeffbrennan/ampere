@@ -10,7 +10,7 @@ from dash import Input, Output, callback, dcc, html
 from plotly.graph_objects import Figure
 
 from ampere.app_shared import cache
-from ampere.common import get_frontend_db_con, timeit
+from ampere.common import get_frontend_db_con
 from ampere.styling import AmperePalette
 
 dash.register_page(__name__, name="downloads", top_nav=True, order=1)
@@ -106,7 +106,14 @@ def viz_area(
 def get_valid_repos() -> list[str]:
     with get_frontend_db_con() as con:
         repos = (
-            con.sql("select distinct repo from mart_downloads_summary")
+            con.sql(
+                """
+                select distinct a.repo 
+                from mart_downloads_summary a 
+                left join stg_repos b on a.repo = b.repo_name
+                order by b.stargazers_count desc, a.repo
+                """
+            )
             .to_df()
             .squeeze()
             .tolist()
