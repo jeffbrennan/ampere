@@ -21,7 +21,6 @@ dash.register_page(__name__, name="summary", path="/", top_nav=True, order=0)
         Input("summary-date-slider", "value"),
     ],
 )
-@cache.memoize()
 def toggle_slider_tooltip_visibility(
     min_date_seconds: int, max_date_seconds: int, date_range: list[int]
 ) -> dict[Any, Any]:
@@ -54,7 +53,6 @@ def toggle_slider_tooltip_visibility(
         Input("summary-df", "data"),
     ],
 )
-@cache.memoize()
 def get_summary_date_ranges(
     df_data: list[dict],
 ) -> tuple[int, int, list[int], dict[Any, dict[str, Any]]]:
@@ -114,7 +112,6 @@ def get_summary_data() -> list[dict[Any, Any]]:
         Input("summary-date-slider", "value"),
     ],
 )
-@cache.memoize()
 def viz_summary_stars(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
     df = pd.DataFrame(df_data)
     fig = viz_summary(
@@ -134,7 +131,6 @@ def viz_summary_stars(df_data: list[dict], breakpoint_name: str, date_range: lis
         Input("summary-date-slider", "value"),
     ],
 )
-@cache.memoize()
 def viz_summary_issues(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
     df = pd.DataFrame(df_data)
     return viz_summary(
@@ -153,7 +149,6 @@ def viz_summary_issues(df_data: list[dict], breakpoint_name: str, date_range: li
         Input("summary-date-slider", "value"),
     ],
 )
-@cache.memoize()
 def viz_summary_commits(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
     df = pd.DataFrame(df_data)
     return viz_summary(

@@ -15,7 +15,7 @@ from ampere.styling import AmperePalette
 
 dash.register_page(__name__, name="downloads", top_nav=True, order=1)
 
-
+@cache.memoize()
 def viz_area(
     df: pd.DataFrame,
     group_name: str,
@@ -123,10 +123,7 @@ def get_valid_repos() -> list[str]:
 
 
 @callback(
-    [
-        Output("downloads-overall", "figure"),
-        Output("downloads-fade", "is_in"),
-    ],
+    Output("downloads-overall", "figure"),
     [
         Input("downloads-df", "data"),
         Input("date-slider", "value"),
@@ -135,7 +132,7 @@ def get_valid_repos() -> list[str]:
 def viz_downloads_overall(df_data: list[dict], date_range: list[int]):
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "overall", date_range)
-    return fig, True
+    return fig
 
 
 @callback(
@@ -145,7 +142,6 @@ def viz_downloads_overall(df_data: list[dict], date_range: list[int]):
         Input("date-slider", "value"),
     ],
 )
-@cache.memoize()
 def viz_downloads_by_package_version(df_data: list[dict], date_range: list[int]):
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "package_version", date_range)
@@ -159,7 +155,6 @@ def viz_downloads_by_package_version(df_data: list[dict], date_range: list[int])
         Input("date-slider", "value"),
     ],
 )
-@cache.memoize()
 def viz_downloads_by_python_version(df_data: list[dict], date_range: list[int]):
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "python_version", date_range)
@@ -169,20 +164,17 @@ def viz_downloads_by_python_version(df_data: list[dict], date_range: list[int]):
 @callback(
     [
         Output("downloads-cloud", "figure"),
-        Output("downloads-cloud", "style"),
+        Output("downloads-fade", "is_in"),
     ],
     [
         Input("downloads-df", "data"),
         Input("date-slider", "value"),
     ],
 )
-@cache.memoize()
-def viz_downloads_by_cloud_provider(
-    df_data: list[dict], date_range: list[int]
-) -> tuple[Figure, dict]:
+def viz_downloads_by_cloud_provider(df_data: list[dict], date_range: list[int]):
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "system_release", date_range)
-    return fig, {}
+    return fig, True
 
 
 @callback(
