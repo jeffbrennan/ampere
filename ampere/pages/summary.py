@@ -104,7 +104,7 @@ def get_summary_data() -> list[dict[Any, Any]]:
 @callback(
     [
         Output("summary-stars", "figure"),
-        Output("summary-graph-fade", "is_in"),
+        Output("summary-stars", "style"),
     ],
     [
         Input("summary-df", "data"),
@@ -113,18 +113,19 @@ def get_summary_data() -> list[dict[Any, Any]]:
     ],
 )
 def viz_summary_stars(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
-    df = pd.DataFrame(df_data)
-    fig = viz_summary(
-        df=df,
+    return viz_summary(
+        df=pd.DataFrame(df_data),
         metric_type="stars",
         date_range=date_range,
         screen_width=ScreenWidth(breakpoint_name),
-    )
-    return fig, True
+    ), {}
 
 
 @callback(
-    Output("summary-issues", "figure"),
+    [
+        Output("summary-issues", "figure"),
+        Output("summary-issues", "style"),
+    ],
     [
         Input("summary-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
@@ -132,17 +133,19 @@ def viz_summary_stars(df_data: list[dict], breakpoint_name: str, date_range: lis
     ],
 )
 def viz_summary_issues(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
-    df = pd.DataFrame(df_data)
     return viz_summary(
-        df=df,
+        df=pd.DataFrame(df_data),
         metric_type="issues",
         date_range=date_range,
         screen_width=ScreenWidth(breakpoint_name),
-    )
+    ), {}
 
 
 @callback(
-    Output("summary-commits", "figure"),
+    [
+        Output("summary-commits", "figure"),
+        Output("summary-commits", "style"),
+    ],
     [
         Input("summary-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
@@ -150,13 +153,24 @@ def viz_summary_issues(df_data: list[dict], breakpoint_name: str, date_range: li
     ],
 )
 def viz_summary_commits(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
-    df = pd.DataFrame(df_data)
     return viz_summary(
-        df=df,
+        df=pd.DataFrame(df_data),
         metric_type="commits",
         date_range=date_range,
         screen_width=ScreenWidth(breakpoint_name),
-    )
+    ), {}
+
+
+@callback(
+    Output("summary-graph-fade", "is_in"),
+    [
+        Input("summary-stars", "figure"),
+        Input("summary-issues", "figure"),
+        Input("summary-commits", "figure"),
+    ],
+)
+def update_summary_graph_fade(fig1, fig2, fig3):
+    return all([fig1, fig2, fig3])
 
 
 def layout():
@@ -189,11 +203,11 @@ def layout():
                         "top": "60px",
                     },
                 ),
-                dcc.Graph("summary-stars"),
-                dcc.Graph("summary-issues"),
-                dcc.Graph("summary-commits"),
+                dcc.Graph("summary-stars", style={"visibility": "hidden"}),
+                dcc.Graph("summary-issues", style={"visibility": "hidden"}),
+                dcc.Graph("summary-commits", style={"visibility": "hidden"}),
             ],
-            style={"transition": "opacity 500ms ease-in"},
+            style={"transition": "opacity 200ms ease-in"},
             is_in=False,
         ),
     ]

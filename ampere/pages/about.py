@@ -94,7 +94,7 @@ def layout():
                     ]
                 ),
             ],
-            style={"transition": "opacity 300ms ease-in"},
+            style={"transition": "opacity 200ms ease-in"},
             is_in=False,
         )
     ]

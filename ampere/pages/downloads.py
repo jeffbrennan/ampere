@@ -15,7 +15,7 @@ from ampere.styling import AmperePalette
 
 dash.register_page(__name__, name="downloads", top_nav=True, order=1)
 
-@cache.memoize()
+
 def viz_area(
     df: pd.DataFrame,
     group_name: str,
@@ -123,7 +123,10 @@ def get_valid_repos() -> list[str]:
 
 
 @callback(
-    Output("downloads-overall", "figure"),
+    [
+        Output("downloads-overall", "figure"),
+        Output("downloads-overall", "style"),
+    ],
     [
         Input("downloads-df", "data"),
         Input("date-slider", "value"),
@@ -132,11 +135,14 @@ def get_valid_repos() -> list[str]:
 def viz_downloads_overall(df_data: list[dict], date_range: list[int]):
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "overall", date_range)
-    return fig
+    return fig, {}
 
 
 @callback(
-    Output("downloads-package-version", "figure"),
+    [
+        Output("downloads-package-version", "figure"),
+        Output("downloads-package-version", "style"),
+    ],
     [
         Input("downloads-df", "data"),
         Input("date-slider", "value"),
@@ -145,11 +151,14 @@ def viz_downloads_overall(df_data: list[dict], date_range: list[int]):
 def viz_downloads_by_package_version(df_data: list[dict], date_range: list[int]):
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "package_version", date_range)
-    return fig
+    return fig, {}
 
 
 @callback(
-    Output("downloads-python-version", "figure"),
+    [
+        Output("downloads-python-version", "figure"),
+        Output("downloads-python-version", "style"),
+    ],
     [
         Input("downloads-df", "data"),
         Input("date-slider", "value"),
@@ -158,13 +167,13 @@ def viz_downloads_by_package_version(df_data: list[dict], date_range: list[int])
 def viz_downloads_by_python_version(df_data: list[dict], date_range: list[int]):
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "python_version", date_range)
-    return fig
+    return fig, {}
 
 
 @callback(
     [
         Output("downloads-cloud", "figure"),
-        Output("downloads-fade", "is_in"),
+        Output("downloads-cloud", "style"),
     ],
     [
         Input("downloads-df", "data"),
@@ -174,7 +183,20 @@ def viz_downloads_by_python_version(df_data: list[dict], date_range: list[int]):
 def viz_downloads_by_cloud_provider(df_data: list[dict], date_range: list[int]):
     df = pd.DataFrame(df_data)
     fig = viz_area(df, "system_release", date_range)
-    return fig, True
+    return fig, {}
+
+
+@callback(
+    Output("downloads-fade", "is_in"),
+    [
+        Input("downloads-overall", "figure"),
+        Input("downloads-package-version", "figure"),
+        Input("downloads-python-version", "figure"),
+        Input("downloads-cloud", "figure"),
+    ],
+)
+def update_downloads_graph_fade(fig1, fig2, fig3, fig4):
+    return all([fig1, fig2, fig3, fig4])
 
 
 @callback(
@@ -322,12 +344,12 @@ def layout():
                         "top": "60px",
                     },
                 ),
-                dcc.Graph("downloads-overall"),
-                dcc.Graph("downloads-package-version"),
-                dcc.Graph("downloads-python-version"),
-                dcc.Graph("downloads-cloud"),
+                dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
+                dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
+                dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
+                dcc.Graph("downloads-cloud", style={"visibility": "hidden"}),
             ],
-            style={"transition": "opacity 300ms ease-in"},
+            style={"transition": "opacity 200ms ease-in"},
             is_in=False,
         ),
     ]

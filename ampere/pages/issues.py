@@ -292,7 +292,7 @@ def layout():
                     **issues_style,
                 ),
             ],
-            style={"transition": "opacity 500ms ease-in"},
+            style={"transition": "opacity 200ms ease-in"},
             is_in=False,
         ),
     ]
