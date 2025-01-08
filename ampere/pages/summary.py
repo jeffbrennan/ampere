@@ -167,45 +167,38 @@ def viz_summary_commits(df_data: list[dict], breakpoint_name: str, date_range: l
 def layout():
     return [
         dcc.Store("summary-df", data=get_summary_data()),
-        dbc.Spinner(
-            dbc.Fade(
-                id="summary-graph-fade",
-                children=[
-                    dbc.Row(
-                        [
-                            dbc.Col(
-                                html.Div(
-                                    dcc.RangeSlider(
-                                        id="summary-date-slider",
-                                        step=86400,  # daily
-                                        allowCross=False,
-                                    ),
-                                    style={
-                                        "whiteSpace": "nowrap",
-                                        "paddingLeft": "5%",
-                                    },
+        dbc.Fade(
+            id="summary-graph-fade",
+            children=[
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            html.Div(
+                                dcc.RangeSlider(
+                                    id="summary-date-slider",
+                                    step=86400,  # daily
+                                    allowCross=False,
                                 ),
-                                width=3,
+                                style={
+                                    "whiteSpace": "nowrap",
+                                    "paddingLeft": "5%",
+                                },
                             ),
-                            dbc.Col(width=8),
-                        ],
-                        style={
-                            "position": "sticky",
-                            "z-index": "100",
-                            "top": "60px",
-                        },
-                    ),
-                    dcc.Graph("summary-stars"),
-                    dcc.Graph("summary-issues"),
-                    dcc.Graph("summary-commits"),
-                ],
-                style={"transition": "opacity 500ms ease-in"},
-                is_in=False,
-            ),
-            fullscreen=True,
-            color=AmperePalette.PAGE_ACCENT_COLOR2,
-            type="grow",
-            delay_show=100,
-            spinner_style={"width": "2rem", "height": "2rem"}
+                            width=3,
+                        ),
+                        dbc.Col(width=8),
+                    ],
+                    style={
+                        "position": "sticky",
+                        "z-index": "100",
+                        "top": "60px",
+                    },
+                ),
+                dcc.Graph("summary-stars"),
+                dcc.Graph("summary-issues"),
+                dcc.Graph("summary-commits"),
+            ],
+            style={"transition": "opacity 500ms ease-in"},
+            is_in=False,
         ),
     ]
