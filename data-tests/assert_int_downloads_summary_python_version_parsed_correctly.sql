@@ -2,7 +2,7 @@ with base as (
     select
         group_name,
         group_value,
-        regexp_matches(group_value, '^\d{1}\.\d{1,2}$|^unknown$') as is_valid
+        regexp_matches(group_value, '^\d{1}\.\d{1,2}$|^unknown$|^other$') as is_valid
     from
         {{ ref('int_downloads_summary') }}
     where group_name = 'python_version'
