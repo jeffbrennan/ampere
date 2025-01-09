@@ -61,7 +61,7 @@ python_major_minor as (
     from python_major_minor_raw as a
     left join python_major_minor_ranked as b
     on a.repo = b.repo and a.group_name = b.group_name and a.group_value = b.group_value
-    and b.rn <= 6
+    and b.rn <= 8
     group by all
 ),
 
@@ -116,7 +116,7 @@ package_versions as  (
         on a.repo = b.repo
         and a.group_name = b.group_name
         and a.group_value = b.group_value
-        and b.rn <= 6
+        and b.rn <= 8
     group by all
 ),
 
