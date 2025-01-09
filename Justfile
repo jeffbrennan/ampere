@@ -28,3 +28,6 @@ set dotenv-load
     dbt build &&
     poetry run python ampere/mirror.py &&
     docker compose up --build {{FLAGS}}
+
+@sync:
+    sh utils/sync_local.sh
