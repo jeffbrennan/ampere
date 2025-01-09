@@ -1,3 +1,5 @@
+import argparse
+
 import dash
 import dash_bootstrap_components as dbc
 import dash_breakpoints
@@ -5,17 +7,6 @@ from dash import Input, Output, callback, dcc, html
 
 from ampere.app_shared import cache
 from ampere.styling import AmperePalette, ScreenWidth
-
-app = dash.Dash(
-    use_pages=True,
-    external_stylesheets=[dbc.themes.BOOTSTRAP],
-    suppress_callback_exceptions=True,
-    compress=True,
-    update_title="",
-    serve_locally=False,
-)
-server = app.server
-cache.init_app(server)
 
 
 @callback(
@@ -54,101 +45,129 @@ def update_downloads_link_color(pathname: str):
     return output_styles
 
 
-navbar = dbc.NavbarSimple(
-    children=[
-        dcc.Location(id="current-url", refresh=False),
-        dbc.NavItem(
-            dbc.NavLink(
-                id="downloads-link",
-                children="downloads",
-                href="downloads",
-                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-                class_name="downloads-link",
-            )
-        ),
-        dbc.NavItem(
-            dbc.NavLink(
-                id="feed-link",
-                children="feed",
-                href="feed",
-                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-            )
-        ),
-        dbc.NavItem(
-            dbc.NavLink(
-                id="issues-link",
-                children="issues",
-                href="issues",
-                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-            )
-        ),
-        dbc.DropdownMenu(
-            children=[
-                dbc.DropdownMenuItem(
-                    "stargazers",
-                    href="network-stargazers",
-                    style={"color": AmperePalette.PAGE_ACCENT_COLOR},
-                ),
-                dbc.DropdownMenuItem(
-                    "followers",
-                    href="network-followers",
-                    style={"color": AmperePalette.PAGE_ACCENT_COLOR},
-                ),
-            ],
-            id="network-link",
-            nav=True,
-            in_navbar=True,
-            label="networks",
-            toggle_style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-        ),
-        dbc.NavItem(
-            dbc.NavLink(
-                id="status-link",
-                children="status",
-                href="status",
-                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-            )
-        ),
-        dbc.NavItem(
-            dbc.NavLink(
-                id="about-link",
-                children="about",
-                href="about",
-                style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-            )
-        ),
-    ],
-    color=AmperePalette.PAGE_ACCENT_COLOR,
-    dark=True,
-    fixed="top",
-    fluid=True,
-    style={"width": "100%"},
-    brand="ampere",
-    brand_style={"fontWeight": "bold"},
-    links_left=True,
-    brand_href="/",
-)
+def layout():
+    navbar = dbc.NavbarSimple(
+        children=[
+            dcc.Location(id="current-url", refresh=False),
+            dbc.NavItem(
+                dbc.NavLink(
+                    id="downloads-link",
+                    children="downloads",
+                    href="downloads",
+                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                    class_name="downloads-link",
+                )
+            ),
+            dbc.NavItem(
+                dbc.NavLink(
+                    id="feed-link",
+                    children="feed",
+                    href="feed",
+                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                )
+            ),
+            dbc.NavItem(
+                dbc.NavLink(
+                    id="issues-link",
+                    children="issues",
+                    href="issues",
+                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                )
+            ),
+            dbc.DropdownMenu(
+                children=[
+                    dbc.DropdownMenuItem(
+                        "stargazers",
+                        href="network-stargazers",
+                        style={"color": AmperePalette.PAGE_ACCENT_COLOR},
+                    ),
+                    dbc.DropdownMenuItem(
+                        "followers",
+                        href="network-followers",
+                        style={"color": AmperePalette.PAGE_ACCENT_COLOR},
+                    ),
+                ],
+                id="network-link",
+                nav=True,
+                in_navbar=True,
+                label="networks",
+                toggle_style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+            ),
+            dbc.NavItem(
+                dbc.NavLink(
+                    id="status-link",
+                    children="status",
+                    href="status",
+                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                )
+            ),
+            dbc.NavItem(
+                dbc.NavLink(
+                    id="about-link",
+                    children="about",
+                    href="about",
+                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                )
+            ),
+        ],
+        color=AmperePalette.PAGE_ACCENT_COLOR,
+        dark=True,
+        fixed="top",
+        fluid=True,
+        style={"width": "100%"},
+        brand="ampere",
+        brand_style={"fontWeight": "bold"},
+        links_left=True,
+        brand_href="/",
+    )
 
-app.layout = dbc.Container(
-    [
-        navbar,
-        html.Br(),
-        html.Br(),
-        dash_breakpoints.WindowBreakpoints(
-            id="breakpoints",
-            widthBreakpointThresholdsPx=[
-                500,
-                1200,
-                1920,
-                2560,
-            ],
-            widthBreakpointNames=[i.value for i in ScreenWidth],
-        ),
-        dash.page_container,
-    ],
-    fluid=True,
-    style={"paddingLeft": "5%", "paddingRight": "5%", "paddingBottom": "3%"},
-)
+    return dbc.Container(
+        [
+            navbar,
+            html.Br(),
+            html.Br(),
+            dash_breakpoints.WindowBreakpoints(
+                id="breakpoints",
+                widthBreakpointThresholdsPx=[
+                    500,
+                    1200,
+                    1920,
+                    2560,
+                ],
+                widthBreakpointNames=[i.value for i in ScreenWidth],
+            ),
+            dash.page_container,
+        ],
+        fluid=True,
+        style={"paddingLeft": "5%", "paddingRight": "5%", "paddingBottom": "3%"},
+    )
+
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0")
+    envs = {
+        "prod": {"host": "0.0.0.0", "debug": False, "serve_locally": False},
+        "dev": {"host": "127.0.0.1", "debug": True, "serve_locally": True},
+    }
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--env",
+        type=str,
+        default="prod",
+        help="Environment to run the app in. Default is prod",
+    )
+
+    env = parser.parse_args().env
+
+    app = dash.Dash(
+        use_pages=True,
+        external_stylesheets=[dbc.themes.BOOTSTRAP],
+        suppress_callback_exceptions=True,
+        compress=True,
+        update_title="",
+        serve_locally=envs[env]["serve_locally"],
+    )
+    server = app.server
+    cache.init_app(server)
+
+    app.layout = layout()
+    app.run(host=envs[env]["host"], debug=envs[env]["debug"])
