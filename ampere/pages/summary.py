@@ -1,16 +1,135 @@
-from typing import Any
+import datetime
+from typing import Any, Optional
 
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
+import plotly.express as px
+import pytz
 from dash import Input, Output, callback, dcc, html
+from plotly.graph_objs import Figure
 
 from ampere.app_shared import cache
 from ampere.common import get_frontend_db_con
 from ampere.styling import AmperePalette, ScreenWidth
-from ampere.viz import viz_summary
+from ampere.viz import generate_repo_palette
 
 dash.register_page(__name__, name="summary", path="/", top_nav=True, order=0)
+
+
+def viz_summary(
+    df: pd.DataFrame,
+    metric_type: str,
+    date_range: Optional[list[int]] = None,
+    show_fig: bool = False,
+    screen_width: ScreenWidth = ScreenWidth.lg,
+    dark_mode: bool = False,
+) -> Figure:
+    df_filtered = df.query(f"metric_type == '{metric_type}'").sort_values("metric_date")
+    if date_range is not None:
+        filter_date_min = datetime.datetime.fromtimestamp(
+            date_range[0], tz=pytz.timezone("America/New_York")
+        )
+        filter_date_max = datetime.datetime.fromtimestamp(
+            date_range[1], tz=pytz.timezone("America/New_York")
+        )
+
+        df_filtered = df_filtered.query(f"metric_date >= '{filter_date_min}'").query(
+            f"metric_date <= '{filter_date_max}'"
+        )
+
+    if dark_mode:
+        font_color = "white"
+        bg_color = "rgb(30,30,30)"
+        template = "plotly_dark"
+    else:
+        font_color = "black"
+        bg_color = "rgb(240,240,240)"
+        template = "plotly_white"
+
+    repo_palette = generate_repo_palette()
+    fig = px.area(
+        df_filtered,
+        x="metric_date",
+        y="metric_count",
+        color="repo_name",
+        template=template,
+        hover_name="repo_name",
+        color_discrete_map=repo_palette,
+        height=500,
+        category_orders={"repo_name": repo_palette.keys()},
+        facet_col="metric_type",  # single var facet col for plot title
+    )
+    fig.update_layout(plot_bgcolor=bg_color, paper_bgcolor=bg_color)
+    fig.for_each_annotation(
+        lambda a: a.update(
+            text="<b>" + a.text.split("=")[-1] + "</b>",
+            font_size=18,
+            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
+            font_color="white",
+            borderpad=5,
+        )
+    )
+    fig.update_yaxes(matches=None, showticklabels=True, showgrid=False)
+    fig.update_xaxes(showgrid=False)
+    fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
+
+    fig_legend_y = {ScreenWidth.xs: 1.04, ScreenWidth.sm: 1.02}
+    if screen_width in [ScreenWidth.xs, ScreenWidth.sm]:
+        fig.update_layout(
+            legend=dict(
+                title=None,
+                itemsizing="constant",
+                font=dict(size=14),
+                orientation="h",
+                yanchor="top",
+                y=fig_legend_y[screen_width],
+                xanchor="center",
+                x=0.5,
+            )
+        )
+    else:
+        fig.update_layout(
+            legend=dict(title=None, itemsizing="constant", font=dict(size=14))
+        )
+
+    fig.for_each_annotation(
+        lambda a: a.update(
+            text="<b>" + a.text.split("=")[-1] + "</b>",
+            font_size=18,
+            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
+            font_color="white",
+            borderpad=5,
+        )
+    )
+
+    fig.for_each_yaxis(
+        lambda y: y.update(
+            title="",
+            showline=True,
+            linewidth=1,
+            linecolor=font_color,
+            mirror=True,
+            tickfont_size=14,
+        )
+    )
+    fig.for_each_xaxis(
+        lambda x: x.update(
+            title="",
+            showline=True,
+            linewidth=1,
+            linecolor=font_color,
+            mirror=True,
+            showticklabels=True,
+            tickfont_size=14,
+        )
+    )
+
+    fig.update_layout(margin=dict(l=0, r=0))
+    if show_fig:
+        fig.show()
+
+    return fig
 
 
 @callback(
@@ -110,15 +229,21 @@ def get_summary_data() -> list[dict[Any, Any]]:
         Input("summary-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
         Input("summary-date-slider", "value"),
+        Input("color-mode-switch", "value"),
     ],
 )
-def viz_summary_stars(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
-    return viz_summary(
+def viz_summary_stars(
+    df_data: list[dict], breakpoint_name: str, date_range: list[int], dark_mode: bool
+):
+    fig = viz_summary(
         df=pd.DataFrame(df_data),
         metric_type="stars",
         date_range=date_range,
         screen_width=ScreenWidth(breakpoint_name),
-    ), {}
+        dark_mode=dark_mode,
+    )
+
+    return fig, {}
 
 
 @callback(
@@ -130,15 +255,20 @@ def viz_summary_stars(df_data: list[dict], breakpoint_name: str, date_range: lis
         Input("summary-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
         Input("summary-date-slider", "value"),
+        Input("color-mode-switch", "value"),
     ],
 )
-def viz_summary_issues(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
-    return viz_summary(
+def viz_summary_issues(
+    df_data: list[dict], breakpoint_name: str, date_range: list[int], dark_mode: bool
+):
+    fig = viz_summary(
         df=pd.DataFrame(df_data),
         metric_type="issues",
         date_range=date_range,
         screen_width=ScreenWidth(breakpoint_name),
-    ), {}
+        dark_mode=dark_mode,
+    )
+    return fig, {}
 
 
 @callback(
@@ -150,15 +280,21 @@ def viz_summary_issues(df_data: list[dict], breakpoint_name: str, date_range: li
         Input("summary-df", "data"),
         Input("breakpoints", "widthBreakpoint"),
         Input("summary-date-slider", "value"),
+        Input("color-mode-switch", "value"),
     ],
 )
-def viz_summary_commits(df_data: list[dict], breakpoint_name: str, date_range: list[int]):
-    return viz_summary(
+def viz_summary_commits(
+    df_data: list[dict], breakpoint_name: str, date_range: list[int], dark_mode: bool
+):
+    fig = viz_summary(
         df=pd.DataFrame(df_data),
         metric_type="commits",
         date_range=date_range,
         screen_width=ScreenWidth(breakpoint_name),
-    ), {}
+        dark_mode=dark_mode,
+    )
+
+    return fig, {}
 
 
 @callback(

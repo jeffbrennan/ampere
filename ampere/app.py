@@ -46,79 +46,104 @@ def update_downloads_link_color(pathname: str):
 
 
 def layout():
-    navbar = dbc.NavbarSimple(
-        children=[
-            dcc.Location(id="current-url", refresh=False),
-            dbc.NavItem(
-                dbc.NavLink(
-                    id="downloads-link",
-                    children="downloads",
-                    href="downloads",
-                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-                    class_name="downloads-link",
-                )
-            ),
-            dbc.NavItem(
-                dbc.NavLink(
-                    id="feed-link",
-                    children="feed",
-                    href="feed",
-                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-                )
-            ),
-            dbc.NavItem(
-                dbc.NavLink(
-                    id="issues-link",
-                    children="issues",
-                    href="issues",
-                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-                )
-            ),
-            dbc.DropdownMenu(
-                children=[
-                    dbc.DropdownMenuItem(
-                        "stargazers",
-                        href="network-stargazers",
-                        style={"color": AmperePalette.PAGE_ACCENT_COLOR},
+    navbar = dbc.Navbar(
+        dbc.Container(
+            [
+                dbc.NavbarBrand("ampere", href="/", style={"fontWeight": "bold"}),
+                dbc.NavbarToggler(id="navbar-toggler"),
+                dbc.Collapse(
+                    dbc.Nav(
+                        [
+                            dcc.Location(id="current-url", refresh=False),
+                            dbc.NavItem(
+                                dbc.NavLink(
+                                    id="downloads-link",
+                                    children="downloads",
+                                    href="downloads",
+                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                                    class_name="downloads-link",
+                                )
+                            ),
+                            dbc.NavItem(
+                                dbc.NavLink(
+                                    id="feed-link",
+                                    children="feed",
+                                    href="feed",
+                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                                )
+                            ),
+                            dbc.NavItem(
+                                dbc.NavLink(
+                                    id="issues-link",
+                                    children="issues",
+                                    href="issues",
+                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                                )
+                            ),
+                            dbc.DropdownMenu(
+                                children=[
+                                    dbc.DropdownMenuItem(
+                                        "stargazers",
+                                        href="network-stargazers",
+                                        style={"color": AmperePalette.PAGE_ACCENT_COLOR},
+                                    ),
+                                    dbc.DropdownMenuItem(
+                                        "followers",
+                                        href="network-followers",
+                                        style={"color": AmperePalette.PAGE_ACCENT_COLOR},
+                                    ),
+                                ],
+                                id="network-link",
+                                nav=True,
+                                in_navbar=True,
+                                label="networks",
+                                toggle_style={
+                                    "color": AmperePalette.BRAND_TEXT_COLOR_MUTED
+                                },
+                            ),
+                            dbc.NavItem(
+                                dbc.NavLink(
+                                    id="status-link",
+                                    children="status",
+                                    href="status",
+                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                                )
+                            ),
+                            dbc.NavItem(
+                                dbc.NavLink(
+                                    id="about-link",
+                                    children="about",
+                                    href="about",
+                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                                )
+                            ),
+                        ],
+                        className="ml-auto",
+                        navbar=True,
                     ),
-                    dbc.DropdownMenuItem(
-                        "followers",
-                        href="network-followers",
-                        style={"color": AmperePalette.PAGE_ACCENT_COLOR},
+                    id="navbar-collapse",
+                    navbar=True,
+                ),
+                dbc.NavItem(
+                    html.Span(
+                        [
+                            dbc.Switch(
+                                id="color-mode-switch",
+                                value=False,
+                                className="d-inline-block ms-1",
+                                persistence=True,
+                            ),
+                            dbc.Label("🌛", html_for="color-mode-switch"),
+                        ]
                     ),
-                ],
-                id="network-link",
-                nav=True,
-                in_navbar=True,
-                label="networks",
-                toggle_style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-            ),
-            dbc.NavItem(
-                dbc.NavLink(
-                    id="status-link",
-                    children="status",
-                    href="status",
-                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-                )
-            ),
-            dbc.NavItem(
-                dbc.NavLink(
-                    id="about-link",
-                    children="about",
-                    href="about",
-                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-                )
-            ),
-        ],
+                ),
+            ],
+            fluid=True,
+        ),
         color=AmperePalette.PAGE_ACCENT_COLOR,
         dark=True,
         fixed="top",
-        fluid=True,
         style={"width": "100%"},
-        brand="ampere",
-        brand_style={"fontWeight": "bold"},
-        links_left=True,
-        brand_href="/",
     )
 
     return dbc.Container(
@@ -160,7 +185,7 @@ if __name__ == "__main__":
 
     app = dash.Dash(
         use_pages=True,
-        external_stylesheets=[dbc.themes.BOOTSTRAP],
+        external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.FONT_AWESOME],
         suppress_callback_exceptions=True,
         compress=True,
         update_title="",
