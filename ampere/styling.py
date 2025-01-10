@@ -12,6 +12,8 @@ class AmperePalette(StrEnum):
     PAGE_LIGHT_GRAY = "#EEEEEE"
     BRAND_TEXT_COLOR = "#FFFFFF"
     BRAND_TEXT_COLOR_MUTED = "#E3E7FA"
+    PAGE_BACKGROUND_COLOR_LIGHT = "rgb(240, 240, 240)"
+    PAGE_BACKGROUND_COLOR_DARK = "rgb(30, 30, 30)"
 
 
 class ScreenWidth(StrEnum):

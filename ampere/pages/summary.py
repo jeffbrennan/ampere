@@ -40,11 +40,11 @@ def viz_summary(
 
     if dark_mode:
         font_color = "white"
-        bg_color = "rgb(30,30,30)"
+        bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
         template = "plotly_dark"
     else:
         font_color = "black"
-        bg_color = "rgb(240,240,240)"
+        bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
         template = "plotly_white"
 
     repo_palette = generate_repo_palette()

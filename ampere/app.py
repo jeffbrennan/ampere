@@ -1,4 +1,5 @@
 import argparse
+import time
 
 import dash
 import dash_bootstrap_components as dbc
@@ -43,6 +44,21 @@ def update_downloads_link_color(pathname: str):
     }
 
     return output_styles
+
+
+@callback(
+    Output("ampere-page", "style"),
+    Input("color-mode-switch", "value"),
+)
+def update_page_color(dark_mode: bool):
+    base_style = {"paddingLeft": "5%", "paddingRight": "5%", "paddingBottom": "3%"}
+    time.sleep(0.15)
+    if dark_mode:
+        base_style["backgroundColor"] = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+    else:
+        base_style["backgroundColor"] = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+
+    return base_style
 
 
 def layout():
@@ -147,7 +163,8 @@ def layout():
     )
 
     return dbc.Container(
-        [
+        id="ampere-page",
+        children=[
             navbar,
             html.Br(),
             html.Br(),
