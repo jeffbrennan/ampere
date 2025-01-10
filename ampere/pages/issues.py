@@ -7,8 +7,8 @@ from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_frontend_db_con
 from ampere.styling import (
-    AmpereDTStyle,
     ColumnInfo,
+    get_ampere_dt_style,
     style_dt_background_colors_by_rank,
     table_title_style,
 )
@@ -210,7 +210,7 @@ def issues_table_margin_callback(*args, **kwargs):
 
 
 def style_issues_summary_table(summary_df: pd.DataFrame) -> dict:
-    summary_style = copy.deepcopy(AmpereDTStyle)
+    summary_style = get_ampere_dt_style()
     del summary_style["style_table"]["maxHeight"]
     del summary_style["style_table"]["height"]
     n_repos = summary_df.shape[0]
@@ -255,7 +255,7 @@ def layout():
 
     df = create_issues_table()
 
-    issues_style = copy.deepcopy(AmpereDTStyle)
+    issues_style = get_ampere_dt_style()
     issues_style["css"] = cell_padding
     summary_df = create_issues_summary_table()
 

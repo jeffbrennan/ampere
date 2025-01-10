@@ -6,7 +6,7 @@ import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_frontend_db_con
-from ampere.styling import AmpereDTStyle
+from ampere.styling import get_ampere_dt_style
 
 dash.register_page(__name__, name="status", top_nav=True, order=2)
 
@@ -62,7 +62,7 @@ def status_table_fadein(_: str) -> bool:
 
 
 def style_summary_table() -> dict:
-    summary_style = deepcopy(AmpereDTStyle)
+    summary_style = get_ampere_dt_style()
     summary_style["style_table"].update(
         {"height": "25%", "maxWidth": "65vw", "width": "65vw", "marginLeft": "12vw"}
     )
@@ -95,7 +95,7 @@ def style_summary_table() -> dict:
 
 
 def style_details_table() -> dict:
-    status_details_style = deepcopy(AmpereDTStyle)
+    status_details_style = get_ampere_dt_style()
     status_details_style["style_table"].update(
         {
             "maxWidth": "65vw",

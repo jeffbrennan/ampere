@@ -6,7 +6,7 @@ import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_frontend_db_con
-from ampere.styling import AmpereDTStyle
+from ampere.styling import get_ampere_dt_style
 
 dash.register_page(__name__, name="about", top_nav=True, order=2)
 
@@ -41,7 +41,7 @@ def about_table_fadein(_: str) -> bool:
 
 def layout():
     df = create_repo_table()
-    about_style = deepcopy(AmpereDTStyle)
+    about_style = get_ampere_dt_style()
     about_style["style_table"]["height"] = "50%"
     about_style["css"] = [
         dict(

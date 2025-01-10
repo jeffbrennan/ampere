@@ -82,66 +82,90 @@ def style_dt_background_colors_by_rank(
     return styles
 
 
-AmpereDTStyle = asdict(
-    DTStyle(
-        sort_action="native",
-        sort_mode="multi",
-        column_selectable="single",
-        row_selectable=False,
-        row_deletable=False,
-        fixed_rows={"headers": True},
-        filter_action="native",
-        filter_options={"case": "insensitive", "placeholder_text": ""},
-        page_size=100,
-        style_header={
-            "backgroundColor": AmperePalette.PAGE_ACCENT_COLOR,
-            "color": AmperePalette.BRAND_TEXT_COLOR,
-            # account for filters
-            "paddingRight": "12px",
-            "margin": "0",
-            "fontWeight": "bold",
-        },
-        style_filter={
-            "borderTop": "0",
-            "borderBottom": "2px solid black",
-            "backgroundColor": AmperePalette.BRAND_TEXT_COLOR,
-        },
-        style_cell={
-            "textAlign": "center",
-            "minWidth": 100,
-            "maxWidth": 170,
-            "font_size": "1em",
-            "whiteSpace": "normal",
-            "height": "auto",
-            "font-family": "sans-serif",
-            "borderTop": "0",
-            "borderBottom": "0",
-            "paddingRight": "5px",
-            "paddingLeft": "5px",
-            "borderLeft": "2px solid black",
-            "borderRight": "2px solid black",
-        },
-        style_cell_conditional=[],
-        style_data_conditional=[
-            {
-                "if": {"row_index": "odd"},
-                "backgroundColor": AmperePalette.PAGE_LIGHT_GRAY,
+def get_ampere_dt_style(dark_mode: bool = False) -> dict:
+    if dark_mode:
+        color = "white"
+        even_row_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+        odd_row_color = "rgb(50, 50, 50)"
+        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+
+    else:
+        color = "black"
+        even_row_color = "rgb(245, 245, 245)"
+        odd_row_color = "rgb(220, 220, 220)"
+        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+
+    dt_style = asdict(
+        DTStyle(
+            sort_action="native",
+            sort_mode="multi",
+            column_selectable="single",
+            row_selectable=False,
+            row_deletable=False,
+            fixed_rows={"headers": True},
+            filter_action="native",
+            filter_options={"case": "insensitive", "placeholder_text": ""},
+            page_size=100,
+            style_header={
+                "backgroundColor": AmperePalette.PAGE_ACCENT_COLOR2,
+                "color": AmperePalette.BRAND_TEXT_COLOR,
+                "paddingRight": "12px",
+                "margin": "0",
+                "fontWeight": "bold",
+                "borderLeft": f"2px solid {color}",
+                "borderRight": f"2px solid {color}",
             },
-        ],
-        style_data={"color": "black", "backgroundColor": "white"},
-        css=[dict(selector="p", rule="margin-bottom: 0; text-align: right;")],
-        style_table={
-            "height": "85vh",
-            "maxHeight": "85vh",
-            "overflowY": "scroll",
-            "overflowX": "scroll",
-            "margin": {"b": 100},
-            "borderBottom": "2px solid black",
-            "borderTop": "2px solid black",
-            "borderLeft": "1px solid black",
-        },
+            style_filter={
+                "borderTop": "0",
+                "borderBottom": f"2px solid {color}",
+                "backgroundColor": background_color,
+                "borderLeft": f"2px solid {color}",
+                "borderRight": f"2px solid {color}",
+                "color": "red",
+            },
+            style_cell={
+                "textAlign": "center",
+                "minWidth": 100,
+                "maxWidth": 170,
+                "font_size": "1em",
+                "whiteSpace": "normal",
+                "height": "auto",
+                "font-family": "sans-serif",
+                "borderTop": "0",
+                "borderBottom": "0",
+                "paddingRight": "5px",
+                "paddingLeft": "5px",
+                "borderLeft": f"2px solid {color}",
+                "borderRight": f"2px solid {color}",
+            },
+            style_cell_conditional=[],
+            style_data_conditional=[
+                {
+                    "if": {"row_index": "even"},
+                    "backgroundColor": even_row_color,
+                },
+                {
+                    "if": {"row_index": "odd"},
+                    "backgroundColor": odd_row_color,
+                },
+            ],
+            style_data={"color": color, "backgroundColor": background_color},
+            css=[dict(selector="p", rule="margin-bottom: 0; text-align: right;")],
+            style_table={
+                "height": "85vh",
+                "maxHeight": "85vh",
+                "overflowY": "scroll",
+                "overflowX": "scroll",
+                "margin": {"b": 100},
+                "borderBottom": f"2px solid {color}",
+                "borderTop": f"2px solid {color}",
+                "borderLeft": f"1px solid {color}",
+                "borderRight": f"1px solid {color}",
+            },
+        )
     )
-)
+    return dt_style
+
 
 table_title_style = {
     "color": AmperePalette.BRAND_TEXT_COLOR,

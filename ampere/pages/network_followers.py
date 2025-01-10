@@ -5,7 +5,7 @@ from dash import Input, Output, callback, dash_table, dcc, html
 from plotly.graph_objects import Figure
 
 from ampere.common import get_frontend_db_con
-from ampere.styling import AmpereDTStyle
+from ampere.styling import get_ampere_dt_style
 from ampere.viz import viz_follower_network
 
 dash.register_page(__name__)
@@ -65,7 +65,7 @@ def layout():
                         for x in df.columns
                     ],
                     id="tbl",
-                    **AmpereDTStyle,
+                    **get_ampere_dt_style(),
                 ),
             ],
             style={"transition": "opacity 200ms ease-in"},

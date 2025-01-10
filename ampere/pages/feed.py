@@ -1,12 +1,10 @@
-import copy
-
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_frontend_db_con
-from ampere.styling import AmpereDTStyle
+from ampere.styling import get_ampere_dt_style
 
 dash.register_page(__name__, name="feed", top_nav=True, order=3)
 
@@ -32,45 +30,20 @@ def create_feed_table() -> pd.DataFrame:
     return df
 
 
-@callback(
-    [
-        Output("feed-table", "style_table"),
-        Output("feed-table", "style_cell_conditional"),
-    ],
-    [
-        Input("feed-table", "style_table"),
-        Input("feed-table", "style_cell_conditional"),
-        Input("breakpoints", "widthBreakpoint"),
-    ],
-)
-def handle_table_margins(
-    style_table_incoming: dict,
-    style_cell_conditional_incoming: list[dict],
-    breakpoint_name: str,
-) -> tuple[dict, list[dict]]:
-    style_table = copy.deepcopy(style_table_incoming)
-    style_cell_conditional = copy.deepcopy(style_cell_conditional_incoming)
-    style_cell_conditional = [
-        i for i in style_cell_conditional if "minWidth" not in str(i)
-    ]
-
+def handle_table_margins(breakpoint_name: str):
+    style_table = {}
     if breakpoint_name in ["lg", "xl"]:
         width_lookup = {"date": 80, "time": 45, "event": 400, "description": 400}
-        style_table["maxWidth"] = "65vw"
-        style_table["width"] = "65vw"
-        style_table["marginLeft"] = "12vw"
+        style_table = {"maxWidth": "65vw", "width": "65vw", "marginLeft": "12vw"}
 
     elif breakpoint_name == "md":
         width_lookup = {"date": 100, "time": 60, "event": 400, "description": 400}
-        style_table = style_feed_table()["style_table"]
 
     elif breakpoint_name == "sm":
         width_lookup = {"date": 100, "time": 60, "event": 250, "description": 250}
-        style_table = style_feed_table()["style_table"]
 
     elif breakpoint_name == "xs":
         width_lookup = {"date": 100, "time": 60, "event": 200, "description": 200}
-        style_table = style_feed_table()["style_table"]
     else:
         raise ValueError(f"unhandled breakpoint name: {breakpoint_name}")
 
@@ -83,46 +56,82 @@ def handle_table_margins(
         for i in ["date", "time", "event", "description"]
     ]
 
-    style_cell_conditional.extend(margin_adjustment)
-    return style_table, style_cell_conditional
+    return style_table, margin_adjustment
 
 
-def style_feed_table() -> dict:
-    feed_style = copy.deepcopy(AmpereDTStyle)
-    feed_style["css"] = [
-        dict(
-            selector="p",
-            rule="""
-                margin-bottom: 0;
-                padding-bottom: 15px;
-                padding-top: 15px;
-                padding-left: 5px;
-                padding-right: 5px;
-                text-align: left;
-            """,
-        ),
-    ]
+@callback(
+    [
+        Output("feed-table", "style_table"),
+        Output("feed-table", "style_cell_conditional"),
+        Output("feed-table", "style_data_conditional"),
+        Output("feed-table", "style_filter"),
+        Output("feed-table", "style_header"),
+        Output("feed-fade", "is_in"),
+    ],
+    [
+        Input("breakpoints", "widthBreakpoint"),
+        Input("color-mode-switch", "value"),
+    ],
+)
+def style_feed_table(breakpoint_name: str, dark_mode: bool = False):
+    default_style = get_ampere_dt_style(dark_mode)
+    style_table = default_style["style_table"]
+    style_cell_conditional = default_style["style_cell_conditional"]
+    style_data_conditional = default_style["style_data_conditional"]
 
-    colors = {
-        "pull request": "#d9e6b5",
-        "issue": "#edb4bd",
-        "star": "#e8d3a9",
-        "commit": "#b6dedc",
-        "fork": "#e1ccdb",
-    }
+    if dark_mode:
+        text_color = "white"
+        event_background_colors = {
+            "pull request": "#263302",
+            "issue": "#6b303a",
+            "star": "#54401b",
+            "commit": "#15524e",
+            "fork": "#3b2133",
+        }
+    else:
+        text_color = "black"
+        event_background_colors = {
+            "pull request": "#d9e6b5",
+            "issue": "#edb4bd",
+            "star": "#e8d3a9",
+            "commit": "#b6dedc",
+            "fork": "#e1ccdb",
+        }
 
     color_styles = [
         {
             "if": {"filter_query": f"{{event}} contains '{k}'", "column_id": "event"},
             "backgroundColor": v,
-            "color": "black",
-            "borderBottom": "1px rgb(237, 237, 237) solid",
         }
-        for k, v in colors.items()
+        for k, v in event_background_colors.items()
     ]
-    feed_style["style_data_conditional"].extend(color_styles)
 
-    return feed_style
+    standard_col_colors = [
+        {
+            "color": text_color,
+            "borderLeft": f"2px solid {text_color}",
+            "borderRight": f"2px solid {text_color}",
+        }
+        for _ in ["date", "time", "event", "description"]
+    ]
+
+    style_data_conditional.extend(color_styles + standard_col_colors)
+
+    adjusted_style_table, adjusted_style_cell_conditional = handle_table_margins(
+        breakpoint_name
+    )
+
+    style_table.update(adjusted_style_table)
+    style_cell_conditional.extend(adjusted_style_cell_conditional)
+
+    return (
+        style_table,
+        style_cell_conditional,
+        style_data_conditional,
+        default_style["style_filter"],
+        default_style["style_header"],
+        True,
+    )
 
 
 def format_feed_table(df: pd.DataFrame) -> pd.DataFrame:
@@ -158,18 +167,25 @@ def format_feed_table(df: pd.DataFrame) -> pd.DataFrame:
     return df_final
 
 
-@callback(
-    Output("feed-fade", "is_in"),
-    Input("feed-table", "id"),  # dummy input for callback trigger
-)
-def feed_table_fadein(_: str) -> bool:
-    return True
-
-
 def layout():
     raw_df = create_feed_table()
     df = format_feed_table(raw_df)
-    feed_style = style_feed_table()
+
+    feed_style = get_ampere_dt_style()
+    feed_style["css"] = [
+        dict(
+            selector="p",
+            rule="""
+                margin-bottom: 0;
+                padding-bottom: 15px;
+                padding-top: 15px;
+                padding-left: 5px;
+                padding-right: 5px;
+                text-align: left;
+            """,
+        )
+    ]
+
     return [
         dbc.Fade(
             id="feed-fade",
