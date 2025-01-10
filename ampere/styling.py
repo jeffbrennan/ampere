@@ -195,7 +195,7 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
 
 table_title_style = {
     "color": AmperePalette.BRAND_TEXT_COLOR,
-    "backgroundColor": AmperePalette.PAGE_ACCENT_COLOR,
+    "backgroundColor": AmperePalette.PAGE_ACCENT_COLOR2,
     "paddingBottom": "0",
     "paddingLeft": "10px",
     "paddingRight": "10px",
