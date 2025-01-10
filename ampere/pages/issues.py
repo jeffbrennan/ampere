@@ -3,7 +3,7 @@ import copy
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import Input, Output, callback, dash_table, html
+from dash import Input, Output, callback, dash_table, dcc, html
 
 from ampere.common import get_frontend_db_con
 from ampere.styling import (
@@ -209,10 +209,21 @@ def issues_table_margin_callback(*args, **kwargs):
     return handle_table_margins(*args, **kwargs)
 
 
-def style_issues_summary_table(summary_df: pd.DataFrame) -> dict:
-    summary_style = get_ampere_dt_style()
-    del summary_style["style_table"]["maxHeight"]
-    del summary_style["style_table"]["height"]
+@callback(
+    [
+        Output("summary-table", "style_data_conditional"),
+        Output("summary-table", "style_filter"),
+        Output("summary-table", "style_header"),
+        Output("summary-table", "css"),
+    ],
+    [
+        Input("summary-data", "data"),
+        Input("color-mode-switch", "value"),
+    ],
+)
+def style_issues_summary_table(summary_data: list[dict], dark_mode: bool):
+    summary_style = get_ampere_dt_style(dark_mode)
+    summary_df = pd.DataFrame(summary_data)
     n_repos = summary_df.shape[0]
 
     formatting_cols = [
@@ -221,54 +232,92 @@ def style_issues_summary_table(summary_df: pd.DataFrame) -> dict:
         ColumnInfo(name="new issues (this month)", ascending=True, palette="Oranges"),
         ColumnInfo(name="closed issues (this month)", ascending=True, palette="Greens"),
     ]
+    if dark_mode:
+        text_color = "white"
+    else:
+        text_color = "black"
+
+    standard_col_colors = [
+        {
+            "color": text_color,
+            "borderLeft": f"2px solid {text_color}",
+            "borderRight": f"2px solid {text_color}",
+        }
+        for _ in summary_df.columns
+    ]
+    col_value_heatmaps = style_dt_background_colors_by_rank(
+        df=summary_df, n_bins=n_repos, cols=formatting_cols
+    )
 
     summary_style["style_data_conditional"].extend(
-        style_dt_background_colors_by_rank(
-            df=summary_df, n_bins=n_repos, cols=formatting_cols
-        )
+        col_value_heatmaps + standard_col_colors
     )
-    return summary_style
+
+    return (
+        summary_style["style_data_conditional"],
+        summary_style["style_filter"],
+        summary_style["style_header"],
+        summary_style["css"],
+    )
 
 
 @callback(
-    Output("issues-fade", "is_in"),
-    Input("issues-table", "id"),  # dummy input for callback trigger
+    [
+        Output("issues-table", "style_data_conditional"),
+        Output("issues-table", "style_filter"),
+        Output("issues-table", "style_header"),
+        Output("issues-table", "css"),
+        Output("issues-fade", "is_in"),
+    ],
+    [
+        Input("issues-table", "data"),
+        Input("color-mode-switch", "value"),
+    ],
 )
-def issues_table_fadein(_: str) -> bool:
-    return True
+def style_issues_table(issues_data: list[dict], dark_mode: bool):
+    issues_df = pd.DataFrame(issues_data)
+    base_style = get_ampere_dt_style(dark_mode)
+    if dark_mode:
+        text_color = "white"
+    else:
+        text_color = "black"
+
+    standard_col_colors = [
+        {
+            "color": text_color,
+            "borderLeft": f"2px solid {text_color}",
+            "borderRight": f"2px solid {text_color}",
+        }
+        for _ in issues_df.columns
+    ]
+    base_style["style_data_conditional"].extend(standard_col_colors)
+    return (
+        base_style["style_data_conditional"],
+        base_style["style_filter"],
+        base_style["style_header"],
+        base_style["css"],
+        True,
+    )
 
 
 def layout():
-    cell_padding = [
-        dict(
-            selector="p",
-            rule="""
-                    margin-bottom: 0;
-                    padding-bottom: 15px;
-                    padding-top: 15px;
-                    padding-left: 5px;
-                    padding-right: 5px;
-                    text-align: left;
-                """,
-        ),
-    ]
-
     df = create_issues_table()
-
-    issues_style = get_ampere_dt_style()
-    issues_style["css"] = cell_padding
     summary_df = create_issues_summary_table()
+    summary_data = summary_df.to_dict("records")
 
-    summary_style = style_issues_summary_table(summary_df)
-    summary_style["css"] = cell_padding
+    summary_base_style = get_ampere_dt_style()
+    del summary_base_style["style_table"]["maxHeight"]
+    del summary_base_style["style_table"]["height"]
+
     return [
+        dcc.Store(id="summary-data", data=summary_data),
         dbc.Fade(
             id="issues-fade",
             children=[
                 html.Br(),
                 html.Label("summary", style=table_title_style, id="summary-title"),
                 dash_table.DataTable(
-                    summary_df.to_dict("records"),
+                    data=summary_data,
                     columns=[
                         {"id": x, "name": x, "presentation": "markdown"}
                         if x in ["repo"]
@@ -276,7 +325,7 @@ def layout():
                         for x in summary_df.columns
                     ],
                     id="summary-table",
-                    **summary_style,
+                    **summary_base_style,
                 ),
                 html.Br(),
                 html.Label("issues", style=table_title_style, id="issues-title"),
@@ -289,10 +338,10 @@ def layout():
                         for x in df.columns
                     ],
                     id="issues-table",
-                    **issues_style,
+                    **get_ampere_dt_style(),
                 ),
             ],
-            style={"transition": "opacity 200ms ease-in"},
+            style={"transition": "opacity 300ms ease-in"},
             is_in=False,
         ),
     ]
