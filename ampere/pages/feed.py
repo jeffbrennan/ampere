@@ -4,7 +4,7 @@ import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_frontend_db_con
-from ampere.styling import get_ampere_dt_style
+from ampere.styling import AmperePalette, get_ampere_dt_style
 
 dash.register_page(__name__, name="feed", top_nav=True, order=3)
 
@@ -66,6 +66,7 @@ def handle_table_margins(breakpoint_name: str):
         Output("feed-table", "style_data_conditional"),
         Output("feed-table", "style_filter"),
         Output("feed-table", "style_header"),
+        Output("feed-table", "css"),
         Output("feed-fade", "is_in"),
     ],
     [
@@ -88,6 +89,7 @@ def style_feed_table(breakpoint_name: str, dark_mode: bool = False):
             "commit": "#15524e",
             "fork": "#3b2133",
         }
+        event_color_border = AmperePalette.TABLE_EVEN_ROW_COLOR_DARK
     else:
         text_color = "black"
         event_background_colors = {
@@ -97,11 +99,13 @@ def style_feed_table(breakpoint_name: str, dark_mode: bool = False):
             "commit": "#b6dedc",
             "fork": "#e1ccdb",
         }
+        event_color_border = AmperePalette.TABLE_EVEN_ROW_COLOR_LIGHT
 
     color_styles = [
         {
             "if": {"filter_query": f"{{event}} contains '{k}'", "column_id": "event"},
             "backgroundColor": v,
+            "borderBottom": f"1px solid {event_color_border}",
         }
         for k, v in event_background_colors.items()
     ]
@@ -130,6 +134,7 @@ def style_feed_table(breakpoint_name: str, dark_mode: bool = False):
         style_data_conditional,
         default_style["style_filter"],
         default_style["style_header"],
+        default_style["css"],
         True,
     )
 
@@ -171,21 +176,6 @@ def layout():
     raw_df = create_feed_table()
     df = format_feed_table(raw_df)
 
-    feed_style = get_ampere_dt_style()
-    feed_style["css"] = [
-        dict(
-            selector="p",
-            rule="""
-                margin-bottom: 0;
-                padding-bottom: 15px;
-                padding-top: 15px;
-                padding-left: 5px;
-                padding-right: 5px;
-                text-align: left;
-            """,
-        )
-    ]
-
     return [
         dbc.Fade(
             id="feed-fade",
@@ -203,7 +193,7 @@ def layout():
                         for x in df.columns
                     ],
                     id="feed-table",
-                    **feed_style,
+                    **get_ampere_dt_style(),
                 ),
             ],
             style={"transition": "opacity 200ms ease-in"},

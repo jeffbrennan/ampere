@@ -14,6 +14,10 @@ class AmperePalette(StrEnum):
     BRAND_TEXT_COLOR_MUTED = "#E3E7FA"
     PAGE_BACKGROUND_COLOR_LIGHT = "rgb(240, 240, 240)"
     PAGE_BACKGROUND_COLOR_DARK = "rgb(30, 30, 30)"
+    TABLE_EVEN_ROW_COLOR_DARK = "rgb(30, 30, 30)"
+    TABLE_ODD_ROW_COLOR_DARK = "rgb(50, 50, 50)"
+    TABLE_EVEN_ROW_COLOR_LIGHT = "rgb(245, 245, 245)"
+    TABLE_ODD_ROW_COLOR_LIGHT = "rgb(220, 220, 220)"
 
 
 class ScreenWidth(StrEnum):
@@ -85,14 +89,14 @@ def style_dt_background_colors_by_rank(
 def get_ampere_dt_style(dark_mode: bool = False) -> dict:
     if dark_mode:
         color = "white"
-        even_row_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-        odd_row_color = "rgb(50, 50, 50)"
+        even_row_color = AmperePalette.TABLE_EVEN_ROW_COLOR_DARK
+        odd_row_color = AmperePalette.TABLE_ODD_ROW_COLOR_DARK
         background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
 
     else:
         color = "black"
-        even_row_color = "rgb(245, 245, 245)"
-        odd_row_color = "rgb(220, 220, 220)"
+        even_row_color = AmperePalette.TABLE_EVEN_ROW_COLOR_LIGHT
+        odd_row_color = AmperePalette.TABLE_ODD_ROW_COLOR_LIGHT
         background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
 
     dt_style = asdict(
@@ -116,12 +120,11 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
                 "borderRight": f"2px solid {color}",
             },
             style_filter={
+                "backgroundColor": background_color,
                 "borderTop": "0",
                 "borderBottom": f"2px solid {color}",
-                "backgroundColor": background_color,
                 "borderLeft": f"2px solid {color}",
                 "borderRight": f"2px solid {color}",
-                "color": "red",
             },
             style_cell={
                 "textAlign": "center",
@@ -150,7 +153,31 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
                 },
             ],
             style_data={"color": color, "backgroundColor": background_color},
-            css=[dict(selector="p", rule="margin-bottom: 0; text-align: right;")],
+            css=[
+                dict(
+                    selector="p",
+                    rule="""
+                        margin-bottom: 0;
+                        padding-bottom: 15px;
+                        padding-top: 15px;
+                        padding-left: 5px;
+                        padding-right: 5px;
+                        text-align: left;
+                    """,
+                ),
+                dict(
+                    selector=".first-page, .previous-page, .next-page, .current-page, .current-page, .page-number, .last-page",
+                    rule=f"background-color: {background_color}; color: {color} !important;",
+                ),
+                dict(
+                    selector="input.current-page",
+                    rule=f"background-color: {AmperePalette.PAGE_ACCENT_COLOR2}; border-bottom: 0 !important;",
+                ),
+                dict(
+                    selector='.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner .dash-header > div input[type="text"], .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner .dash-filter > div input[type="text"]',
+                    rule=f"color: {color} !important;",
+                ),
+            ],
             style_table={
                 "height": "85vh",
                 "maxHeight": "85vh",
@@ -160,7 +187,6 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
                 "borderBottom": f"2px solid {color}",
                 "borderTop": f"2px solid {color}",
                 "borderLeft": f"1px solid {color}",
-                "borderRight": f"1px solid {color}",
             },
         )
     )
