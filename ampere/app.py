@@ -19,9 +19,12 @@ from ampere.styling import AmperePalette, ScreenWidth
         Output("status-link", "style"),
         Output("about-link", "style"),
     ],
-    Input("current-url", "pathname"),
+    [
+        Input("current-url", "pathname"),
+        Input("color-mode-switch", "value"),
+    ],
 )
-def update_downloads_link_color(pathname: str):
+def update_downloads_link_color(pathname: str, dark_mode: bool):
     output_styles = [
         {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
         {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
@@ -36,10 +39,16 @@ def update_downloads_link_color(pathname: str):
 
     pages = ["downloads", "feed", "issues", "network", "status", "about"]
     current_page = pathname.removeprefix("/").split("-")[0]
+    if dark_mode:
+        text_color = AmperePalette.BRAND_TEXT_COLOR_MUTED
+        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+    else:
+        text_color = AmperePalette.PAGE_ACCENT_COLOR
+        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
 
     output_styles[pages.index(current_page)] = {
-        "color": AmperePalette.PAGE_ACCENT_COLOR,
-        "backgroundColor": "white",
+        "color": text_color,
+        "backgroundColor": background_color,
         "borderRadius": "10px",
     }
 
