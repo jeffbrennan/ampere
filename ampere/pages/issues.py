@@ -7,6 +7,7 @@ from dash import Input, Output, callback, dash_table, dcc, html
 
 from ampere.common import get_frontend_db_con
 from ampere.styling import (
+    AmperePalette,
     ColumnInfo,
     get_ampere_dt_style,
     style_dt_background_colors_by_rank,
@@ -170,10 +171,13 @@ def handle_title_margins(style_incoming: dict, breakpoint_name: str) -> dict:
 
 @callback(
     Output("summary-title", "style"),
-    [Input("summary-title", "style"), Input("breakpoints", "widthBreakpoint")],
+    [
+        Input("summary-title", "style"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
 )
-def summary_title_margin_callback(*args, **kwargs):
-    return handle_title_margins(*args, **kwargs)
+def summary_title_margin_callback(*args):
+    return handle_title_margins(*args)
 
 
 @callback(
@@ -181,10 +185,17 @@ def summary_title_margin_callback(*args, **kwargs):
     [
         Input("summary-table", "style_table"),
         Input("breakpoints", "widthBreakpoint"),
+        Input("color-mode-switch", "value"),
     ],
 )
-def summary_table_margin_callback(*args, **kwargs):
-    return handle_table_margins(*args, **kwargs)
+def summary_table_margin_callback(*args):
+    updated_style = handle_table_margins(*args[:2])
+    dark_mode = args[2]
+    if dark_mode:
+        updated_style["borderTop"] = "2px white solid"
+    else:
+        updated_style["borderTop"] = "2px black solid"
+    return updated_style
 
 
 @callback(
@@ -227,10 +238,10 @@ def style_issues_summary_table(summary_data: list[dict], dark_mode: bool):
     n_repos = summary_df.shape[0]
 
     formatting_cols = [
-        ColumnInfo(name="open issues", ascending=True, palette="Oranges"),
-        ColumnInfo(name="median issue age (days)", ascending=True, palette="Oranges"),
-        ColumnInfo(name="new issues (this month)", ascending=True, palette="Oranges"),
-        ColumnInfo(name="closed issues (this month)", ascending=True, palette="Greens"),
+        ColumnInfo(name="open issues", ascending=True, palette="oranges"),
+        ColumnInfo(name="median issue age (days)", ascending=True, palette="oranges"),
+        ColumnInfo(name="new issues (this month)", ascending=True, palette="oranges"),
+        ColumnInfo(name="closed issues (this month)", ascending=True, palette="greens"),
     ]
     if dark_mode:
         text_color = "white"
@@ -240,17 +251,39 @@ def style_issues_summary_table(summary_data: list[dict], dark_mode: bool):
     standard_col_colors = [
         {
             "color": text_color,
-            "borderLeft": f"2px solid {text_color}",
+            "borderLeft": "none",
             "borderRight": f"2px solid {text_color}",
         }
         for _ in summary_df.columns
     ]
     col_value_heatmaps = style_dt_background_colors_by_rank(
-        df=summary_df, n_bins=n_repos, cols=formatting_cols
+        df=summary_df,
+        n_bins=n_repos,
+        cols=formatting_cols,
+        dark_mode=dark_mode,
     )
 
+    summary_style["style_data_conditional"] = [
+        i for i in summary_style["style_data_conditional"] if "odd" not in str(i)
+    ]
+
+    if dark_mode:
+        border_color = "white"
+        odd_row_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+    else:
+        border_color = "black"
+        odd_row_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+
+    summary_style["style_data_conditional"].append(
+        {
+            "if": {"row_index": "odd"},
+            "backgroundColor": odd_row_color,
+            "borderBottom": f"1px {border_color} solid",
+            "borderTop": f"1px {border_color} solid",
+        }
+    )
     summary_style["style_data_conditional"].extend(
-        col_value_heatmaps + standard_col_colors
+        standard_col_colors + col_value_heatmaps
     )
 
     return (

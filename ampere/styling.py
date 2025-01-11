@@ -2,7 +2,6 @@ from dataclasses import asdict, dataclass
 from enum import StrEnum, auto
 from typing import Any
 
-import colorlover
 import pandas as pd
 
 
@@ -14,10 +13,10 @@ class AmperePalette(StrEnum):
     BRAND_TEXT_COLOR_MUTED = "#E3E7FA"
     PAGE_BACKGROUND_COLOR_LIGHT = "rgb(240, 240, 240)"
     PAGE_BACKGROUND_COLOR_DARK = "rgb(30, 30, 30)"
+    TABLE_EVEN_ROW_COLOR_LIGHT = "rgb(240, 240, 240)"
     TABLE_EVEN_ROW_COLOR_DARK = "rgb(30, 30, 30)"
-    TABLE_ODD_ROW_COLOR_DARK = "rgb(50, 50, 50)"
-    TABLE_EVEN_ROW_COLOR_LIGHT = "rgb(245, 245, 245)"
     TABLE_ODD_ROW_COLOR_LIGHT = "rgb(220, 220, 220)"
+    TABLE_ODD_ROW_COLOR_DARK = "rgb(50, 50, 50)"
 
 
 class ScreenWidth(StrEnum):
@@ -56,30 +55,69 @@ class ColumnInfo:
     palette: str
 
 
+def adjust_rgb_for_dark_mode(rgb: str) -> str:
+    rgb_vals = rgb.split("rgb(")[1].split(")")[0].split(",")
+    adjusted_rgb = [str(255 - int(i)) for i in rgb_vals]
+    return f'rgb({",".join(adjusted_rgb)})'
+
+
+def generate_heatmap_palette(dark_mode: bool, palette_name: str) -> list[str]:
+    if palette_name not in ["oranges", "greens"]:
+        raise ValueError("Invalid palette name")
+
+    palettes = {
+        "oranges": {
+            "light": ["#FFC6BE", "#FF9182", "#FF4B33"],
+            "dark": ["#660C00", "#881000", "#CC1800"],
+        },
+        "greens": {
+            "light": [
+                "#C8F6B2",
+                "#8DEC60",
+                "#57D61A",
+            ],
+            "dark": ["#112A05", "#22530A", "#337D0F"],
+        },
+    }
+
+    return palettes[palette_name]["dark" if dark_mode else "light"]
+
+
 def style_dt_background_colors_by_rank(
-    df: pd.DataFrame, n_bins: int, cols: list[ColumnInfo]
+    df: pd.DataFrame, n_bins: int, cols: list[ColumnInfo], dark_mode: bool
 ) -> list[dict]:
     # https://dash.plotly.com/datatable/conditional-formatting
     styles = []
+    rows_to_update = 3
+    if dark_mode:
+        text_color = "white"
+    else:
+        text_color = "black"
 
     for col in cols:
-        colors = colorlover.scales[str(n_bins)]["seq"][col.palette]
+        colors = generate_heatmap_palette(dark_mode, col.palette)
         ranks = (
             (df[col.name].rank(ascending=col.ascending, method="max").astype("int") - 1)
             .squeeze()
             .tolist()  # type: ignore
         )
+        max_ranks = sorted(set(ranks))[-rows_to_update:]
         for row in range(n_bins):
             row_val = df[col.name].iloc[row]
             rank_val = ranks[row]
+            if rank_val not in max_ranks:
+                continue
+
+            rank_val_idx = max_ranks.index(rank_val)
             styles.append(
                 {
                     "if": {
                         "filter_query": f"{{{col.name}}} = {row_val}",
                         "column_id": col.name,
                     },
-                    "backgroundColor": colors[rank_val],
-                    "color": "white" if rank_val > 4 else "inherit",
+                    "backgroundColor": colors[rank_val_idx],
+                    "color": text_color,
+                    "borderLeft": f"2px solid {text_color}",
                 }
             )
 
@@ -116,14 +154,16 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
                 "paddingRight": "12px",
                 "margin": "0",
                 "fontWeight": "bold",
-                "borderLeft": f"2px solid {color}",
+                "borderLeft": "none",
+                # "borderLeft": f"2px solid {color}",
                 "borderRight": f"2px solid {color}",
             },
             style_filter={
                 "backgroundColor": background_color,
                 "borderTop": "0",
                 "borderBottom": f"2px solid {color}",
-                "borderLeft": f"2px solid {color}",
+                "borderLeft": "none",
+                # "borderLeft": f"2px solid {color}",
                 "borderRight": f"2px solid {color}",
             },
             style_cell={
@@ -138,7 +178,8 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
                 "borderBottom": "0",
                 "paddingRight": "5px",
                 "paddingLeft": "5px",
-                "borderLeft": f"2px solid {color}",
+                "borderLeft": "none",
+                # "borderLeft": f"2px solid {color}",
                 "borderRight": f"2px solid {color}",
             },
             style_cell_conditional=[],
@@ -184,9 +225,10 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
                 "overflowY": "scroll",
                 "overflowX": "scroll",
                 "margin": {"b": 100},
+                "border": "none",
                 "borderBottom": f"2px solid {color}",
                 "borderTop": f"2px solid {color}",
-                "borderLeft": f"1px solid {color}",
+                "borderLeft": f"2px solid {color}",
             },
         )
     )
