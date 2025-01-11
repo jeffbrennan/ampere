@@ -6,7 +6,7 @@ import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_frontend_db_con
-from ampere.styling import get_ampere_dt_style
+from ampere.styling import AmperePalette, get_ampere_dt_style
 
 dash.register_page(__name__, name="about", top_nav=True, order=2)
 
@@ -31,69 +31,77 @@ def create_repo_table() -> pd.DataFrame:
     return df
 
 
-@callback(
-    Output("about-fade", "is_in"),
-    Input("about-table", "id"),  # dummy input for callback trigger
-)
-def about_table_fadein(_: str) -> bool:
-    return True
-
-
-def layout():
-    df = create_repo_table()
-    about_style = get_ampere_dt_style()
-    about_style["style_table"]["height"] = "50%"
-    about_style["css"] = [
-        dict(
-            selector="p",
-            rule="""
-                   margin-bottom: 0;
-                   padding-bottom: 15px;
-                   padding-top: 15px;
-                   padding-left: 5px;
-                   padding-right: 5px;
-                   text-align: center;
-               """,
+def get_styled_about_text(dark_mode: bool):
+    color = "white" if dark_mode else "black"
+    return [
+        html.Div("made with ❤️ by ", style={"display": "inline", "color": color}),
+        html.A(
+            "Jeff Brennan",
+            href="https://github.com/jeffbrennan",
+            target="_blank",
         ),
+        html.Div(" and ", style={"display": "inline", "color": color}),
+        html.A(
+            "mrpowers-io",
+            href="https://github.com/mrpowers-io",
+            target="_blank",
+        ),
+        html.Div(" contributors", style={"display": "inline", "color": color}),
     ]
 
+
+@callback(
+    [
+        Output("about-contents", "children"),
+        Output("about-contents", "is_in"),
+    ],
+    Input("color-mode-switch", "value"),
+)
+def get_styled_about_table(dark_mode: bool):
+    df = create_repo_table()
+    about_style = get_ampere_dt_style(dark_mode)
+    about_style["style_table"]["maxHeight"] = "50%"
+    about_style["style_table"]["height"] = "50%"
+
+    tbl = dash_table.DataTable(
+        df.to_dict("records"),
+        columns=[
+            (
+                {"id": x, "name": "repo", "presentation": "markdown"}
+                if x == "repo_name"
+                else {"id": x, "name": x}
+            )
+            for x in df.columns
+        ],
+        **about_style,
+    )
+    about_text = get_styled_about_text(dark_mode)
+    children = [html.Br(), tbl] + about_text
+
+    parent_container = html.Div(
+        children=children,
+        style={
+            "backgroundColor": AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+            if not dark_mode
+            else AmperePalette.PAGE_BACKGROUND_COLOR_DARK,
+            "minHeight": "100vh",
+        },
+    )
+
+    return parent_container, True
+
+
+@callback(
+    [
+        Output("about-text", "children"),
+        Output("about-text", "style"),
+    ],
+    Input("color-mode-switch", "value"),
+)
+def layout():
     return [
         dbc.Fade(
-            id="about-fade",
-            children=[
-                html.Br(),
-                dash_table.DataTable(
-                    df.to_dict("records"),
-                    columns=[
-                        (
-                            {"id": x, "name": "repo", "presentation": "markdown"}
-                            if x == "repo_name"
-                            else {"id": x, "name": x}
-                        )
-                        for x in df.columns
-                    ],
-                    id="about-table",
-                    **about_style,
-                ),
-                html.Hr(),
-                html.Div(
-                    [
-                        html.Div("made with ❤️ by ", style={"display": "inline"}),
-                        html.A(
-                            "Jeff Brennan",
-                            href="https://github.com/jeffbrennan",
-                            target="_blank",
-                        ),
-                        html.Div(" and ", style={"display": "inline"}),
-                        html.A(
-                            "mrpowers-io",
-                            href="https://github.com/mrpowers-io",
-                            target="_blank",
-                        ),
-                        html.Div(" contributors", style={"display": "inline"}),
-                    ]
-                ),
-            ],
+            id="about-contents",
             style={"transition": "opacity 200ms ease-in"},
             is_in=False,
         )
