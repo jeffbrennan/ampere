@@ -163,7 +163,6 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
                 "borderTop": "0",
                 "borderBottom": f"2px solid {color}",
                 "borderLeft": "none",
-                # "borderLeft": f"2px solid {color}",
                 "borderRight": f"2px solid {color}",
             },
             style_cell={
@@ -179,7 +178,6 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
                 "paddingRight": "5px",
                 "paddingLeft": "5px",
                 "borderLeft": "none",
-                # "borderLeft": f"2px solid {color}",
                 "borderRight": f"2px solid {color}",
             },
             style_cell_conditional=[],
