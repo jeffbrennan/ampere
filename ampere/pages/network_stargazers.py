@@ -172,11 +172,28 @@ def show_summary_graph(dark_mode: bool) -> tuple[Figure, bool]:
         Output("stargazer-table", "style_header"),
         Output("stargazer-table", "css"),
     ],
-    Input("color-mode-switch", "value"),
+    [
+        Input("stargazer-table", "data"),
+        Input("color-mode-switch", "value"),
+    ],
 )
-def style_stargazers_table(dark_mode: bool):
+def style_stargazers_table(data: list[dict], dark_mode: bool):
     base_style = get_ampere_dt_style(dark_mode)
+    df = pd.DataFrame(data)
+    if dark_mode:
+        text_color = "white"
+    else:
+        text_color = "black"
 
+    standard_col_colors = [
+        {
+            "color": text_color,
+            "borderLeft": "none",
+            "borderRight": f"2px solid {text_color}",
+        }
+        for _ in df.columns
+    ]
+    base_style["style_data_conditional"] += standard_col_colors
     return (
         base_style["style_table"],
         base_style["style_cell_conditional"],
@@ -220,7 +237,7 @@ def layout():
                         )
                         for x in df.columns
                     ],
-                    id="stargazer-tbl",
+                    id="stargazer-table",
                     **get_ampere_dt_style(),
                 ),
             ],
