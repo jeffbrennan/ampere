@@ -191,10 +191,14 @@ def summary_title_margin_callback(*args):
 def summary_table_margin_callback(*args):
     updated_style = handle_table_margins(*args[:2])
     dark_mode = args[2]
-    if dark_mode:
-        updated_style["borderTop"] = "2px white solid"
-    else:
-        updated_style["borderTop"] = "2px black solid"
+    color = "white" if dark_mode else "black"
+    updated_style.update(
+        {
+            "borderTop": f"2px {color} solid",
+            "borderLeft": f"2px {color} solid",
+            "borderBottom": f"2px {color} solid",
+        }
+    )
     return updated_style
 
 
