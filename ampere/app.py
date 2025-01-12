@@ -148,17 +148,18 @@ def layout(initial_background_color: str):
                     navbar=True,
                 ),
                 dbc.NavItem(
-                    html.Span(
-                        [
-                            dbc.Switch(
-                                id="color-mode-switch",
-                                value=False,
-                                className="d-inline-block ms-1",
-                                persistence=True,
-                            ),
-                            dbc.Label("🌛", html_for="color-mode-switch"),
-                        ]
-                    ),
+                    dbc.Switch(
+                        id="color-mode-switch",
+                        value=False,
+                        persistence=True,
+                        label="🌛",
+                        input_style={"marginTop": "14px", "marginBottom": "0px"},
+                        label_style={
+                            "fontSize": "1.5em",
+                            "marginTop": "4px",
+                            "marginBottom": "0px",
+                        },
+                    )
                 ),
             ],
             fluid=True,

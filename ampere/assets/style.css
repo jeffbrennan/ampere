@@ -39,3 +39,14 @@
 #ampere-page {
   transition: background-color 0.3s ease;
 }
+
+.form-switch .form-check-input {
+  box-shadow: none !important;
+  outline: none !important;
+  background-color: rgb(30, 30, 30) !important;
+}
+
+.form-switch .form-check-input:not(:checked) {
+  background-color: white !important;
+  border-color: gray !important;
+}
