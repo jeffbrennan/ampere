@@ -1,3 +1,4 @@
+import time
 from copy import deepcopy
 
 import dash
@@ -5,7 +6,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
-from ampere.common import get_frontend_db_con
+from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import AmperePalette, get_ampere_dt_style
 
 dash.register_page(__name__, name="about", top_nav=True, order=2)
@@ -31,37 +32,50 @@ def create_repo_table() -> pd.DataFrame:
     return df
 
 
+@callback(
+    [
+        Output("about-text", "children"),
+        Output("about-text", "style"),
+    ],
+    Input("color-mode-switch", "value"),
+)
 def get_styled_about_text(dark_mode: bool):
     color = "white" if dark_mode else "black"
     return [
-        html.Div("made with ❤️ by ", style={"display": "inline", "color": color}),
-        html.A(
-            "Jeff Brennan",
-            href="https://github.com/jeffbrennan",
-            target="_blank",
+        html.Div(
+            id="about-text",
+            children=[
+                html.Div("made with ❤️ by ", style={"display": "inline", "color": color}),
+                html.A(
+                    "Jeff Brennan",
+                    href="https://github.com/jeffbrennan",
+                    target="_blank",
+                ),
+                html.Div(" and ", style={"display": "inline", "color": color}),
+                html.A(
+                    "mrpowers-io",
+                    href="https://github.com/mrpowers-io",
+                    target="_blank",
+                ),
+                html.Div(" contributors", style={"display": "inline", "color": color}),
+            ],
         ),
-        html.Div(" and ", style={"display": "inline", "color": color}),
-        html.A(
-            "mrpowers-io",
-            href="https://github.com/mrpowers-io",
-            target="_blank",
-        ),
-        html.Div(" contributors", style={"display": "inline", "color": color}),
-    ]
+    ], {}
 
 
 @callback(
     [
-        Output("about-contents", "children"),
-        Output("about-contents", "is_in"),
+        Output("about-table", "children"),
+        Output("about-table", "style"),
+        Output("about-fade", "is_in"),
     ],
     Input("color-mode-switch", "value"),
 )
 def get_styled_about_table(dark_mode: bool):
     df = create_repo_table()
     about_style = get_ampere_dt_style(dark_mode)
-    about_style["style_table"]["maxHeight"] = "50%"
-    about_style["style_table"]["height"] = "50%"
+    about_style["style_table"]["maxHeight"] = "39.5vh"
+    about_style["style_table"]["height"] = "39.5vh"
 
     tbl = dash_table.DataTable(
         df.to_dict("records"),
@@ -75,34 +89,33 @@ def get_styled_about_table(dark_mode: bool):
         ],
         **about_style,
     )
-    about_text = get_styled_about_text(dark_mode)
-    children = [html.Br(), tbl] + about_text
 
-    parent_container = html.Div(
-        children=children,
-        style={
-            "backgroundColor": AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-            if not dark_mode
-            else AmperePalette.PAGE_BACKGROUND_COLOR_DARK,
-            "minHeight": "100vh",
-        },
-    )
+    #     children=children,
+    #     id="about-div",
+    #     style={
+    #         "backgroundColor": AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+    #         if not dark_mode
+    #         else AmperePalette.PAGE_BACKGROUND_COLOR_DARK,
+    #         "minHeight": "100vh",
+    #         "transition": "opacity 200ms ease-in",
+    #     },
+    # )
 
-    return parent_container, True
+    return tbl, {}, True
 
 
-@callback(
-    [
-        Output("about-text", "children"),
-        Output("about-text", "style"),
-    ],
-    Input("color-mode-switch", "value"),
-)
 def layout():
     return [
         dbc.Fade(
-            id="about-contents",
-            style={"transition": "opacity 200ms ease-in"},
+            id="about-fade",
+            children=[
+                html.Br(),
+                html.Div(id="about-table", style={"visibility": "hidden"}),
+                html.Br(),
+                html.Br(),
+                html.Div(id="about-text", style={"visibility": "hidden"}),
+            ],
+            style={"transition": "opacity 200ms ease-in", "minHeight": "100vh"},
             is_in=False,
         )
     ]

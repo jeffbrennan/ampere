@@ -10,12 +10,12 @@ from dash import Input, Output, callback, dcc, html
 from plotly.graph_objects import Figure
 
 from ampere.app_shared import cache
-from ampere.common import get_frontend_db_con
+from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import AmperePalette
 
 dash.register_page(__name__, name="downloads", top_nav=True, order=1)
 
-
+@timeit
 def viz_area(
     df: pd.DataFrame,
     group_name: str,
@@ -347,7 +347,7 @@ def layout():
                 dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
                 dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
             ],
-            style={"transition": "opacity 200ms ease-in"},
+            style={"transition": "opacity 200ms ease-in", "minHeight": "100vh"},
             is_in=False,
         ),
     ]

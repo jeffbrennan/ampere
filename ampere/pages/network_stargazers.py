@@ -8,7 +8,7 @@ from dash import Input, Output, callback, dash_table, dcc, html
 from plotly.graph_objects import Figure
 from plotly.graph_objs import Figure
 
-from ampere.common import get_frontend_db_con
+from ampere.common import get_frontend_db_con, timeit
 from ampere.models import StargazerNetworkRecord
 from ampere.styling import AmperePalette, get_ampere_dt_style
 from ampere.viz import NETWORK_LAYOUT, generate_repo_palette, read_network_graph_pickle
@@ -28,7 +28,7 @@ def create_stargazers_table() -> pd.DataFrame:
         ).to_df()
     return df
 
-
+@timeit
 def create_star_network_plot(
     graph: nx.Graph,
     repos: list[str],
@@ -127,7 +127,7 @@ def create_star_network_plot(
     )
     return fig
 
-
+@timeit
 def viz_star_network(dark_mode: bool) -> Figure:
     with get_frontend_db_con() as con:
         stargazers = con.sql(
@@ -155,31 +155,36 @@ def viz_star_network(dark_mode: bool) -> Figure:
 @callback(
     [
         Output("network-stargazer-graph", "figure"),
+        Output("network-stargazer-graph", "style"),
+        Output("network-stargazer-table", "style"),
         Output("network-stargazer-graph-fade", "is_in"),
     ],
     Input("color-mode-switch", "value"),
 )
-def show_summary_graph(dark_mode: bool) -> tuple[Figure, bool]:
-    return viz_star_network(dark_mode), True
+@timeit
+def get_stylized_network_graph(dark_mode: bool):
+    fig = viz_star_network(dark_mode)
+    return (
+        fig,
+        {
+            "height": "95vh",
+            "marginLeft": "0vw",
+            "marginRight": "0vw",
+            "width": "100%",
+        },
+        {},
+        True,
+    )
 
 
 @callback(
-    [
-        Output("stargazer-table", "style_table"),
-        Output("stargazer-table", "style_cell_conditional"),
-        Output("stargazer-table", "style_data_conditional"),
-        Output("stargazer-table", "style_filter"),
-        Output("stargazer-table", "style_header"),
-        Output("stargazer-table", "css"),
-    ],
-    [
-        Input("stargazer-table", "data"),
-        Input("color-mode-switch", "value"),
-    ],
+    Output("network-stargazer-table", "children"),
+    Input("color-mode-switch", "value"),
 )
-def style_stargazers_table(data: list[dict], dark_mode: bool):
+@timeit
+def get_styled_stargazers_table(dark_mode: bool):
     base_style = get_ampere_dt_style(dark_mode)
-    df = pd.DataFrame(data)
+    df = create_stargazers_table()
     if dark_mode:
         text_color = "white"
     else:
@@ -194,54 +199,40 @@ def style_stargazers_table(data: list[dict], dark_mode: bool):
         for _ in df.columns
     ]
     base_style["style_data_conditional"] += standard_col_colors
-    return (
-        base_style["style_table"],
-        base_style["style_cell_conditional"],
-        base_style["style_data_conditional"],
-        base_style["style_filter"],
-        base_style["style_header"],
-        base_style["css"],
+    tbl = (
+        dash_table.DataTable(
+            df.to_dict("records"),
+            columns=[
+                (
+                    {"id": x, "name": "", "presentation": "markdown"}
+                    if x == "user_name"
+                    else {"id": x, "name": x}
+                )
+                for x in df.columns
+            ],
+            **base_style,
+        ),
     )
+    return tbl
 
 
 def layout():
-    df = create_stargazers_table()
     return [
-        html.Br(),
-        dcc.Interval(
-            id="network-stargazer-load-interval",
-            n_intervals=0,
-            max_intervals=0,
-            interval=1,
-        ),
         dbc.Fade(
             id="network-stargazer-graph-fade",
             children=[
+                html.Br(),
                 dcc.Graph(
                     id="network-stargazer-graph",
-                    style={
-                        "height": "95vh",
-                        "marginLeft": "0vw",
-                        "marginRight": "0vw",
-                        "width": "100%",
-                    },
+                    style={"visibility": "hidden"},
                     responsive=True,
                 ),
-                dash_table.DataTable(
-                    df.to_dict("records"),
-                    columns=[
-                        (
-                            {"id": x, "name": "", "presentation": "markdown"}
-                            if x == "user_name"
-                            else {"id": x, "name": x}
-                        )
-                        for x in df.columns
-                    ],
-                    id="stargazer-table",
-                    **get_ampere_dt_style(),
-                ),
+                html.Div(id="network-stargazer-table", style={"visibility": "hidden"}),
             ],
-            style={"transition": "opacity 200ms ease-in"},
+            style={
+                "transition": "opacity 200ms ease-in",
+                "minHeight": "100vh",
+            },
             is_in=False,
         ),
     ]

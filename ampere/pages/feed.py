@@ -3,12 +3,13 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
-from ampere.common import get_frontend_db_con
+from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import AmperePalette, get_ampere_dt_style
 
 dash.register_page(__name__, name="feed", top_nav=True, order=3)
 
 
+@timeit
 def create_feed_table() -> pd.DataFrame:
     with get_frontend_db_con() as con:
         df = con.sql(
@@ -30,6 +31,7 @@ def create_feed_table() -> pd.DataFrame:
     return df
 
 
+@timeit
 def handle_table_margins(breakpoint_name: str):
     style_table = {}
     if breakpoint_name in ["lg", "xl"]:
@@ -61,12 +63,8 @@ def handle_table_margins(breakpoint_name: str):
 
 @callback(
     [
-        Output("feed-table", "style_table"),
-        Output("feed-table", "style_cell_conditional"),
-        Output("feed-table", "style_data_conditional"),
-        Output("feed-table", "style_filter"),
-        Output("feed-table", "style_header"),
-        Output("feed-table", "css"),
+        Output("feed-table", "children"),
+        Output("feed-table", "style"),
         Output("feed-fade", "is_in"),
     ],
     [
@@ -74,11 +72,11 @@ def handle_table_margins(breakpoint_name: str):
         Input("color-mode-switch", "value"),
     ],
 )
+@timeit
 def style_feed_table(breakpoint_name: str, dark_mode: bool = False):
-    default_style = get_ampere_dt_style(dark_mode)
-    style_table = default_style["style_table"]
-    style_cell_conditional = default_style["style_cell_conditional"]
-    style_data_conditional = default_style["style_data_conditional"]
+    raw_df = create_feed_table()
+    df = format_feed_table(raw_df)
+    feed_style = get_ampere_dt_style(dark_mode)
 
     if dark_mode:
         text_color = "white"
@@ -96,7 +94,6 @@ def style_feed_table(breakpoint_name: str, dark_mode: bool = False):
             "pull request": "#d9e6b5",
             "issue": "#edb4bd",
             "star": "#e8d3a9",
-            "commit": "#b6dedc",
             "fork": "#e1ccdb",
         }
         event_color_border = AmperePalette.TABLE_EVEN_ROW_COLOR_LIGHT
@@ -119,26 +116,32 @@ def style_feed_table(breakpoint_name: str, dark_mode: bool = False):
         for _ in ["date", "time", "event", "description"]
     ]
 
-    style_data_conditional.extend(color_styles + standard_col_colors)
+    feed_style["style_data_conditional"].extend(color_styles + standard_col_colors)
 
     adjusted_style_table, adjusted_style_cell_conditional = handle_table_margins(
         breakpoint_name
     )
 
-    style_table.update(adjusted_style_table)
-    style_cell_conditional.extend(adjusted_style_cell_conditional)
+    feed_style["style_table"].update(adjusted_style_table)
+    feed_style["style_cell_conditional"].extend(adjusted_style_cell_conditional)
 
-    return (
-        style_table,
-        style_cell_conditional,
-        style_data_conditional,
-        default_style["style_filter"],
-        default_style["style_header"],
-        default_style["css"],
-        True,
+    tbl = dash_table.DataTable(
+        df.to_dict("records"),
+        columns=[
+            (
+                {"id": x, "name": x, "presentation": "markdown"}
+                if x in ["event", "description"]
+                else {"id": x, "name": x}
+            )
+            for x in df.columns
+        ],
+        id="feed-table",
+        **feed_style,
     )
+    return tbl, {}, True
 
 
+@timeit
 def format_feed_table(df: pd.DataFrame) -> pd.DataFrame:
     df["type_link"] = "[" + df["type"] + "]" + "(" + df["event_link"] + ")"
     df["repo_link"] = (
@@ -173,30 +176,13 @@ def format_feed_table(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def layout():
-    raw_df = create_feed_table()
-    df = format_feed_table(raw_df)
-
-    return [
-        dbc.Fade(
-            id="feed-fade",
-            children=[
-                html.Br(),
-                html.Br(),
-                dash_table.DataTable(
-                    df.to_dict("records"),
-                    columns=[
-                        (
-                            {"id": x, "name": x, "presentation": "markdown"}
-                            if x in ["event", "description"]
-                            else {"id": x, "name": x}
-                        )
-                        for x in df.columns
-                    ],
-                    id="feed-table",
-                    **get_ampere_dt_style(),
-                ),
-            ],
-            style={"transition": "opacity 200ms ease-in"},
-            is_in=False,
-        )
-    ]
+    return dbc.Fade(
+        id="feed-fade",
+        children=[
+            html.Br(),
+            html.Br(),
+            html.Div(id="feed-table", style={"visibility": "hidden"}),
+        ],
+        style={"transition": "opacity 200ms ease-in", "minHeight": "100vh"},
+        is_in=False,
+    )

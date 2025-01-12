@@ -152,7 +152,7 @@ def layout():
                 html.Br(),
                 html.Div(id="status-details-table", style={"visibility": "hidden"}),
             ],
-            style={"transition": "opacity 200ms ease-in"},
+            style={"transition": "opacity 200ms ease-in", "minHeight": "100vh"},
             is_in=False,
         ),
     ]

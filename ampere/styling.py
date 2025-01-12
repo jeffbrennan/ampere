@@ -4,6 +4,8 @@ from typing import Any
 
 import pandas as pd
 
+from ampere.common import timeit
+
 
 class AmperePalette(StrEnum):
     PAGE_ACCENT_COLOR = "#304FFE"
@@ -82,7 +84,7 @@ def generate_heatmap_palette(dark_mode: bool, palette_name: str) -> list[str]:
 
     return palettes[palette_name]["dark" if dark_mode else "light"]
 
-
+@timeit
 def style_dt_background_colors_by_rank(
     df: pd.DataFrame, n_bins: int, cols: list[ColumnInfo], dark_mode: bool
 ) -> list[dict]:

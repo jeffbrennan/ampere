@@ -3,9 +3,9 @@ import copy
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import Input, Output, callback, dash_table, dcc, html
+from dash import Input, Output, callback, dash_table, html
 
-from ampere.common import get_frontend_db_con
+from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import (
     AmperePalette,
     ColumnInfo,
@@ -17,6 +17,7 @@ from ampere.styling import (
 dash.register_page(__name__, name="feed", top_nav=True, order=3)
 
 
+@timeit
 def create_issues_table() -> pd.DataFrame:
     with get_frontend_db_con() as con:
         df = con.sql(
@@ -36,6 +37,7 @@ def create_issues_table() -> pd.DataFrame:
     return df
 
 
+@timeit
 def create_issues_summary_table() -> pd.DataFrame:
     with get_frontend_db_con() as con:
         df = con.sql(
@@ -52,13 +54,7 @@ def create_issues_summary_table() -> pd.DataFrame:
     return df
 
 
-@callback(
-    Output("issues-table", "style_cell_conditional"),
-    [
-        Input("issues-table", "style_cell_conditional"),
-        Input("breakpoints", "widthBreakpoint"),
-    ],
-)
+@timeit
 def handle_col_widths(
     style_cell_conditional_incoming: list[dict], breakpoint_name: str
 ) -> list[dict]:
@@ -115,17 +111,10 @@ def handle_col_widths(
     return style_cell_conditional
 
 
-@callback(
-    Output("summary-table", "style_cell_conditional"),
-    [
-        Input("summary-table", "style_cell_conditional"),
-        Input("breakpoints", "widthBreakpoint"),
-    ],
-)
+@timeit
 def handle_summary_col_widths(
-    style_cell_conditional_incoming: list[dict], breakpoint_name: str
+    style_cell_conditional: list[dict], breakpoint_name: str
 ) -> list[dict]:
-    style_cell_conditional = copy.deepcopy(style_cell_conditional_incoming)
     style_cell_conditional = [
         i for i in style_cell_conditional if "minWidth" not in str(i)
     ]
@@ -140,6 +129,7 @@ def handle_summary_col_widths(
     return style_cell_conditional
 
 
+@timeit
 def handle_table_margins(style_table_incoming: dict, breakpoint_name: str) -> dict:
     style_table = copy.deepcopy(style_table_incoming)
     if breakpoint_name != "xl":
@@ -153,6 +143,7 @@ def handle_table_margins(style_table_incoming: dict, breakpoint_name: str) -> di
     return style_table
 
 
+@timeit
 def handle_title_margins(style_incoming: dict, breakpoint_name: str) -> dict:
     margin_adjustments = {
         "xl": {"maxWidth": "65vw", "width": "65vw", "marginLeft": "12vw"},
@@ -170,76 +161,44 @@ def handle_title_margins(style_incoming: dict, breakpoint_name: str) -> dict:
 
 
 @callback(
-    Output("summary-title", "style"),
     [
-        Input("summary-title", "style"),
+        Output("summary-title", "children"),
+        Output("summary-title", "style"),
+        Output("issues-fade", "is_in"),
+    ],
+    [
+        Input("summary-table", "children"),
         Input("breakpoints", "widthBreakpoint"),
     ],
 )
-def summary_title_margin_callback(*args):
-    return handle_title_margins(*args)
-
-
-@callback(
-    Output("summary-table", "style_table"),
-    [
-        Input("summary-table", "style_table"),
-        Input("breakpoints", "widthBreakpoint"),
-        Input("color-mode-switch", "value"),
-    ],
-)
-def summary_table_margin_callback(*args):
-    updated_style = handle_table_margins(*args[:2])
-    dark_mode = args[2]
-    color = "white" if dark_mode else "black"
-    updated_style.update(
-        {
-            "borderTop": f"2px {color} solid",
-            "borderLeft": f"2px {color} solid",
-            "borderBottom": f"2px {color} solid",
-        }
+@timeit
+def display_summary_title(_, breakpoint_name):
+    summary_title = html.Label(
+        "summary", style=handle_title_margins(table_title_style, breakpoint_name)
     )
-    return updated_style
 
-
-@callback(
-    Output("issues-title", "style"),
-    [
-        Input("issues-title", "style"),
-        Input("breakpoints", "widthBreakpoint"),
-    ],
-)
-def issues_title_margin_callback(*args, **kwargs):
-    return handle_title_margins(*args, **kwargs)
-
-
-@callback(
-    Output("issues-table", "style_table"),
-    [
-        Input("issues-table", "style_table"),
-        Input("breakpoints", "widthBreakpoint"),
-    ],
-)
-def issues_table_margin_callback(*args, **kwargs):
-    return handle_table_margins(*args, **kwargs)
+    return summary_title, {}, True
 
 
 @callback(
     [
-        Output("summary-table", "style_data_conditional"),
-        Output("summary-table", "style_filter"),
-        Output("summary-table", "style_header"),
-        Output("summary-table", "css"),
+        Output("summary-table", "children"),
+        Output("summary-table", "style"),
     ],
     [
-        Input("summary-data", "data"),
         Input("color-mode-switch", "value"),
+        Input("breakpoints", "widthBreakpoint"),
     ],
 )
-def style_issues_summary_table(summary_data: list[dict], dark_mode: bool):
-    summary_style = get_ampere_dt_style(dark_mode)
-    summary_df = pd.DataFrame(summary_data)
+@timeit
+def get_styled_issues_summary_table(dark_mode: bool, breakpoint_name: str):
+    summary_df = create_issues_summary_table()
+    summary_data = summary_df.to_dict("records")
     n_repos = summary_df.shape[0]
+
+    summary_style = get_ampere_dt_style(dark_mode)
+    del summary_style["style_table"]["maxHeight"]
+    del summary_style["style_table"]["height"]
 
     formatting_cols = [
         ColumnInfo(name="open issues", ascending=True, palette="oranges"),
@@ -248,15 +207,17 @@ def style_issues_summary_table(summary_data: list[dict], dark_mode: bool):
         ColumnInfo(name="closed issues (this month)", ascending=True, palette="greens"),
     ]
     if dark_mode:
-        text_color = "white"
+        color = "white"
+        odd_row_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
     else:
-        text_color = "black"
+        color = "black"
+        odd_row_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
 
     standard_col_colors = [
         {
-            "color": text_color,
+            "color": color,
             "borderLeft": "none",
-            "borderRight": f"2px solid {text_color}",
+            "borderRight": f"2px solid {color}",
         }
         for _ in summary_df.columns
     ]
@@ -271,48 +232,83 @@ def style_issues_summary_table(summary_data: list[dict], dark_mode: bool):
         i for i in summary_style["style_data_conditional"] if "odd" not in str(i)
     ]
 
-    if dark_mode:
-        border_color = "white"
-        odd_row_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-    else:
-        border_color = "black"
-        odd_row_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-
     summary_style["style_data_conditional"].append(
         {
             "if": {"row_index": "odd"},
             "backgroundColor": odd_row_color,
-            "borderBottom": f"1px {border_color} solid",
-            "borderTop": f"1px {border_color} solid",
+            "borderBottom": f"1px {color} solid",
+            "borderTop": f"1px {color} solid",
         }
     )
     summary_style["style_data_conditional"].extend(
         standard_col_colors + col_value_heatmaps
     )
 
-    return (
-        summary_style["style_data_conditional"],
-        summary_style["style_filter"],
-        summary_style["style_header"],
-        summary_style["css"],
+    summary_style["style_cell_conditional"] = handle_summary_col_widths(
+        summary_style["style_cell_conditional"], breakpoint_name
     )
+
+    summary_style["style_table"] = handle_table_margins(
+        summary_style["style_table"], breakpoint_name
+    )
+
+    summary_style["style_table"].update(
+        {
+            "borderTop": f"2px {color} solid",
+            "borderLeft": f"2px {color} solid",
+            "borderBottom": f"2px {color} solid",
+        }
+    )
+
+    tbl = (
+        dash_table.DataTable(
+            data=summary_data,
+            columns=[
+                {"id": x, "name": x, "presentation": "markdown"}
+                if x in ["repo"]
+                else {"id": x, "name": x}
+                for x in summary_df.columns
+            ],
+            id="summary-table",
+            **summary_style,
+        ),
+    )
+    return tbl, {}
 
 
 @callback(
     [
-        Output("issues-table", "style_data_conditional"),
-        Output("issues-table", "style_filter"),
-        Output("issues-table", "style_header"),
-        Output("issues-table", "css"),
-        Output("issues-fade", "is_in"),
+        Output("issues-title", "children"),
+        Output("issues-title", "style"),
     ],
     [
-        Input("issues-table", "data"),
-        Input("color-mode-switch", "value"),
+        Input("issues-table", "children"),
+        Input("breakpoints", "widthBreakpoint"),
     ],
 )
-def style_issues_table(issues_data: list[dict], dark_mode: bool):
-    issues_df = pd.DataFrame(issues_data)
+@timeit
+def display_issues_title(_, breakpoint_name):
+    issues_title = html.Label(
+        "issues",
+        style=handle_title_margins(table_title_style, breakpoint_name),
+    )
+
+    return issues_title, {}
+
+
+@callback(
+    [
+        Output("issues-table", "children"),
+        Output("issues-table", "style"),
+    ],
+    [
+        Input("color-mode-switch", "value"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
+)
+@timeit
+def get_styled_issues_table(dark_mode: bool, breakpoint_name: str):
+    issues_df = create_issues_table()
     base_style = get_ampere_dt_style(dark_mode)
     if dark_mode:
         text_color = "white"
@@ -327,58 +323,43 @@ def style_issues_table(issues_data: list[dict], dark_mode: bool):
         }
         for _ in issues_df.columns
     ]
-    base_style["style_data_conditional"].extend(standard_col_colors)
-    return (
-        base_style["style_data_conditional"],
-        base_style["style_filter"],
-        base_style["style_header"],
-        base_style["css"],
-        True,
+    base_style["style_cell_conditional"] = handle_col_widths(
+        base_style["style_cell_conditional"], breakpoint_name
     )
 
+    base_style["style_table"] = handle_table_margins(
+        base_style["style_table"], breakpoint_name
+    )
 
-def layout():
-    df = create_issues_table()
-    summary_df = create_issues_summary_table()
-    summary_data = summary_df.to_dict("records")
-
-    summary_base_style = get_ampere_dt_style()
-    del summary_base_style["style_table"]["maxHeight"]
-    del summary_base_style["style_table"]["height"]
-
-    return [
-        dcc.Store(id="summary-data", data=summary_data),
-        dbc.Fade(
-            id="issues-fade",
-            children=[
-                html.Br(),
-                html.Label("summary", style=table_title_style, id="summary-title"),
-                dash_table.DataTable(
-                    data=summary_data,
-                    columns=[
-                        {"id": x, "name": x, "presentation": "markdown"}
-                        if x in ["repo"]
-                        else {"id": x, "name": x}
-                        for x in summary_df.columns
-                    ],
-                    id="summary-table",
-                    **summary_base_style,
-                ),
-                html.Br(),
-                html.Label("issues", style=table_title_style, id="issues-title"),
-                dash_table.DataTable(
-                    df.to_dict("records"),
-                    columns=[
-                        {"id": x, "name": x, "presentation": "markdown"}
-                        if x in ["repo", "author", "title", "body"]
-                        else {"id": x, "name": x}
-                        for x in df.columns
-                    ],
-                    id="issues-table",
-                    **get_ampere_dt_style(),
-                ),
+    base_style["style_data_conditional"].extend(standard_col_colors)
+    tbl = (
+        dash_table.DataTable(
+            issues_df.to_dict("records"),
+            columns=[
+                {"id": x, "name": x, "presentation": "markdown"}
+                if x in ["repo", "author", "title", "body"]
+                else {"id": x, "name": x}
+                for x in issues_df.columns
             ],
-            style={"transition": "opacity 300ms ease-in"},
-            is_in=False,
+            **base_style,
         ),
-    ]
+    )
+
+    return tbl, {}
+
+
+@timeit
+def layout():
+    return dbc.Fade(
+        id="issues-fade",
+        children=[
+            html.Br(),
+            html.Div(id="summary-title", style={"visibility": "hidden"}),
+            html.Div(id="summary-table", style={"visibility": "hidden"}),
+            html.Br(),
+            html.Div(id="issues-title", style={"visibility": "hidden"}),
+            html.Div(id="issues-table", style={"visibility": "hidden"}),
+        ],
+        style={"transition": "opacity 200ms ease-in", "minHeight": "100vh"},
+        is_in=False,
+    )

@@ -132,7 +132,7 @@ def create_follower_network_plot(
     node_df["followers_group"] **= 10
     if dark_mode:
         node_df["followers_group"] = 10 - node_df["followers_group"]
-    
+
     node_trace = go.Scatter(
         x=node_df.x,
         y=node_df.y,
@@ -206,6 +206,7 @@ def viz_follower_network(dark_mode: bool) -> Figure:
     return fig
 
 
+@timeit
 def create_followers_table() -> pd.DataFrame:
     with get_frontend_db_con() as con:
         df = con.sql(
@@ -228,21 +229,14 @@ def create_followers_table() -> pd.DataFrame:
 
 @callback(
     [
-        Output("followers-table", "style_table"),
-        Output("followers-table", "style_cell_conditional"),
-        Output("followers-table", "style_data_conditional"),
-        Output("followers-table", "style_filter"),
-        Output("followers-table", "style_header"),
-        Output("followers-table", "css"),
+        Output("followers-table", "children"),
+        Output("followers-table", "style"),
     ],
-    [
-        Input("followers-table", "data"),
-        Input("color-mode-switch", "value"),
-    ],
+    Input("color-mode-switch", "value"),
 )
-def style_followers_table(data: list[dict], dark_mode: bool):
+def get_styled_followers_table(dark_mode: bool):
     base_style = get_ampere_dt_style(dark_mode)
-    df = pd.DataFrame(data)
+    df = create_followers_table()
     if dark_mode:
         text_color = "white"
     else:
@@ -257,29 +251,52 @@ def style_followers_table(data: list[dict], dark_mode: bool):
         for _ in df.columns
     ]
     base_style["style_data_conditional"] += standard_col_colors
+    tbl = (
+        dash_table.DataTable(
+            df.to_dict("records"),
+            columns=[
+                (
+                    {"id": x, "name": "", "presentation": "markdown"}
+                    if x == "user_name"
+                    else {"id": x, "name": x}
+                )
+                for x in df.columns
+            ],
+            **base_style,
+        ),
+    )
+    return tbl, {}
+
+
+@callback(
+    [
+        Output("network-followers-graph", "figure"),
+        Output("network-followers-graph", "style"),
+        Output("network-followers-graph-fade", "is_in"),
+    ],
+    Input("color-mode-switch", "value"),
+)
+@timeit
+def show_summary_graph(dark_mode: bool):
+    fig = viz_follower_network(dark_mode)
     return (
-        base_style["style_table"],
-        base_style["style_cell_conditional"],
-        base_style["style_data_conditional"],
-        base_style["style_filter"],
-        base_style["style_header"],
-        base_style["css"],
+        fig,
+        {
+            "height": "95vh",
+            "marginLeft": "0vw",
+            "marginRight": "0vw",
+            "width": "100%",
+        },
+        True,
     )
 
 
 def layout():
-    df = create_followers_table()
     return [
-        html.Br(),
-        dcc.Interval(
-            id="network-followers-load-interval",
-            n_intervals=0,
-            max_intervals=0,
-            interval=1,
-        ),
         dbc.Fade(
             id="network-followers-graph-fade",
             children=[
+                html.Br(),
                 dcc.Graph(
                     id="network-followers-graph",
                     style={
@@ -287,35 +304,14 @@ def layout():
                         "marginLeft": "0vw",
                         "marginRight": "0vw",
                         "width": "100%",
+                        "visibility": "hidden",
                     },
                     responsive=True,
                 ),
-                dash_table.DataTable(
-                    df.to_dict("records"),
-                    columns=[
-                        (
-                            {"id": x, "name": "", "presentation": "markdown"}
-                            if x == "user_name"
-                            else {"id": x, "name": x}
-                        )
-                        for x in df.columns
-                    ],
-                    id="followers-table",
-                    **get_ampere_dt_style(),
-                ),
+                html.Br(),
+                html.Div(id="followers-table", style={"visibility": "hidden"}),
             ],
-            style={"transition": "opacity 200ms ease-in"},
+            style={"transition": "opacity 200ms ease-in", "minHeight": "100vh"},
             is_in=False,
         ),
     ]
-
-
-@callback(
-    [
-        Output("network-followers-graph", "figure"),
-        Output("network-followers-graph-fade", "is_in"),
-    ],
-    Input("color-mode-switch", "value"),
-)
-def show_summary_graph(dark_mode: bool) -> tuple[Figure, bool]:
-    return viz_follower_network(dark_mode), True

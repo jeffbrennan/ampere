@@ -341,9 +341,10 @@ def layout():
                 ),
                 dcc.Graph("summary-stars", style={"visibility": "hidden"}),
                 dcc.Graph("summary-issues", style={"visibility": "hidden"}),
+
                 dcc.Graph("summary-commits", style={"visibility": "hidden"}),
             ],
-            style={"transition": "opacity 200ms ease-in"},
+            style={"transition": "opacity 200ms ease-in", "minHeight": "100vh"},
             is_in=False,
         ),
     ]
