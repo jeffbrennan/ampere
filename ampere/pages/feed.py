@@ -3,13 +3,12 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
-from ampere.common import get_frontend_db_con, timeit
+from ampere.common import get_frontend_db_con
 from ampere.styling import AmperePalette, get_ampere_dt_style
 
 dash.register_page(__name__, name="feed", top_nav=True, order=3)
 
 
-@timeit
 def create_feed_table() -> pd.DataFrame:
     with get_frontend_db_con() as con:
         df = con.sql(
@@ -31,7 +30,6 @@ def create_feed_table() -> pd.DataFrame:
     return df
 
 
-@timeit
 def handle_table_margins(breakpoint_name: str):
     style_table = {}
     if breakpoint_name in ["lg", "xl"]:
@@ -68,18 +66,16 @@ def handle_table_margins(breakpoint_name: str):
         Output("feed-fade", "is_in"),
     ],
     [
-        Input("breakpoints", "widthBreakpoint"),
         Input("color-mode-switch", "value"),
+        Input("breakpoints", "widthBreakpoint"),
     ],
 )
-@timeit
-def style_feed_table(breakpoint_name: str, dark_mode: bool = False):
+def style_feed_table(dark_mode: bool, breakpoint_name: str):
     raw_df = create_feed_table()
     df = format_feed_table(raw_df)
     feed_style = get_ampere_dt_style(dark_mode)
 
     if dark_mode:
-        text_color = "white"
         event_background_colors = {
             "pull request": "#263302",
             "issue": "#6b303a",
@@ -89,7 +85,6 @@ def style_feed_table(breakpoint_name: str, dark_mode: bool = False):
         }
         event_color_border = AmperePalette.TABLE_EVEN_ROW_COLOR_DARK
     else:
-        text_color = "black"
         event_background_colors = {
             "pull request": "#d9e6b5",
             "issue": "#edb4bd",
@@ -106,17 +101,7 @@ def style_feed_table(breakpoint_name: str, dark_mode: bool = False):
         }
         for k, v in event_background_colors.items()
     ]
-
-    standard_col_colors = [
-        {
-            "color": text_color,
-            "borderLeft": f"2px solid {text_color}",
-            "borderRight": f"2px solid {text_color}",
-        }
-        for _ in ["date", "time", "event", "description"]
-    ]
-
-    feed_style["style_data_conditional"].extend(color_styles + standard_col_colors)
+    feed_style["style_data_conditional"].extend(color_styles)
 
     adjusted_style_table, adjusted_style_cell_conditional = handle_table_margins(
         breakpoint_name
@@ -135,13 +120,11 @@ def style_feed_table(breakpoint_name: str, dark_mode: bool = False):
             )
             for x in df.columns
         ],
-        id="feed-table",
         **feed_style,
     )
     return tbl, {}, True
 
 
-@timeit
 def format_feed_table(df: pd.DataFrame) -> pd.DataFrame:
     df["type_link"] = "[" + df["type"] + "]" + "(" + df["event_link"] + ")"
     df["repo_link"] = (

@@ -1,13 +1,11 @@
-import time
-from copy import deepcopy
 
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
-from ampere.common import get_frontend_db_con, timeit
-from ampere.styling import AmperePalette, get_ampere_dt_style
+from ampere.common import get_frontend_db_con
+from ampere.styling import get_ampere_dt_style
 
 dash.register_page(__name__, name="about", top_nav=True, order=2)
 
@@ -89,17 +87,6 @@ def get_styled_about_table(dark_mode: bool):
         ],
         **about_style,
     )
-
-    #     children=children,
-    #     id="about-div",
-    #     style={
-    #         "backgroundColor": AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-    #         if not dark_mode
-    #         else AmperePalette.PAGE_BACKGROUND_COLOR_DARK,
-    #         "minHeight": "100vh",
-    #         "transition": "opacity 200ms ease-in",
-    #     },
-    # )
 
     return tbl, {}, True
 
