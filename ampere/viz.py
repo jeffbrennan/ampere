@@ -1,21 +1,13 @@
-import datetime
 import pickle
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
 import networkx as nx
-import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import pypalettes
-import pytz
-from plotly.graph_objs import Figure
 
 from ampere.common import get_frontend_db_con, timeit
 from ampere.get_repo_metrics import read_repos
-from ampere.models import Followers, StargazerNetworkRecord
-from ampere.styling import AmperePalette, ScreenWidth
 
 
 @timeit

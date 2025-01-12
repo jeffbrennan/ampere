@@ -1,7 +1,7 @@
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import Input, Output, callback, dash_table, dcc, html
+from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import get_ampere_dt_style
