@@ -32,3 +32,10 @@
     box-shadow: none !important;
 }
 
+._dash-loading {
+  display: none !important;
+}
+
+#ampere-page {
+  transition: background-color 0.3s ease; /* Add transition for background color */
+}

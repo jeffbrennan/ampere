@@ -61,7 +61,6 @@ def update_downloads_link_color(pathname: str, dark_mode: bool):
 )
 def update_page_color(dark_mode: bool):
     base_style = {"paddingLeft": "5%", "paddingRight": "5%", "paddingBottom": "3%"}
-    time.sleep(0.15)
     if dark_mode:
         base_style["backgroundColor"] = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
     else:
@@ -70,7 +69,7 @@ def update_page_color(dark_mode: bool):
     return base_style
 
 
-def layout():
+def layout(initial_background_color: str):
     navbar = dbc.Navbar(
         dbc.Container(
             [
@@ -190,7 +189,12 @@ def layout():
             dash.page_container,
         ],
         fluid=True,
-        style={"paddingLeft": "5%", "paddingRight": "5%", "paddingBottom": "3%"},
+        style={
+            "paddingLeft": "5%",
+            "paddingRight": "5%",
+            "paddingBottom": "3%",
+            "backgroundColor": initial_background_color,
+        },
     )
 
 
@@ -214,11 +218,37 @@ if __name__ == "__main__":
         external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.FONT_AWESOME],
         suppress_callback_exceptions=True,
         compress=True,
-        update_title="",
         serve_locally=envs[env]["serve_locally"],
     )
+
+    initial_background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+    app.index_string = f"""
+    <!DOCTYPE html>
+    <html>
+        <head>
+            {{%metas%}}
+            <title>{{%title%}}</title>
+            {{%favicon%}}
+            {{%css%}}
+            <style>
+                body {{
+                    background-color: {initial_background_color};
+                    margin: 0; /* Remove default margin */
+                }}
+            </style>
+        </head>
+        <body>
+            {{%app_entry%}}
+            <footer>
+                {{%config%}}
+                {{%scripts%}}
+                {{%renderer%}}
+            </footer>
+        </body>
+    </html>
+    """
     server = app.server
     cache.init_app(server)
 
-    app.layout = layout()
+    app.layout = layout(initial_background_color)
     app.run(host=envs[env]["host"], debug=envs[env]["debug"])
