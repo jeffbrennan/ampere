@@ -228,20 +228,11 @@ def layout(initial_background_color: str):
     )
 
 
-if __name__ == "__main__":
+def main(env: str = "prod"):
     envs = {
         "prod": {"host": "0.0.0.0", "debug": False, "serve_locally": False},
         "dev": {"host": "127.0.0.1", "debug": True, "serve_locally": True},
     }
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--env",
-        type=str,
-        default="prod",
-        help="Environment to run the app in. Default is prod",
-    )
-
-    env = parser.parse_args().env
 
     app = dash.Dash(
         use_pages=True,
@@ -281,4 +272,21 @@ if __name__ == "__main__":
     cache.init_app(server)
 
     app.layout = layout(initial_background_color)
+
+    return app, server, envs
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--env",
+        type=str,
+        default="prod",
+        help="Environment to run the app in. Default is prod",
+    )
+
+    env = parser.parse_args().env
+    app, server, envs = main(env)
     app.run(host=envs[env]["host"], debug=envs[env]["debug"])
+
+_, server, _= main()
