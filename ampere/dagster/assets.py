@@ -4,6 +4,7 @@ from typing import Any
 from dagster import AssetExecutionContext, asset
 from dagster_dbt import DbtCliResource, dbt_assets
 
+from ampere.cache_plots import create_follower_network, create_star_network
 from ampere.common import (
     DeltaTableWriteMode,
     DeltaWriteConfig,
@@ -11,7 +12,6 @@ from ampere.common import (
     get_model_primary_key,
     write_delta_table,
 )
-from ampere.create_network_graph import create_follower_network, create_star_network
 from ampere.get_pypi_downloads import (
     refresh_all_pypi_downloads,
 )
