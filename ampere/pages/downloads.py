@@ -10,16 +10,18 @@ from dash import Input, Output, callback, dcc, html
 from plotly.graph_objects import Figure
 
 from ampere.app_shared import cache
-from ampere.common import get_frontend_db_con
+from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import AmperePalette
 
 dash.register_page(__name__, name="downloads", top_nav=True, order=1)
 
 
+@timeit
 def viz_area(
     df: pd.DataFrame,
     group_name: str,
     date_range: Optional[list[int]] = None,
+    dark_mode: bool = False,
 ) -> Figure:
     df_filtered = df.query(f"group_name=='{group_name}'")
     if date_range is not None:
@@ -41,26 +43,35 @@ def viz_area(
         .tolist()
     )
 
+    if dark_mode:
+        font_color = "white"
+        bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+        template = "plotly_dark"
+    else:
+        font_color = "black"
+        bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+        template = "plotly_white"
+
     fig = px.area(
         df_filtered,
         x="download_date",
         y="download_count",
         color="group_value",
         facet_col="group_name",
-        template="simple_white",
+        color_discrete_sequence=px.colors.qualitative.T10,
+        template=template,
         category_orders={"group_value": categories},
     )
+
+    fig.update_layout(plot_bgcolor=bg_color, paper_bgcolor=bg_color)
     fig.for_each_annotation(
         lambda a: a.update(
-            text="<b>"
-            + a.text.split("=")[-1]
-            .replace("_", " ")
-            .replace("system release", "cloud platform")
-            + "</b>",
+            text="<b>" + a.text.split("=")[-1].replace("_", " ") + "</b>",
             font_size=18,
             bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
             font_color="white",
             borderpad=5,
+            y=1.02,
         )
     )
 
@@ -69,7 +80,7 @@ def viz_area(
             title="",
             showline=True,
             linewidth=1,
-            linecolor="black",
+            linecolor=font_color,
             mirror=True,
             tickfont_size=14,
         )
@@ -79,13 +90,14 @@ def viz_area(
             title="",
             showline=True,
             linewidth=1,
-            linecolor="black",
+            linecolor=font_color,
             mirror=True,
             showticklabels=True,
             tickfont_size=14,
         )
     )
-    fig.update_yaxes(matches=None, showticklabels=True)
+    fig.update_yaxes(matches=None, showticklabels=True, showgrid=False)
+    fig.update_xaxes(showgrid=False)
 
     fig.update_layout(
         title={
@@ -130,11 +142,12 @@ def get_valid_repos() -> list[str]:
     [
         Input("downloads-df", "data"),
         Input("date-slider", "value"),
+        Input("color-mode-switch", "value"),
     ],
 )
-def viz_downloads_overall(df_data: list[dict], date_range: list[int]):
+def viz_downloads_overall(df_data: list[dict], date_range: list[int], dark_mode: bool):
     df = pd.DataFrame(df_data)
-    fig = viz_area(df, "overall", date_range)
+    fig = viz_area(df, "overall", date_range, dark_mode)
     return fig, {}
 
 
@@ -146,11 +159,14 @@ def viz_downloads_overall(df_data: list[dict], date_range: list[int]):
     [
         Input("downloads-df", "data"),
         Input("date-slider", "value"),
+        Input("color-mode-switch", "value"),
     ],
 )
-def viz_downloads_by_package_version(df_data: list[dict], date_range: list[int]):
+def viz_downloads_by_package_version(
+    df_data: list[dict], date_range: list[int], dark_mode: bool
+):
     df = pd.DataFrame(df_data)
-    fig = viz_area(df, "package_version", date_range)
+    fig = viz_area(df, "package_version", date_range, dark_mode)
     return fig, {}
 
 
@@ -162,11 +178,14 @@ def viz_downloads_by_package_version(df_data: list[dict], date_range: list[int])
     [
         Input("downloads-df", "data"),
         Input("date-slider", "value"),
+        Input("color-mode-switch", "value"),
     ],
 )
-def viz_downloads_by_python_version(df_data: list[dict], date_range: list[int]):
+def viz_downloads_by_python_version(
+    df_data: list[dict], date_range: list[int], dark_mode: bool
+):
     df = pd.DataFrame(df_data)
-    fig = viz_area(df, "python_version", date_range)
+    fig = viz_area(df, "python_version", date_range, dark_mode)
     return fig, {}
 
 
@@ -276,6 +295,23 @@ def get_downloads_summary_date_ranges(
     )
 
 
+@callback(
+    [Output("repo-selection", "className"), Output("repo-selection", "style")],
+    Input("color-mode-switch", "value"),
+)
+def update_dropdown_menu_color(dark_mode: bool):
+    class_name = "" if dark_mode else "light-mode"
+    style = {
+        "borderRadius": "10px",
+        "fontSize": "20px",
+        "marginRight": "10%",
+        "marginTop": "2%",
+        "paddingBottom": "2px",
+        "paddingTop": "2px",
+    }
+    return class_name, style
+
+
 def layout():
     return [
         dcc.Store("downloads-df"),
@@ -292,29 +328,20 @@ def layout():
                                 clearable=False,
                                 searchable=False,
                                 id="repo-selection",
-                                style={
-                                    "background": AmperePalette.PAGE_ACCENT_COLOR2,
-                                    "border": AmperePalette.PAGE_ACCENT_COLOR2,
-                                    "borderRadius": "10px",
-                                    "fontSize": "20px",
-                                    "marginRight": "10%",
-                                    "marginTop": "2%",
-                                    "paddingBottom": "2px",
-                                    "paddingTop": "2px",
-                                },
                             ),
-                            width=1,
+                            width=2,
                         ),
                         dbc.Col(
                             html.Div(
                                 dcc.RangeSlider(
                                     id="date-slider",
                                     step=86400,  # daily
-                                    allowCross=False,
+                                    allowCross=True,
                                 ),
                                 style={
                                     "whiteSpace": "nowrap",
                                     "paddingLeft": "5%",
+                                    "marginTop": "6px",
                                 },
                             ),
                             width=3,
@@ -327,11 +354,13 @@ def layout():
                         "top": "60px",
                     },
                 ),
+                html.Br(),
+                html.Br(),
                 dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
                 dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
                 dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
             ],
-            style={"transition": "opacity 200ms ease-in"},
+            style={"transition": "opacity 200ms ease-in", "minHeight": "100vh"},
             is_in=False,
         ),
     ]

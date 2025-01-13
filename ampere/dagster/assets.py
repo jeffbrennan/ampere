@@ -42,7 +42,6 @@ from ampere.models import (
     Stargazer,
     User,
 )
-from ampere.viz import viz_follower_network, viz_star_network
 
 from .project import ampere_project
 

@@ -1,5 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap');
+
 .rc-slider-tooltip-inner {
-  background: #5560FA !important;
+  background: #5560fa !important;
+  padding-top: 8px !important;
 }
 
 .rc-slider-track {
@@ -8,9 +11,15 @@
 }
 
 .rc-slider-handle {
-  background-color: #5560FA;
+  background-color: #5560fa;
   border: solid 2px #5560FA;
 }
+
+.rc-slider-dot {
+  background-color: #C3C7E6;
+  border: solid 1px #5560fa;
+}
+
 
 .rc-slider-handle:hover,
 .rc-slider-handle:focus,
@@ -19,6 +28,27 @@
   box-shadow: none !important;
   outline: none !important;
 }
+
+/* RC Slider tooltip z-index handling */
+.rc-slider-tooltip[style*="left: 0%"],
+.rc-slider-tooltip[style*="left: 0px"] {
+  z-index: 1100 !important; /* Higher than default active state */
+}
+
+.rc-slider-tooltip {
+  z-index: 900 !important;
+}
+
+.rc-slider-tooltip-placement-top {
+  z-index: 900 !important;
+}
+
+.rc-slider-tooltip.rc-slider-tooltip-active,
+.rc-slider-tooltip-placement-top.rc-slider-tooltip-active {
+  z-index: 1000 !important;
+}
+
+
 
 .Select input {
   color: #FFFFFF;
@@ -31,3 +61,131 @@
 .Select.is-focused .Select-control {
     box-shadow: none !important;
 }
+
+._dash-loading {
+  display: none !important;
+}
+
+#ampere-page {
+  transition: background-color 0.3s ease;
+}
+
+.form-switch .form-check-input {
+  box-shadow: none !important;
+  outline: none !important;
+  background-color: rgb(30, 30, 30) !important;
+}
+
+.form-switch .form-check-input:not(:checked) {
+  background-color: white !important;
+  border-color: gray !important;
+}
+
+
+/* Base elements */
+body,
+.Select input,
+.Select-value-label,
+.form-check-input,
+#ampere-page,
+.dash-table-container {
+  font-family: "JetBrains Mono", serif !important;
+  font-weight: 600 !important;
+}
+
+/* DataTable elements */
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td,
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th,
+.dash-cell-value {
+  font-family: "JetBrains Mono", serif !important;
+  font-weight: 400 !important;
+}
+
+/* Plotly elements */
+.gtitle,
+.g-gtitle,
+.plotly-graph-div,
+.js-plotly-plot .plotly .modebar,
+.annotation-text,
+.legend-item-text,
+.ytitle,
+.xtitle,
+.zerolinelayer,
+.tick text,
+.legendtext {
+  font-family: "JetBrains Mono", serif !important;
+  font-weight: 400 !important;
+}
+
+.dropdown-menu {
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin-bottom: 0 !important;
+  margin-top: 9px !important;
+}
+
+.dropdown-item {
+  border-bottom: 2px solid #555 !important;
+  border-left: 2px solid #555 !important;
+  border-right: 2px solid #555 !important;
+}
+
+/* Remove dropdown arrow */
+.Select-arrow-zone {
+  display: none !important;
+}
+
+.Select-arrow {
+  display: none !important;
+}
+
+/* Dropdown styling */
+.Select-control {
+  padding-right: 0 !important;
+  background-color: #5560fa !important;  /* Navbar color */
+  border: none !important;
+  color: white !important;
+  padding-bottom: 0px !important;
+  padding-top: 0px !important;
+  margin-top: 0px !important;
+}
+
+.Select-value {
+  color: white !important;
+}
+
+.Select-value-label {
+  color: white !important;
+}
+
+/* Dark mode menu styling */
+.Select-menu-outer {
+  background-color:rgb(30,30,30) !important;
+  border: none !important;
+  margin-top: 0 !important;
+}
+
+.VirtualizedSelectOption {
+  background-color: rgb(30, 30, 30) !important;
+  color: white !important;
+}
+
+.VirtualizedSelectFocusedOption {
+  background-color: rgb(30, 30, 30) !important;
+}
+
+/* Light mode menu styling */
+.light-mode .Select-menu-outer {
+  background-color: rgb(255, 255, 255) !important;
+}
+
+.light-mode .VirtualizedSelectOption {
+  background-color: rgb(255, 255, 255) !important;
+  color: black !important;
+}
+
+.light-mode .VirtualizedSelectFocusedOption {
+  background-color: rgb(233, 233, 233) !important;
+}
+
