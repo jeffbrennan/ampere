@@ -72,8 +72,8 @@ def get_styled_about_text(dark_mode: bool):
 def get_styled_about_table(dark_mode: bool):
     df = create_repo_table()
     about_style = get_ampere_dt_style(dark_mode)
-    about_style["style_table"]["maxHeight"] = "39.5vh"
-    about_style["style_table"]["height"] = "39.5vh"
+    about_style["style_table"]["maxHeight"] = "37vh"
+    about_style["style_table"]["height"] = "37vh"
 
     tbl = dash_table.DataTable(
         df.to_dict("records"),
@@ -98,7 +98,6 @@ def layout():
             children=[
                 html.Br(),
                 html.Div(id="about-table", style={"visibility": "hidden"}),
-                html.Br(),
                 html.Br(),
                 html.Div(id="about-text", style={"visibility": "hidden"}),
             ],

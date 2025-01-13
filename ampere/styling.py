@@ -13,9 +13,9 @@ class AmperePalette(StrEnum):
     PAGE_LIGHT_GRAY = "#EEEEEE"
     BRAND_TEXT_COLOR = "#FFFFFF"
     BRAND_TEXT_COLOR_MUTED = "#E3E7FA"
-    PAGE_BACKGROUND_COLOR_LIGHT = "rgb(240, 240, 240)"
+    PAGE_BACKGROUND_COLOR_LIGHT = "rgb(233, 233, 233)"
     PAGE_BACKGROUND_COLOR_DARK = "rgb(30, 30, 30)"
-    TABLE_EVEN_ROW_COLOR_LIGHT = "rgb(240, 240, 240)"
+    TABLE_EVEN_ROW_COLOR_LIGHT = "rgb(233, 233, 233)"
     TABLE_EVEN_ROW_COLOR_DARK = "rgb(30, 30, 30)"
     TABLE_ODD_ROW_COLOR_LIGHT = "rgb(220, 220, 220)"
     TABLE_ODD_ROW_COLOR_DARK = "rgb(50, 50, 50)"
@@ -83,6 +83,7 @@ def generate_heatmap_palette(dark_mode: bool, palette_name: str) -> list[str]:
     }
 
     return palettes[palette_name]["dark" if dark_mode else "light"]
+
 
 @timeit
 def style_dt_background_colors_by_rank(

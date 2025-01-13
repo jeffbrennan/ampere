@@ -68,6 +68,7 @@ def viz_summary(
             bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
             font_color="white",
             borderpad=5,
+            y=1.02,
         )
     )
     fig.update_yaxes(matches=None, showticklabels=True, showgrid=False)
@@ -327,6 +328,7 @@ def layout():
                                 style={
                                     "whiteSpace": "nowrap",
                                     "paddingLeft": "5%",
+                                    "marginTop": "6px",
                                 },
                             ),
                             width=3,
@@ -339,9 +341,9 @@ def layout():
                         "top": "60px",
                     },
                 ),
+                html.Br(),
                 dcc.Graph("summary-stars", style={"visibility": "hidden"}),
                 dcc.Graph("summary-issues", style={"visibility": "hidden"}),
-
                 dcc.Graph("summary-commits", style={"visibility": "hidden"}),
             ],
             style={"transition": "opacity 200ms ease-in", "minHeight": "100vh"},

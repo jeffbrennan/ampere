@@ -68,11 +68,36 @@ def update_page_color(dark_mode: bool):
     return base_style
 
 
+@callback(
+    [
+        Output("stargazers-dropdown", "style"),
+        Output("followers-dropdown", "style"),
+    ],
+    Input("color-mode-switch", "value"),
+)
+def update_network_dropdown_color(dark_mode: bool):
+    if dark_mode:
+        text_color = AmperePalette.BRAND_TEXT_COLOR_MUTED
+        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+    else:
+        text_color = AmperePalette.PAGE_ACCENT_COLOR
+        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+
+    return (
+        {"color": text_color, "backgroundColor": background_color},
+        {"color": text_color, "backgroundColor": background_color},
+    )
+
+
 def layout(initial_background_color: str):
     navbar = dbc.Navbar(
         dbc.Container(
             [
-                dbc.NavbarBrand("ampere", href="/", style={"fontWeight": "bold"}),
+                dbc.NavbarBrand(
+                    "ampere",
+                    href="/",
+                    style={"fontWeight": "bold", "paddingBottom": "6px"},
+                ),
                 dbc.NavbarToggler(id="navbar-toggler"),
                 dbc.Collapse(
                     dbc.Nav(
@@ -106,12 +131,17 @@ def layout(initial_background_color: str):
                             dbc.DropdownMenu(
                                 children=[
                                     dbc.DropdownMenuItem(
-                                        "stargazers",
+                                        id="stargazers-dropdown",
+                                        children="stargazers",
                                         href="network-stargazers",
-                                        style={"color": AmperePalette.PAGE_ACCENT_COLOR},
+                                        style={
+                                            "color": AmperePalette.PAGE_ACCENT_COLOR,
+                                            "borderBottom": "1px solid white",
+                                        },
                                     ),
                                     dbc.DropdownMenuItem(
-                                        "followers",
+                                        id="followers-dropdown",
+                                        children="followers",
                                         href="network-followers",
                                         style={"color": AmperePalette.PAGE_ACCENT_COLOR},
                                     ),

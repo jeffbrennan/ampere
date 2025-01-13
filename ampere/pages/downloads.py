@@ -15,6 +15,7 @@ from ampere.styling import AmperePalette
 
 dash.register_page(__name__, name="downloads", top_nav=True, order=1)
 
+
 @timeit
 def viz_area(
     df: pd.DataFrame,
@@ -57,6 +58,7 @@ def viz_area(
         y="download_count",
         color="group_value",
         facet_col="group_name",
+        color_discrete_sequence=px.colors.qualitative.T10,
         template=template,
         category_orders={"group_value": categories},
     )
@@ -69,6 +71,7 @@ def viz_area(
             bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
             font_color="white",
             borderpad=5,
+            y=1.02,
         )
     )
 
@@ -292,6 +295,23 @@ def get_downloads_summary_date_ranges(
     )
 
 
+@callback(
+    [Output("repo-selection", "className"), Output("repo-selection", "style")],
+    Input("color-mode-switch", "value"),
+)
+def update_dropdown_menu_color(dark_mode: bool):
+    class_name = "" if dark_mode else "light-mode"
+    style = {
+        "borderRadius": "10px",
+        "fontSize": "20px",
+        "marginRight": "10%",
+        "marginTop": "2%",
+        "paddingBottom": "2px",
+        "paddingTop": "2px",
+    }
+    return class_name, style
+
+
 def layout():
     return [
         dcc.Store("downloads-df"),
@@ -308,29 +328,20 @@ def layout():
                                 clearable=False,
                                 searchable=False,
                                 id="repo-selection",
-                                style={
-                                    "background": AmperePalette.PAGE_ACCENT_COLOR2,
-                                    "border": AmperePalette.PAGE_ACCENT_COLOR2,
-                                    "borderRadius": "10px",
-                                    "fontSize": "20px",
-                                    "marginRight": "10%",
-                                    "marginTop": "2%",
-                                    "paddingBottom": "2px",
-                                    "paddingTop": "2px",
-                                },
                             ),
-                            width=1,
+                            width=2,
                         ),
                         dbc.Col(
                             html.Div(
                                 dcc.RangeSlider(
                                     id="date-slider",
                                     step=86400,  # daily
-                                    allowCross=False,
+                                    allowCross=True,
                                 ),
                                 style={
                                     "whiteSpace": "nowrap",
                                     "paddingLeft": "5%",
+                                    "marginTop": "6px",
                                 },
                             ),
                             width=3,
@@ -343,6 +354,8 @@ def layout():
                         "top": "60px",
                     },
                 ),
+                html.Br(),
+                html.Br(),
                 dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
                 dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
                 dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
