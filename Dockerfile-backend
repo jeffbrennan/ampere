@@ -38,7 +38,7 @@ WORKDIR $PYSETUP_PATH
 COPY poetry.lock pyproject.toml ./
 
 # install runtime deps - uses $POETRY_VIRTUALENVS_IN_PROJECT internally
-RUN poetry install --no-dev
+RUN poetry install --no-root
 
 # `development` image is used during development / testing
 FROM python-base AS development
@@ -66,7 +66,7 @@ RUN dbt deps --profiles-dir .
 RUN poetry config virtualenvs.path --unset
 
 # quicker install as runtime deps are already installed
-RUN poetry install
+RUN poetry install --no-root
 
 # APP CODE -------
 COPY ampere/ ./ampere
