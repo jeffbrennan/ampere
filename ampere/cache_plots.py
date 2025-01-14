@@ -108,6 +108,7 @@ def cache_downloads_plots() -> None:
 
     for repo in repos:
         df = get_downloads_data(repo)
+        dump_obj_to_pickle(f"downloads_df_{repo}", df)
         for group in groups:
             for mode in modes:
                 dark_mode = mode == "dark"

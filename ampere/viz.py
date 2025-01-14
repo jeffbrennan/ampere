@@ -85,6 +85,11 @@ def read_plotly_fig_pickle(pkl_name: str) -> Figure:
 
 
 @timeit
+def read_dataframe_pickle(pkl_name: str) -> pd.DataFrame:
+    return read_pickle(pkl_name)
+
+
+@timeit
 def read_plotly_fig_json(f_name: str) -> Figure:
     fig_data = read_json(f_name)
     return go.Figure(plotly.io.from_json(fig_data))
@@ -223,6 +228,7 @@ def get_summary_data() -> pd.DataFrame:
     return df
 
 
+@timeit
 def get_downloads_data(repo_name: str) -> pd.DataFrame:
     with get_frontend_db_con() as con:
         df = con.sql(

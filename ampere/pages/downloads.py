@@ -12,6 +12,7 @@ from ampere.styling import AmperePalette
 from ampere.viz import (
     get_downloads_data,
     get_repos_with_downloads,
+    read_dataframe_pickle,
     read_plotly_fig_pickle,
     viz_downloads,
 )
@@ -49,6 +50,7 @@ def get_viz_downloads(
 
 
 @cache.memoize()
+@timeit
 def dash_get_repos_with_downloads():
     return get_repos_with_downloads()
 
@@ -63,7 +65,8 @@ def dash_get_repos_with_downloads():
         Input("date-slider", "value"),
         Input("color-mode-switch", "value"),
         Input("downloads-date-bounds", "data"),
-        Input("repo-selection", "value")],
+        Input("repo-selection", "value"),
+    ],
 )
 def viz_downloads_overall(
     df_data: list[dict],
@@ -159,9 +162,11 @@ def update_downloads_graph_fade(fig1, fig2, fig3):
     Input("repo-selection", "value"),
 )
 @cache.memoize()
+@timeit
 def get_downloads_records(repo_name: str) -> list[dict]:
     print(f"cache miss: computing get_downloads_records for {repo_name}")
-    return get_downloads_data(repo_name).to_dict("records")
+    df = read_dataframe_pickle(f"downloads_df_{repo_name}")
+    return df.to_dict("records")
 
 
 @callback(
@@ -172,6 +177,7 @@ def get_downloads_records(repo_name: str) -> list[dict]:
         Input("date-slider", "value"),
     ],
 )
+@timeit
 def toggle_slider_tooltip_visibility(
     min_date_seconds: int, max_date_seconds: int, date_range: list[int]
 ) -> dict[Any, Any]:
@@ -205,6 +211,7 @@ def toggle_slider_tooltip_visibility(
         Input("downloads-df", "data"),
     ],
 )
+@timeit
 def get_downloads_records_date_ranges(df_data: list[dict]):
     df = pd.DataFrame(df_data)
     df["download_date"] = pd.to_datetime(df["download_date"], utc=True)
