@@ -7,10 +7,10 @@ from dagster_dbt import DbtCliResource, dbt_assets
 from ampere.cache_plots import (
     cache_downloads_plots,
     cache_follower_network,
-    cache_star_network,
+    cache_stargazer_network,
     cache_summary_plots,
     create_follower_network,
-    create_star_network,
+    create_stargazer_network,
 )
 from ampere.common import (
     DeltaTableWriteMode,
@@ -55,11 +55,13 @@ from .project import ampere_project
 db_path = ampere_project.project_dir.joinpath("data/backend.duckdb")
 
 
+# DBT
 @dbt_assets(manifest=ampere_project.manifest_path)
 def ampere_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource) -> Any:
     yield from dbt.cli(["build"], context=context).stream()
 
 
+# GITHUB
 @asset(
     compute_kind="python",
     key=["repos"],
@@ -252,8 +254,8 @@ def dagster_get_users(context: AssetExecutionContext) -> None:
 )
 def dagster_refresh_star_network(context: AssetExecutionContext) -> None:
     start_time = time.time()
-    create_star_network()
-    cache_star_network()
+    create_stargazer_network()
+    cache_stargazer_network()
     context.add_output_metadata({"elapsed time": time.time() - start_time})
 
 
@@ -267,30 +269,6 @@ def dagster_refresh_follower_network(context: AssetExecutionContext) -> None:
     start_time = time.time()
     create_follower_network()
     cache_follower_network()
-    context.add_output_metadata({"elapsed time": time.time() - start_time})
-
-
-@asset(
-    compute_kind="python",
-    key=["refresh_downloads_plots"],
-    deps=["bigquery_backend_to_frontend", "mart_downloads_summary"],
-    group_name="bigquery_daily",
-)
-def dagster_refresh_downloads_plots(context: AssetExecutionContext) -> None:
-    start_time = time.time()
-    cache_downloads_plots()
-    context.add_output_metadata({"elapsed time": time.time() - start_time})
-
-
-@asset(
-    compute_kind="python",
-    key=["refresh_summary_plots"],
-    deps=["github_metrics_backend_to_frontend", "mart_repo_summary"],
-    group_name="github_metrics_daily_4",
-)
-def dagster_refresh_summary_plots(context: AssetExecutionContext) -> None:
-    start_time = time.time()
-    cache_summary_plots()
     context.add_output_metadata({"elapsed time": time.time() - start_time})
 
 
@@ -338,12 +316,6 @@ def dagster_get_following(context: AssetExecutionContext) -> None:
     context.add_output_metadata({"n_records": n})
 
 
-@asset(compute_kind="python", key=["pypi_downloads"], group_name="bigquery_daily")
-def dagster_get_pypi_downloads(context: AssetExecutionContext) -> None:
-    records_added = refresh_all_pypi_downloads(dry_run=False)
-    context.add_output_metadata({"n_records": records_added})
-
-
 @asset(
     compute_kind="python",
     key=["github_metrics_backend_to_frontend"],
@@ -367,6 +339,25 @@ def github_metrics_table_copy(context: AssetExecutionContext) -> None:
 
 @asset(
     compute_kind="python",
+    key=["refresh_summary_plots"],
+    deps=["github_metrics_backend_to_frontend", "mart_repo_summary"],
+    group_name="github_metrics_daily_4",
+)
+def dagster_refresh_summary_plots(context: AssetExecutionContext) -> None:
+    start_time = time.time()
+    cache_summary_plots()
+    context.add_output_metadata({"elapsed time": time.time() - start_time})
+
+
+# BIGQUERY
+@asset(compute_kind="python", key=["pypi_downloads"], group_name="bigquery_daily")
+def dagster_get_pypi_downloads(context: AssetExecutionContext) -> None:
+    records_added = refresh_all_pypi_downloads(dry_run=False)
+    context.add_output_metadata({"n_records": records_added})
+
+
+@asset(
+    compute_kind="python",
     key=["bigquery_backend_to_frontend"],
     deps=["mart_downloads_summary"],
     group_name="bigquery_daily",
@@ -377,6 +368,19 @@ def bigquery_table_copy(context: AssetExecutionContext) -> None:
     context.add_output_metadata({"elapsed_time": time.time() - start_time})
 
 
+@asset(
+    compute_kind="python",
+    key=["refresh_downloads_plots"],
+    deps=["bigquery_backend_to_frontend", "mart_downloads_summary"],
+    group_name="bigquery_daily",
+)
+def dagster_refresh_downloads_plots(context: AssetExecutionContext) -> None:
+    start_time = time.time()
+    cache_downloads_plots()
+    context.add_output_metadata({"elapsed time": time.time() - start_time})
+
+
+# TESTS
 @asset(compute_kind="python", key=["will_pass"], group_name="test")
 def dagster_test_run_pass() -> None:
     assert True

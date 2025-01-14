@@ -119,7 +119,7 @@ def cache_downloads_plots() -> None:
                 dump_obj_to_pickle(pkl_name, fig)
 
 
-def cache_star_network():
+def cache_stargazer_network():
     modes = ["light", "dark"]
     for mode in modes:
         dark_mode = mode == "dark"
