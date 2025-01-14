@@ -9,8 +9,9 @@ from plotly.graph_objs import Figure
 
 from ampere.common import get_backend_db_con, timeit
 from ampere.models import Followers, StargazerNetworkRecord
+from ampere.pages.downloads import get_repos_with_downloads
 from ampere.styling import ScreenWidth
-from ampere.viz import get_summary_data, viz_summary
+from ampere.viz import get_downloads_data, get_summary_data, viz_downloads, viz_summary
 
 
 def dump_obj_to_pickle(pkl_name: str, obj: Any):
@@ -89,23 +90,25 @@ def cache_summary_plots() -> None:
                 )
 
                 f_name = f"summary_{metric}_{mode}_{width.value}"
-                dump_fig_to_json(f_name, fig)
+                dump_obj_to_pickle(f_name, fig)
 
 
 @timeit
 def cache_downloads_plots() -> None:
-    repos = get_valid_repos()
+    repos = get_repos_with_downloads()
     groups = ["overall", "package_version", "python_version"]
     modes = ["light", "dark"]
 
     for repo in repos:
-        df = pd.DataFrame(get_downloads_summary(repo))
+        df = get_downloads_data(repo)
         for group in groups:
             for mode in modes:
                 dark_mode = mode == "dark"
                 pkl_name = f"downloads_{repo}_{group}_{mode}"
                 print(f"caching {pkl_name}...")
-                fig = viz_area(df, group_name=group, date_range=None, dark_mode=dark_mode)
+                fig = viz_downloads(
+                    df, group_name=group, date_range=None, dark_mode=dark_mode
+                )
                 dump_obj_to_pickle(pkl_name, fig)
 
 

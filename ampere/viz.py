@@ -65,13 +65,13 @@ def read_pickle(pkl_name: str) -> Any:
         obj = pickle.load(f)
     return obj
 
+
 def read_json(pkl_name: str) -> Any:
     out_dir = Path(__file__).parents[1] / "data" / "viz"
     out_path = out_dir / f"{pkl_name}.json"
     with out_path.open("r") as f:
         data = f.read()
     return data
-
 
 
 def read_network_graph_pickle(pkl_name: str) -> nx.Graph:
@@ -82,11 +82,11 @@ def read_network_graph_pickle(pkl_name: str) -> nx.Graph:
 def read_plotly_fig_pickle(pkl_name: str) -> Figure:
     return read_pickle(pkl_name)
 
+
 @timeit
 def read_plotly_fig_json(f_name: str) -> Figure:
     fig_data = read_json(f_name)
     return go.Figure(plotly.io.from_json(fig_data))
-
 
 
 def viz_summary(
@@ -220,6 +220,142 @@ def get_summary_data() -> pd.DataFrame:
         ).to_df()
 
     return df
+
+
+def get_downloads_data(repo_name: str) -> pd.DataFrame:
+    with get_frontend_db_con() as con:
+        df = con.sql(
+            f"""
+            select
+            repo,
+            download_date,
+            group_name,
+            group_value,
+            download_count
+            from mart_downloads_summary
+            where repo = '{repo_name}'
+            order by download_date, download_count
+            """,
+        ).to_df()
+
+    return df
+
+
+@timeit
+def viz_downloads(
+    df: pd.DataFrame,
+    group_name: str,
+    date_range: Optional[list[int]] = None,
+    dark_mode: bool = False,
+) -> Figure:
+    df_filtered = df.query(f"group_name=='{group_name}'")
+    if date_range is not None:
+        filter_date_min = datetime.datetime.fromtimestamp(
+            date_range[0], tz=pytz.timezone("America/New_York")
+        )
+        filter_date_max = datetime.datetime.fromtimestamp(
+            date_range[1], tz=pytz.timezone("America/New_York")
+        )
+
+        df_filtered = df_filtered.query(f"download_date >= '{filter_date_min}'").query(
+            f"download_date <= '{filter_date_max}'"
+        )
+
+    max_date = df_filtered["download_date"].max()
+    categories = (
+        df_filtered[(df_filtered["download_date"] == max_date)]
+        .sort_values("download_count", ascending=False)["group_value"]
+        .tolist()
+    )
+
+    if dark_mode:
+        font_color = "white"
+        bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+        template = "plotly_dark"
+    else:
+        font_color = "black"
+        bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+        template = "plotly_white"
+
+    fig = px.area(
+        df_filtered,
+        x="download_date",
+        y="download_count",
+        color="group_value",
+        facet_col="group_name",
+        color_discrete_sequence=px.colors.qualitative.T10,
+        template=template,
+        category_orders={"group_value": categories},
+    )
+
+    fig.update_layout(plot_bgcolor=bg_color, paper_bgcolor=bg_color)
+    fig.for_each_annotation(
+        lambda a: a.update(
+            text="<b>" + a.text.split("=")[-1].replace("_", " ") + "</b>",
+            font_size=18,
+            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
+            font_color="white",
+            borderpad=5,
+            y=1.02,
+        )
+    )
+
+    fig.for_each_yaxis(
+        lambda y: y.update(
+            title="",
+            showline=True,
+            linewidth=1,
+            linecolor=font_color,
+            mirror=True,
+            tickfont_size=14,
+        )
+    )
+    fig.for_each_xaxis(
+        lambda x: x.update(
+            title="",
+            showline=True,
+            linewidth=1,
+            linecolor=font_color,
+            mirror=True,
+            showticklabels=True,
+            tickfont_size=14,
+        )
+    )
+    fig.update_yaxes(matches=None, showticklabels=True, showgrid=False)
+    fig.update_xaxes(showgrid=False)
+
+    fig.update_layout(
+        title={
+            "y": 0.95,
+            "x": 0.5,
+            "xanchor": "center",
+            "yanchor": "top",
+        },
+        margin=dict(t=50, l=0, r=0),
+        legend=dict(title=None, itemsizing="constant", font=dict(size=14)),
+        legend_title_text="",
+    )
+
+    return fig
+
+
+def get_repos_with_downloads() -> list[str]:
+    with get_frontend_db_con() as con:
+        repos = (
+            con.sql(
+                """
+                select distinct a.repo 
+                from mart_downloads_summary a 
+                left join stg_repos b on a.repo = b.repo_name
+                order by b.stargazers_count desc, a.repo
+                """
+            )
+            .to_df()
+            .squeeze()
+            .tolist()
+        )
+
+    return repos
 
 
 NETWORK_LAYOUT = go.Layout(
