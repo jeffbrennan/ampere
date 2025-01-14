@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional
 
-import dash
 import dash_bootstrap_components as dbc
 import networkx as nx
 import pandas as pd
@@ -14,8 +13,6 @@ from ampere.common import get_frontend_db_con, timeit
 from ampere.models import Followers
 from ampere.styling import AmperePalette, get_ampere_dt_style
 from ampere.viz import NETWORK_LAYOUT, format_plot_name_list, read_network_graph_pickle
-
-dash.register_page(__name__)
 
 
 @dataclass(slots=True, frozen=True)

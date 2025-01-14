@@ -6,6 +6,16 @@ import dash_breakpoints
 from dash import Input, Output, callback, dcc, html
 
 from ampere.app_shared import cache
+from ampere.pages import (
+    about,
+    downloads,
+    feed,
+    issues,
+    network_followers,
+    network_stargazers,
+    status,
+    summary,
+)
 from ampere.styling import AmperePalette, ScreenWidth
 
 
@@ -273,6 +283,17 @@ def main(env: str = "prod"):
 
     app.layout = layout(initial_background_color)
 
+    dash.register_page(summary.__name__, name="summary", path="/", layout=summary.layout)
+    dash.register_page(downloads.__name__, name="downloads", layout=downloads.layout)
+    dash.register_page(feed.__name__, name="feed", layout=feed.layout)
+    dash.register_page(issues.__name__, name="issues", layout=issues.layout)
+
+    dash.register_page(network_followers.__name__, layout=network_followers.layout)
+    dash.register_page(network_stargazers.__name__, layout=network_stargazers.layout)
+
+    dash.register_page(status.__name__, name="status", layout=status.layout)
+    dash.register_page(about.__name__, name="about", layout=about.layout)
+
     return app, server, envs
 
 
@@ -288,5 +309,4 @@ if __name__ == "__main__":
     env = parser.parse_args().env
     app, server, envs = main(env)
     app.run(host=envs[env]["host"], debug=envs[env]["debug"])
-
-_, server, _= main()
+_, server, _ = main()

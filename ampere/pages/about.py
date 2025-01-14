@@ -1,13 +1,9 @@
-
-import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_frontend_db_con
 from ampere.styling import get_ampere_dt_style
-
-dash.register_page(__name__, name="about", top_nav=True, order=2)
 
 
 def create_repo_table() -> pd.DataFrame:

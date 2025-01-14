@@ -14,8 +14,6 @@ from ampere.styling import (
     table_title_style,
 )
 
-dash.register_page(__name__, name="feed", top_nav=True, order=3)
-
 
 def create_issues_table() -> pd.DataFrame:
     with get_frontend_db_con() as con:

@@ -6,8 +6,6 @@ from dash import Input, Output, callback, dash_table, html
 from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import get_ampere_dt_style
 
-dash.register_page(__name__, name="status", top_nav=True, order=2)
-
 
 def create_status_summary_table() -> pd.DataFrame:
     with get_frontend_db_con() as con:

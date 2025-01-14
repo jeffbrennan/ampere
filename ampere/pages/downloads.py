@@ -13,8 +13,6 @@ from ampere.app_shared import cache
 from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import AmperePalette
 
-dash.register_page(__name__, name="downloads", top_nav=True, order=1)
-
 
 @timeit
 def viz_area(

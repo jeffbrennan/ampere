@@ -6,8 +6,6 @@ from dash import Input, Output, callback, dash_table, html
 from ampere.common import get_frontend_db_con
 from ampere.styling import AmperePalette, get_ampere_dt_style
 
-dash.register_page(__name__, name="feed", top_nav=True, order=3)
-
 
 def create_feed_table() -> pd.DataFrame:
     with get_frontend_db_con() as con:

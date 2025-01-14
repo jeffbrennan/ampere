@@ -1,4 +1,3 @@
-import dash
 import dash_bootstrap_components as dbc
 import networkx as nx
 import pandas as pd
@@ -12,8 +11,6 @@ from ampere.models import StargazerNetworkRecord
 from ampere.styling import AmperePalette, get_ampere_dt_style
 from ampere.viz import NETWORK_LAYOUT, generate_repo_palette, read_network_graph_pickle
 
-dash.register_page(__name__, name="network", top_nav=True, order=1)
-
 
 def create_stargazers_table() -> pd.DataFrame:
     with get_frontend_db_con() as con:
@@ -26,6 +23,7 @@ def create_stargazers_table() -> pd.DataFrame:
         """,
         ).to_df()
     return df
+
 
 @timeit
 def create_star_network_plot(
@@ -125,6 +123,7 @@ def create_star_network_plot(
         legend=dict(font=dict(color=legend_text_color)),
     )
     return fig
+
 
 @timeit
 def viz_star_network(dark_mode: bool) -> Figure:
