@@ -1,10 +1,12 @@
 import datetime
+import json
 import pickle
 from pathlib import Path
 from typing import Any, Optional
 
 import networkx as nx
 import pandas as pd
+import plotly
 import plotly.express as px
 import plotly.graph_objects as go
 import pypalettes
@@ -63,6 +65,14 @@ def read_pickle(pkl_name: str) -> Any:
         obj = pickle.load(f)
     return obj
 
+def read_json(pkl_name: str) -> Any:
+    out_dir = Path(__file__).parents[1] / "data" / "viz"
+    out_path = out_dir / f"{pkl_name}.json"
+    with out_path.open("r") as f:
+        data = f.read()
+    return data
+
+
 
 def read_network_graph_pickle(pkl_name: str) -> nx.Graph:
     return read_pickle(pkl_name)
@@ -71,6 +81,12 @@ def read_network_graph_pickle(pkl_name: str) -> nx.Graph:
 @timeit
 def read_plotly_fig_pickle(pkl_name: str) -> Figure:
     return read_pickle(pkl_name)
+
+@timeit
+def read_plotly_fig_json(f_name: str) -> Figure:
+    fig_data = read_json(f_name)
+    return go.Figure(plotly.io.from_json(fig_data))
+
 
 
 def viz_summary(

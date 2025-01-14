@@ -5,6 +5,7 @@ from typing import Any
 
 import networkx as nx
 import pandas as pd
+from plotly.graph_objs import Figure
 
 from ampere.common import get_backend_db_con, timeit
 from ampere.models import Followers, StargazerNetworkRecord
@@ -19,6 +20,19 @@ def dump_obj_to_pickle(pkl_name: str, obj: Any):
     out_path = out_dir / f"{pkl_name}.pkl"
     with out_path.open("wb") as f:
         pickle.dump(obj, f)
+
+
+def dump_fig_to_json(f_name: str, fig: Figure):
+    out_dir = Path(__file__).parents[1] / "data" / "viz"
+    out_dir.mkdir(exist_ok=True, parents=True)
+
+    out_path = out_dir / f"{f_name}.json"
+    serialized_fig = fig.to_json()
+    if not isinstance(serialized_fig, str):
+        raise TypeError()
+
+    with out_path.open("w") as f:
+        f.write(serialized_fig)
 
 
 def create_follower_network() -> None:
@@ -74,8 +88,8 @@ def cache_summary_plots() -> None:
                     dark_mode=dark_mode,
                 )
 
-                pkl_name = f"summary_{metric}_{mode}_{width.value}"
-                dump_obj_to_pickle(pkl_name, fig)
+                f_name = f"summary_{metric}_{mode}_{width.value}"
+                dump_fig_to_json(f_name, fig)
 
 
 @timeit

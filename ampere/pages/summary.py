@@ -104,9 +104,9 @@ def get_viz_summary(
 ) -> tuple[Figure, dict]:
     if date_range == date_bounds:
         mode = "dark" if dark_mode else "light"
-        pkl_name = f"summary_{metric_type}_{mode}_{breakpoint_name}"
+        f_name = f"summary_{metric_type}_{mode}_{breakpoint_name}"
         try:
-            fig = read_plotly_fig_pickle(pkl_name)
+            fig = read_plotly_fig_pickle(f_name)
             print(f"obtained {metric_type} fig from cache")
             return fig, {}
 
@@ -250,7 +250,7 @@ def layout():
                 dcc.Graph("summary-issues", style={"visibility": "hidden"}),
                 dcc.Graph("summary-commits", style={"visibility": "hidden"}),
             ],
-            style={"transition": "opacity 100ms ease-in", "minHeight": "100vh"},
+            style={"transition": "opacity 200ms ease-in", "minHeight": "100vh"},
             is_in=False,
         ),
     ]
