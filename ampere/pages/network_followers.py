@@ -5,7 +5,6 @@ from dash import Input, Output, callback, dash_table, dcc, html
 from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import get_ampere_dt_style
 from ampere.viz import (
-    NETWORK_LAYOUT,
     read_plotly_fig_pickle,
 )
 

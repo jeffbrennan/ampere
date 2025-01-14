@@ -6,7 +6,7 @@ from dash import Input, Output, callback, dcc, html
 from plotly.graph_objs import Figure
 
 from ampere.app_shared import cache
-from ampere.common import get_frontend_db_con, timeit
+from ampere.common import timeit
 from ampere.styling import AmperePalette, ScreenWidth
 from ampere.viz import (
     get_summary_data,
