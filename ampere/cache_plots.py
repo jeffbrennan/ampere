@@ -1,20 +1,24 @@
 import pickle
 import random
 from pathlib import Path
+from typing import Any
 
 import networkx as nx
+import pandas as pd
 
 from ampere.common import get_backend_db_con, timeit
 from ampere.models import Followers, StargazerNetworkRecord
+from ampere.styling import ScreenWidth
+from ampere.viz import get_summary_data, viz_summary
 
 
-def dump_graph_to_pickle(pkl_name: str, graph: nx.Graph):
+def dump_obj_to_pickle(pkl_name: str, obj: Any):
     out_dir = Path(__file__).parents[1] / "data" / "viz"
     out_dir.mkdir(exist_ok=True, parents=True)
 
     out_path = out_dir / f"{pkl_name}.pkl"
     with out_path.open("wb") as f:
-        pickle.dump(graph, f)
+        pickle.dump(obj, f)
 
 
 def create_follower_network() -> None:
@@ -42,7 +46,53 @@ def create_follower_network() -> None:
     pos = nx.spring_layout(graph)
     nx.set_node_attributes(graph, pos, "pos")
 
-    dump_graph_to_pickle("follower_network", graph)
+    dump_obj_to_pickle("follower_network", graph)
+
+
+@timeit
+def cache_summary_plots() -> None:
+    df = pd.DataFrame(get_summary_data())
+    metrics = ["stars", "issues", "commits"]
+    modes = ["light", "dark"]
+    screen_widths = [
+        ScreenWidth.xs,
+        ScreenWidth.sm,
+        ScreenWidth.md,
+        ScreenWidth.lg,
+        ScreenWidth.xl,
+    ]
+
+    for metric in metrics:
+        for mode in modes:
+            dark_mode = mode == "dark"
+            for width in screen_widths:
+                fig = viz_summary(
+                    df,
+                    metric_type=metric,
+                    date_range=None,
+                    screen_width=width,
+                    dark_mode=dark_mode,
+                )
+
+                pkl_name = f"summary_{metric}_{mode}_{width.value}"
+                dump_obj_to_pickle(pkl_name, fig)
+
+
+@timeit
+def cache_downloads_plots() -> None:
+    repos = get_valid_repos()
+    groups = ["overall", "package_version", "python_version"]
+    modes = ["light", "dark"]
+
+    for repo in repos:
+        df = pd.DataFrame(get_downloads_summary(repo))
+        for group in groups:
+            for mode in modes:
+                dark_mode = mode == "dark"
+                pkl_name = f"downloads_{repo}_{group}_{mode}"
+                print(f"caching {pkl_name}...")
+                fig = viz_area(df, group_name=group, date_range=None, dark_mode=dark_mode)
+                dump_obj_to_pickle(pkl_name, fig)
 
 
 @timeit
@@ -97,4 +147,4 @@ def create_star_network() -> None:
     pos = nx.spring_layout(graph)
     nx.set_node_attributes(graph, pos, "pos")
 
-    dump_graph_to_pickle("star_network", graph)
+    dump_obj_to_pickle("star_network", graph)
