@@ -11,7 +11,14 @@ from ampere.common import get_backend_db_con, timeit
 from ampere.models import Followers, StargazerNetworkRecord
 from ampere.pages.downloads import get_repos_with_downloads
 from ampere.styling import ScreenWidth
-from ampere.viz import get_downloads_data, get_summary_data, viz_downloads, viz_summary
+from ampere.viz import (
+    get_downloads_data,
+    get_summary_data,
+    viz_downloads,
+    viz_follower_network,
+    viz_star_network,
+    viz_summary,
+)
 
 
 def dump_obj_to_pickle(pkl_name: str, obj: Any):
@@ -112,8 +119,26 @@ def cache_downloads_plots() -> None:
                 dump_obj_to_pickle(pkl_name, fig)
 
 
+def cache_star_network():
+    modes = ["light", "dark"]
+    for mode in modes:
+        dark_mode = mode == "dark"
+        fig = viz_star_network(dark_mode)
+        f_name = f"stargazer_network_{mode}"
+        dump_obj_to_pickle(f_name, fig)
+
+
+def cache_follower_network():
+    modes = ["light", "dark"]
+    for mode in modes:
+        dark_mode = mode == "dark"
+        fig = viz_follower_network(dark_mode)
+        f_name = f"follower_network_{mode}"
+        dump_obj_to_pickle(f_name, fig)
+
+
 @timeit
-def create_star_network() -> None:
+def create_stargazer_network() -> None:
     con = get_backend_db_con()
     stargazers_df = con.sql(
         """

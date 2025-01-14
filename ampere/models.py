@@ -180,3 +180,17 @@ class StargazerNetworkRecord:
 class Followers:
     user_id: str
     follower_id: int
+
+
+@dataclass(slots=True, frozen=True)
+class FollowerDetails:
+    user_id: int
+    user_name: str
+    followers_count: int
+    following_count: int
+    followers: Optional[list[str]]
+    following: Optional[list[str]]
+    internal_followers_count: int
+    internal_following_count: int
+    internal_followers_pct: float
+    internal_following_pct: float

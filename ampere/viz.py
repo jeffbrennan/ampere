@@ -15,6 +15,7 @@ from plotly.graph_objs import Figure
 
 from ampere.common import get_frontend_db_con, timeit
 from ampere.get_repo_metrics import read_repos
+from ampere.models import FollowerDetails, Followers, StargazerNetworkRecord
 from ampere.styling import AmperePalette, ScreenWidth
 
 
@@ -356,6 +357,305 @@ def get_repos_with_downloads() -> list[str]:
         )
 
     return repos
+
+
+@timeit
+def create_star_network_plot(
+    graph: nx.Graph,
+    repos: list[str],
+    stargazers: list[StargazerNetworkRecord],
+    dark_mode: bool,
+) -> go.Figure:
+    if dark_mode:
+        edge_color = "rgba(255, 255, 255, 0.3)"
+        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+        legend_text_color = "white"
+    else:
+        edge_color = "rgba(0, 0, 0, 0.3)"
+        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+        legend_text_color = "black"
+
+    edge_x = []
+    edge_y = []
+    for edge in graph.edges():
+        if edge[0] in repos:
+            continue
+
+        x0, y0 = graph.nodes[edge[0]]["pos"]
+        x1, y1 = graph.nodes[edge[1]]["pos"]
+
+        edge_x.extend([x0, x1, None])
+        edge_y.extend([y0, y1, None])
+
+    edge_trace = go.Scatter(
+        x=edge_x,
+        y=edge_y,
+        line=dict(width=1, color=edge_color),
+        hoverinfo="none",
+        mode="lines",
+        showlegend=False,
+    )
+
+    node_info = []
+    for node in graph.nodes():
+        node_data = graph.nodes.data()[node]
+        repo = node_data["repo"]
+        if node == repo:
+            continue
+
+        x, y = graph.nodes[node]["pos"]
+        followers_count = node_data["followers_count"]
+        user_name = node.split("_")[0]
+
+        all_repos = [i.repo_name for i in stargazers if i.user_name == user_name]
+
+        all_repos_text = ", ".join(all_repos)
+
+        node_text_list = [
+            f"<b> {user_name} </b>",
+            "",
+            f"followers: {followers_count}",
+            f"repos: {all_repos_text}",
+        ]
+
+        node_text = "<br>".join(node_text_list)
+        node_info.append(
+            {
+                "x": x,
+                "y": y,
+                "repo": repo,
+                "text": node_text,
+                "size": followers_count,
+            }
+        )
+
+    node_df = pd.DataFrame(node_info)
+    node_df["size_group"] = pd.qcut(node_df["size"], 6, labels=False, duplicates="drop")
+    node_df["size_group"] = (node_df["size_group"] + 1) * 5
+
+    repo_palette = generate_repo_palette()
+    all_node_traces = []
+    for repo in repos:
+        repo_df = node_df.query(f"repo == '{repo}'")
+        node_trace = go.Scatter(
+            x=repo_df.x,
+            y=repo_df.y,
+            marker_size=repo_df.size_group,
+            marker_color=repo_palette[repo],
+            mode="markers",
+            hoverinfo="text",
+            hovertext=repo_df.text,
+            name=repo,
+        )
+        all_node_traces.append(node_trace)
+
+    fig = go.Figure(data=[edge_trace, *all_node_traces], layout=NETWORK_LAYOUT)
+
+    fig.update_layout(
+        plot_bgcolor=background_color,
+        paper_bgcolor=background_color,
+        legend=dict(font=dict(color=legend_text_color)),
+    )
+    return fig
+
+
+@timeit
+def viz_star_network(dark_mode: bool) -> Figure:
+    with get_frontend_db_con() as con:
+        stargazers = con.sql(
+            """
+        select
+            user_name,
+            followers_count,
+            starred_at,
+            retrieved_at,
+            repo_name
+        from int_network_stargazers,
+    """,
+        ).to_df()
+
+    stargazers = list(StargazerNetworkRecord(*record) for record in stargazers.values)
+    repos_with_stargazers = list(set(i.repo_name for i in stargazers))
+    repo_palette = generate_repo_palette()
+    repos = [i for i in repo_palette if i in repos_with_stargazers]
+
+    network = read_network_graph_pickle("star_network")
+    fig = create_star_network_plot(network, repos, stargazers, dark_mode)
+    return fig
+
+
+@timeit
+def create_follower_network_plot(
+    graph: nx.Graph,
+    follower_info: list[Followers],
+    follower_details: dict[int, FollowerDetails],
+    dark_mode: bool,
+) -> go.Figure:
+    if dark_mode:
+        edge_color = "rgba(255, 255, 255, 0.3)"
+        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+        legend_text_color = "white"
+    else:
+        edge_color = "rgba(0, 0, 0, 0.3)"
+        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+        legend_text_color = "black"
+
+    all_connections = [(i.user_id, i.follower_id) for i in follower_info]
+    solo_edges = {"x": [], "y": []}
+    mutual_edges = {"x": [], "y": []}
+    for edge in graph.edges():
+        followed = edge[0]
+        follower = edge[1]
+
+        is_mutual = (follower, followed) in all_connections
+        x0, y0 = graph.nodes[followed]["pos"]
+        x1, y1 = graph.nodes[follower]["pos"]
+
+        if is_mutual:
+            mutual_edges["x"].extend([x0, x1, None])
+            mutual_edges["y"].extend([y0, y1, None])
+        else:
+            solo_edges["x"].extend([x0, x1, None])
+            solo_edges["y"].extend([y0, y1, None])
+
+    solo_edge_trace = go.Scatter(
+        x=solo_edges["x"],
+        y=solo_edges["y"],
+        line=dict(width=1, color=edge_color),
+        hoverinfo="none",
+        mode="lines",
+        name="solo connection",
+    )
+    mutual_edge_trace = go.Scatter(
+        x=mutual_edges["x"],
+        y=mutual_edges["y"],
+        line=dict(width=1, color="rgba(0, 117, 255, 0.8)"),
+        hoverinfo="none",
+        mode="lines",
+        name="mutual connection",
+    )
+
+    node_info = []
+    for node in graph.nodes():
+        x, y = graph.nodes[node]["pos"]
+        node_details = follower_details[node]
+        node_text_list = [
+            "<b>" + node_details.user_name + "</b>",
+            "",
+            f"org followers: {node_details.internal_followers_count}/{node_details.followers_count} ({node_details.internal_followers_pct * 100:.02f}%)",
+            f"org following: {node_details.internal_following_count}/{node_details.following_count} ({node_details.internal_following_pct * 100:.02f}%)",
+        ]
+
+        internal_followers_clean = format_plot_name_list(node_details.followers)
+        internal_following_clean = format_plot_name_list(node_details.following)
+
+        if internal_followers_clean is not None or internal_following_clean is not None:
+            node_text_list += [""]
+
+        if internal_followers_clean is not None:
+            node_text_list += [f"followers: {internal_followers_clean}"]
+
+        if internal_following_clean is not None:
+            node_text_list += [f"following: {internal_following_clean}"]
+
+        node_text = "<br>".join(node_text_list)
+        node_info.append(
+            {
+                "x": x,
+                "y": y,
+                "text": node_text,
+                "followers_count": node_details.followers_count,
+                "internal_followers_count": node_details.internal_followers_count,
+                "internal_followers_pct": node_details.internal_followers_pct,
+                "following_count": node_details.following_count,
+                "internal_following_count": node_details.internal_following_count,
+                "internal_following_pct": node_details.internal_following_pct,
+            }
+        )
+
+    node_df = pd.DataFrame(node_info)
+    node_df["followers_group"] = pd.qcut(
+        node_df["followers_count"],
+        10,
+        labels=False,
+        duplicates="drop",
+    )
+
+    node_df["followers_group"] **= 10
+    if dark_mode:
+        node_df["followers_group"] = 10 - node_df["followers_group"]
+
+    node_trace = go.Scatter(
+        x=node_df.x,
+        y=node_df.y,
+        marker=dict(
+            size=8,
+            color=node_df.followers_group,
+            colorscale="Greys",
+            line=dict(width=1, color=legend_text_color),
+        ),
+        mode="markers",
+        hoverinfo="text",
+        hovertext=node_df.text,
+        name="follower count",
+    )
+
+    fig = go.Figure(
+        data=[solo_edge_trace, mutual_edge_trace, node_trace], layout=NETWORK_LAYOUT
+    )
+
+    fig.update_layout(
+        plot_bgcolor=background_color,
+        paper_bgcolor=background_color,
+        legend=dict(font=dict(color=legend_text_color)),
+    )
+    return fig
+
+
+@timeit
+def viz_follower_network(dark_mode: bool) -> Figure:
+    with get_frontend_db_con() as con:
+        followers = (
+            con.sql("select user_id, follower_id from int_internal_followers")
+            .to_df()
+            .to_dict(orient="records")
+        )
+
+        follower_details_dict = (
+            con.sql(
+                """
+        select
+        user_id,
+        user_name,
+        followers_count,
+        following_count,
+        followers,
+        following,
+        internal_followers_count,
+        internal_following_count,
+        internal_followers_pct,
+        internal_following_pct
+        from int_network_follower_details
+        """,
+            )
+            .to_df()
+            .to_dict(orient="records")
+        )
+
+    followers = [Followers(**record) for record in followers]  # type: ignore
+    follower_details_dc = [FollowerDetails(**i) for i in follower_details_dict]  # type: ignore
+    follower_details = {i.user_id: i for i in follower_details_dc}
+
+    # reads precomputed network graph from scheduled job
+    network = read_network_graph_pickle("follower_network")
+
+    fig = create_follower_network_plot(
+        network,
+        followers,
+        follower_details,
+        dark_mode,
+    )
+    return fig
 
 
 NETWORK_LAYOUT = go.Layout(
