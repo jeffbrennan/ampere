@@ -1,137 +1,57 @@
 import datetime
-from typing import Any, Optional
+from typing import Any
 
-import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
-import plotly.express as px
-import pytz
 from dash import Input, Output, callback, dcc, html
 from plotly.graph_objects import Figure
 
 from ampere.app_shared import cache
-from ampere.common import get_frontend_db_con, timeit
+from ampere.common import timeit
 from ampere.styling import AmperePalette
-
-dash.register_page(__name__, name="downloads", top_nav=True, order=1)
+from ampere.viz import (
+    get_repos_with_downloads,
+    read_dataframe_pickle,
+    read_plotly_fig_pickle,
+    viz_downloads,
+)
 
 
 @timeit
-def viz_area(
-    df: pd.DataFrame,
-    group_name: str,
-    date_range: Optional[list[int]] = None,
-    dark_mode: bool = False,
-) -> Figure:
-    df_filtered = df.query(f"group_name=='{group_name}'")
-    if date_range is not None:
-        filter_date_min = datetime.datetime.fromtimestamp(
-            date_range[0], tz=pytz.timezone("America/New_York")
-        )
-        filter_date_max = datetime.datetime.fromtimestamp(
-            date_range[1], tz=pytz.timezone("America/New_York")
-        )
+def get_viz_downloads(
+    df_data: list[dict],
+    date_range: list[int],
+    dark_mode: bool,
+    date_bounds: list[int],
+    group: str,
+    repo: str,
+) -> tuple[Figure, dict]:
+    if date_range == date_bounds:
+        mode = "dark" if dark_mode else "light"
+        f_name = f"downloads_{repo}_{group}_{mode}"
+        try:
+            fig = read_plotly_fig_pickle(f_name)
+            print(f"obtained {group} fig from cache")
+            return fig, {}
 
-        df_filtered = df_filtered.query(f"download_date >= '{filter_date_min}'").query(
-            f"download_date <= '{filter_date_max}'"
-        )
+        except Exception as e:
+            print(e)
+            pass
 
-    max_date = df_filtered["download_date"].max()
-    categories = (
-        df_filtered[(df_filtered["download_date"] == max_date)]
-        .sort_values("download_count", ascending=False)["group_value"]
-        .tolist()
+    fig = viz_downloads(
+        pd.DataFrame(df_data),
+        group_name=group,
+        date_range=date_range,
+        dark_mode=dark_mode,
     )
 
-    if dark_mode:
-        font_color = "white"
-        bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-        template = "plotly_dark"
-    else:
-        font_color = "black"
-        bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-        template = "plotly_white"
-
-    fig = px.area(
-        df_filtered,
-        x="download_date",
-        y="download_count",
-        color="group_value",
-        facet_col="group_name",
-        color_discrete_sequence=px.colors.qualitative.T10,
-        template=template,
-        category_orders={"group_value": categories},
-    )
-
-    fig.update_layout(plot_bgcolor=bg_color, paper_bgcolor=bg_color)
-    fig.for_each_annotation(
-        lambda a: a.update(
-            text="<b>" + a.text.split("=")[-1].replace("_", " ") + "</b>",
-            font_size=18,
-            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
-            font_color="white",
-            borderpad=5,
-            y=1.02,
-        )
-    )
-
-    fig.for_each_yaxis(
-        lambda y: y.update(
-            title="",
-            showline=True,
-            linewidth=1,
-            linecolor=font_color,
-            mirror=True,
-            tickfont_size=14,
-        )
-    )
-    fig.for_each_xaxis(
-        lambda x: x.update(
-            title="",
-            showline=True,
-            linewidth=1,
-            linecolor=font_color,
-            mirror=True,
-            showticklabels=True,
-            tickfont_size=14,
-        )
-    )
-    fig.update_yaxes(matches=None, showticklabels=True, showgrid=False)
-    fig.update_xaxes(showgrid=False)
-
-    fig.update_layout(
-        title={
-            "y": 0.95,
-            "x": 0.5,
-            "xanchor": "center",
-            "yanchor": "top",
-        },
-        margin=dict(t=50, l=0, r=0),
-        legend=dict(title=None, itemsizing="constant", font=dict(size=14)),
-        legend_title_text="",
-    )
-
-    return fig
+    return fig, {}
 
 
 @cache.memoize()
-def get_valid_repos() -> list[str]:
-    with get_frontend_db_con() as con:
-        repos = (
-            con.sql(
-                """
-                select distinct a.repo 
-                from mart_downloads_summary a 
-                left join stg_repos b on a.repo = b.repo_name
-                order by b.stargazers_count desc, a.repo
-                """
-            )
-            .to_df()
-            .squeeze()
-            .tolist()
-        )
-
-    return repos
+@timeit
+def dash_get_repos_with_downloads():
+    return get_repos_with_downloads()
 
 
 @callback(
@@ -143,12 +63,25 @@ def get_valid_repos() -> list[str]:
         Input("downloads-df", "data"),
         Input("date-slider", "value"),
         Input("color-mode-switch", "value"),
+        Input("downloads-date-bounds", "data"),
+        Input("repo-selection", "value"),
     ],
 )
-def viz_downloads_overall(df_data: list[dict], date_range: list[int], dark_mode: bool):
-    df = pd.DataFrame(df_data)
-    fig = viz_area(df, "overall", date_range, dark_mode)
-    return fig, {}
+def viz_downloads_overall(
+    df_data: list[dict],
+    date_range: list[int],
+    dark_mode: bool,
+    date_bounds: list[int],
+    repo_name: str,
+):
+    return get_viz_downloads(
+        df_data=df_data,
+        date_range=date_range,
+        dark_mode=dark_mode,
+        date_bounds=date_bounds,
+        group="overall",
+        repo=repo_name,
+    )
 
 
 @callback(
@@ -160,14 +93,25 @@ def viz_downloads_overall(df_data: list[dict], date_range: list[int], dark_mode:
         Input("downloads-df", "data"),
         Input("date-slider", "value"),
         Input("color-mode-switch", "value"),
+        Input("downloads-date-bounds", "data"),
+        Input("repo-selection", "value"),
     ],
 )
 def viz_downloads_by_package_version(
-    df_data: list[dict], date_range: list[int], dark_mode: bool
+    df_data: list[dict],
+    date_range: list[int],
+    dark_mode: bool,
+    date_bounds: list[int],
+    repo_name: str,
 ):
-    df = pd.DataFrame(df_data)
-    fig = viz_area(df, "package_version", date_range, dark_mode)
-    return fig, {}
+    return get_viz_downloads(
+        df_data=df_data,
+        date_range=date_range,
+        dark_mode=dark_mode,
+        date_bounds=date_bounds,
+        group="package_version",
+        repo=repo_name,
+    )
 
 
 @callback(
@@ -179,14 +123,25 @@ def viz_downloads_by_package_version(
         Input("downloads-df", "data"),
         Input("date-slider", "value"),
         Input("color-mode-switch", "value"),
+        Input("downloads-date-bounds", "data"),
+        Input("repo-selection", "value"),
     ],
 )
 def viz_downloads_by_python_version(
-    df_data: list[dict], date_range: list[int], dark_mode: bool
+    df_data: list[dict],
+    date_range: list[int],
+    dark_mode: bool,
+    date_bounds: list[int],
+    repo_name: str,
 ):
-    df = pd.DataFrame(df_data)
-    fig = viz_area(df, "python_version", date_range, dark_mode)
-    return fig, {}
+    return get_viz_downloads(
+        df_data=df_data,
+        date_range=date_range,
+        dark_mode=dark_mode,
+        date_bounds=date_bounds,
+        group="python_version",
+        repo=repo_name,
+    )
 
 
 @callback(
@@ -206,24 +161,10 @@ def update_downloads_graph_fade(fig1, fig2, fig3):
     Input("repo-selection", "value"),
 )
 @cache.memoize()
-def get_downloads_summary(repo_name: str) -> list[dict]:
-    print(f"cache miss: computing get_downloads_summary for {repo_name}")
-
-    with get_frontend_db_con() as con:
-        df = con.sql(
-            f"""
-            select
-            repo,
-            download_date,
-            group_name,
-            group_value,
-            download_count
-            from mart_downloads_summary
-            where repo = '{repo_name}'
-            order by download_date, download_count
-            """,
-        ).to_df()
-
+@timeit
+def get_downloads_records(repo_name: str) -> list[dict]:
+    print(f"cache miss: computing get_downloads_records for {repo_name}")
+    df = read_dataframe_pickle(f"downloads_df_{repo_name}")
     return df.to_dict("records")
 
 
@@ -235,6 +176,7 @@ def get_downloads_summary(repo_name: str) -> list[dict]:
         Input("date-slider", "value"),
     ],
 )
+@timeit
 def toggle_slider_tooltip_visibility(
     min_date_seconds: int, max_date_seconds: int, date_range: list[int]
 ) -> dict[Any, Any]:
@@ -262,14 +204,14 @@ def toggle_slider_tooltip_visibility(
         Output("date-slider", "max"),
         Output("date-slider", "value"),
         Output("date-slider", "marks"),
+        Output("downloads-date-bounds", "data"),
     ],
     [
         Input("downloads-df", "data"),
     ],
 )
-def get_downloads_summary_date_ranges(
-    df_data: list[dict],
-) -> tuple[int, int, list[int], dict[Any, dict[str, Any]]]:
+@timeit
+def get_downloads_records_date_ranges(df_data: list[dict]):
     df = pd.DataFrame(df_data)
     df["download_date"] = pd.to_datetime(df["download_date"], utc=True)
     min_timestamp = df["download_date"].min().timestamp()
@@ -292,6 +234,7 @@ def get_downloads_summary_date_ranges(
         max_timestamp,
         date_slider_value,
         date_slider_marks,
+        [min_timestamp, max_timestamp],
     )
 
 
@@ -315,6 +258,7 @@ def update_dropdown_menu_color(dark_mode: bool):
 def layout():
     return [
         dcc.Store("downloads-df"),
+        dcc.Store("downloads-date-bounds"),
         dbc.Fade(
             id="downloads-fade",
             children=[
@@ -322,7 +266,7 @@ def layout():
                     children=[
                         dbc.Col(
                             dcc.Dropdown(
-                                get_valid_repos(),
+                                dash_get_repos_with_downloads(),
                                 placeholder="quinn",
                                 value="quinn",
                                 clearable=False,

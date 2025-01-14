@@ -1,11 +1,10 @@
 import copy
 
-import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
-from ampere.common import get_frontend_db_con
+from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import (
     AmperePalette,
     ColumnInfo,
@@ -13,8 +12,6 @@ from ampere.styling import (
     style_dt_background_colors_by_rank,
     table_title_style,
 )
-
-dash.register_page(__name__, name="feed", top_nav=True, order=3)
 
 
 def create_issues_table() -> pd.DataFrame:
@@ -183,6 +180,7 @@ def display_summary_title(_, breakpoint_name):
         Input("breakpoints", "widthBreakpoint"),
     ],
 )
+@timeit
 def get_styled_issues_summary_table(dark_mode: bool, breakpoint_name: str):
     summary_df = create_issues_summary_table()
     summary_data = summary_df.to_dict("records")
@@ -278,6 +276,7 @@ def display_issues_title(_, breakpoint_name):
         Input("breakpoints", "widthBreakpoint"),
     ],
 )
+@timeit
 def get_styled_issues_table(dark_mode: bool, breakpoint_name: str):
     issues_df = create_issues_table()
     base_style = get_ampere_dt_style(dark_mode)

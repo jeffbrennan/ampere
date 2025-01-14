@@ -127,7 +127,8 @@ This project is build with an open source (d)ata stack:
 
 ## TODOs
 
-- [ ] dark mode
+- [x] dark mode
+- [x] page load speed
 - [ ] mobile improvements
 - [ ] create API
 - [ ] add `ampere` to `mrpowers-io` organization
