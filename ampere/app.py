@@ -114,12 +114,7 @@ def layout(initial_background_color: str):
     navbar = dbc.Navbar(
         dbc.Container(
             [
-                dbc.NavbarBrand(
-                    "ampere",
-                    href="/",
-                    style={"fontWeight": "bold", "paddingBottom": "6px"},
-                    class_name="navbar-brand",
-                ),
+                dbc.NavbarBrand("ampere", href="/", class_name="navbar-brand"),
                 dbc.NavbarToggler(id="navbar-toggler", className="navbar-toggler"),
                 dbc.Collapse(
                     dbc.Nav(
@@ -211,12 +206,12 @@ def layout(initial_background_color: str):
                             "marginTop": "4px",
                             "marginBottom": "0px",
                         },
-                        class_name='color-mode-switch'
+                        class_name="color-mode-switch",
                     )
                 ),
             ],
             fluid=True,
-            class_name='navbar-container'
+            class_name="navbar-container",
         ),
         color=AmperePalette.PAGE_ACCENT_COLOR,
         dark=True,
