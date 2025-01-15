@@ -110,6 +110,15 @@ def toggle_navbar_collapse(n_clicks, is_open):
     return is_open
 
 
+@callback(
+    Output("navbar-collapse", "is_open", allow_duplicate=True),
+    Input("current-url", "pathname"),
+    prevent_initial_call=True,
+)
+def close_navbar_on_navigate(_):
+    return False
+
+
 def layout(initial_background_color: str):
     navbar = dbc.Navbar(
         dbc.Container(
