@@ -3,7 +3,7 @@ import argparse
 import dash
 import dash_bootstrap_components as dbc
 import dash_breakpoints
-from dash import Input, Output, callback, dcc, html
+from dash import Input, Output, State, callback, dcc, html
 
 from ampere.app_shared import cache
 from ampere.pages import (
@@ -99,6 +99,17 @@ def update_network_dropdown_color(dark_mode: bool):
     )
 
 
+@callback(
+    Output("navbar-collapse", "is_open"),
+    [Input("navbar-toggler", "n_clicks")],
+    [State("navbar-collapse", "is_open")],
+)
+def toggle_navbar_collapse(n_clicks, is_open):
+    if n_clicks:
+        return not is_open
+    return is_open
+
+
 def layout(initial_background_color: str):
     navbar = dbc.Navbar(
         dbc.Container(
@@ -107,8 +118,9 @@ def layout(initial_background_color: str):
                     "ampere",
                     href="/",
                     style={"fontWeight": "bold", "paddingBottom": "6px"},
+                    class_name="navbar-brand",
                 ),
-                dbc.NavbarToggler(id="navbar-toggler"),
+                dbc.NavbarToggler(id="navbar-toggler", className="navbar-toggler"),
                 dbc.Collapse(
                     dbc.Nav(
                         [
@@ -199,10 +211,12 @@ def layout(initial_background_color: str):
                             "marginTop": "4px",
                             "marginBottom": "0px",
                         },
+                        class_name='color-mode-switch'
                     )
                 ),
             ],
             fluid=True,
+            class_name='navbar-container'
         ),
         color=AmperePalette.PAGE_ACCENT_COLOR,
         dark=True,
