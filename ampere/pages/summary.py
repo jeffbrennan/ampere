@@ -21,14 +21,22 @@ from ampere.viz import (
         Input("summary-date-slider", "min"),
         Input("summary-date-slider", "max"),
         Input("summary-date-slider", "value"),
+        Input("breakpoints", "widthBreakpoint"),
     ],
 )
 def toggle_slider_tooltip_visibility(
-    min_date_seconds: int, max_date_seconds: int, date_range: list[int]
+    min_date_seconds: int,
+    max_date_seconds: int,
+    date_range: list[int],
+    breakpoint_name: str,
 ) -> dict[Any, Any]:
     always_visible = (
         date_range[0] == min_date_seconds and date_range[1] == max_date_seconds
     )
+    if breakpoint_name == ScreenWidth.xs:
+        tooltip_font_size = "12px"
+    else:
+        tooltip_font_size = "16px"
     return {
         "placement": "bottom",
         "always_visible": always_visible,
@@ -36,7 +44,7 @@ def toggle_slider_tooltip_visibility(
         "style": {
             "background": AmperePalette.PAGE_ACCENT_COLOR2,
             "color": AmperePalette.BRAND_TEXT_COLOR,
-            "fontSize": "16px",
+            "fontSize": tooltip_font_size,
             "paddingLeft": "4px",
             "paddingRight": "4px",
             "borderRadius": "10px",
@@ -102,7 +110,8 @@ def get_viz_summary(
     date_bounds: list[int],
     metric_type: str,
 ) -> tuple[Figure, dict]:
-    if date_range == date_bounds:
+    if False:
+        # if date_range == date_bounds:
         mode = "dark" if dark_mode else "light"
         f_name = f"summary_{metric_type}_{mode}_{breakpoint_name}"
         try:

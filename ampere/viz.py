@@ -153,32 +153,41 @@ def viz_summary(
     fig.update_xaxes(showgrid=False)
     fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
 
-    fig_legend_y = {ScreenWidth.xs: 1.04, ScreenWidth.sm: 1.02}
-    if screen_width in [ScreenWidth.xs, ScreenWidth.sm]:
+    if screen_width == ScreenWidth.xs:
+        legend_font_size = 10
+        annotation_font_size = 14
+        tick_font_size = 10
+
         fig.update_layout(
             legend=dict(
                 title=None,
                 itemsizing="constant",
-                font=dict(size=14),
                 orientation="h",
                 yanchor="top",
-                y=fig_legend_y[screen_width],
+                y=1.35,
                 xanchor="center",
                 x=0.5,
+                font=dict(size=legend_font_size, weight="bold"),
             )
         )
     else:
+        legend_font_size = 14
+        annotation_font_size = 18
+        tick_font_size = 14
         fig.update_layout(
-            legend=dict(title=None, itemsizing="constant", font=dict(size=14))
+            legend=dict(
+                title=None, itemsizing="constant", font=dict(size=legend_font_size)
+            )
         )
 
     fig.for_each_annotation(
         lambda a: a.update(
             text="<b>" + a.text.split("=")[-1] + "</b>",
-            font_size=18,
+            font_size=annotation_font_size,
             bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
             font_color="white",
             borderpad=5,
+            y=0.905,
         )
     )
 
@@ -189,7 +198,7 @@ def viz_summary(
             linewidth=1,
             linecolor=font_color,
             mirror=True,
-            tickfont_size=14,
+            tickfont_size=tick_font_size,
         )
     )
     fig.for_each_xaxis(
@@ -200,7 +209,7 @@ def viz_summary(
             linecolor=font_color,
             mirror=True,
             showticklabels=True,
-            tickfont_size=14,
+            tickfont_size=tick_font_size,
         )
     )
 
