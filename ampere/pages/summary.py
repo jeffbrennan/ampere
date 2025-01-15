@@ -213,6 +213,24 @@ def update_summary_graph_fade(fig1, fig2, fig3):
     return all([fig1, fig2, fig3])
 
 
+@callback(
+    [
+        Output("date-filter-width", "width"),
+        Output("filter-padding-width", "width"),
+        Output("filter-row", "style"),
+    ],
+    Input("breakpoints", "widthBreakpoint"),
+)
+def update_filter_for_mobile(breakpoint_name: str):
+    filter_style = {"top": "60px"}
+    if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
+        filter_style.update({"paddingTop": "20px"})
+        return 11, 1, filter_style
+
+    filter_style.update({"position": "sticky", "z-index": "100"})
+    return 3, 8, filter_style
+
+
 def layout():
     return [
         dcc.Store("summary-df", data=get_summary_records()),
@@ -236,14 +254,16 @@ def layout():
                                 },
                             ),
                             width=3,
+                            id="date-filter-width",
                         ),
-                        dbc.Col(width=8),
+                        dbc.Col(width=8, id="filter-padding-width"),
                     ],
                     style={
                         "position": "sticky",
                         "z-index": "100",
                         "top": "60px",
                     },
+                    id="filter-row",
                 ),
                 html.Br(),
                 dcc.Graph("summary-stars", style={"visibility": "hidden"}),
