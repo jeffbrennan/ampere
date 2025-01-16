@@ -191,3 +191,18 @@ def create_stargazer_network() -> None:
     nx.set_node_attributes(graph, pos, "pos")
 
     dump_obj_to_pickle("star_network", graph)
+
+
+def refresh_all_caches():
+    create_follower_network()
+    cache_follower_network()
+
+    create_stargazer_network()
+    cache_stargazer_network()
+
+    cache_summary_plots()
+    cache_downloads_plots()
+
+
+if __name__ == "__main__":
+    refresh_all_caches()
