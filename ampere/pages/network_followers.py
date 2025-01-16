@@ -3,7 +3,7 @@ import pandas as pd
 from dash import Input, Output, callback, dash_table, dcc, html
 
 from ampere.common import get_frontend_db_con, timeit
-from ampere.styling import get_ampere_dt_style
+from ampere.styling import ScreenWidth, get_ampere_dt_style
 from ampere.viz import (
     read_plotly_fig_pickle,
 )
@@ -35,9 +35,12 @@ def create_followers_table() -> pd.DataFrame:
         Output("followers-table", "children"),
         Output("followers-table", "style"),
     ],
-    Input("color-mode-switch", "value"),
+    [
+        Input("color-mode-switch", "value"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
 )
-def get_styled_followers_table(dark_mode: bool):
+def get_styled_followers_table(dark_mode: bool, breakpoint_name: str):
     base_style = get_ampere_dt_style(dark_mode)
     df = create_followers_table()
     if dark_mode:
@@ -54,6 +57,9 @@ def get_styled_followers_table(dark_mode: bool):
         for _ in df.columns
     ]
     base_style["style_data_conditional"] += standard_col_colors
+    if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
+        base_style["style_cell"]["font_size"] = "12px"
+
     tbl = (
         dash_table.DataTable(
             df.to_dict("records"),
@@ -111,6 +117,7 @@ def layout():
                         "visibility": "hidden",
                     },
                     responsive=True,
+                    config={"displayModeBar": False},
                 ),
                 html.Br(),
                 html.Div(id="followers-table", style={"visibility": "hidden"}),
