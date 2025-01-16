@@ -110,8 +110,7 @@ def get_viz_summary(
     date_bounds: list[int],
     metric_type: str,
 ) -> tuple[Figure, dict]:
-    if False:
-        # if date_range == date_bounds:
+    if date_range == date_bounds:
         mode = "dark" if dark_mode else "light"
         f_name = f"summary_{metric_type}_{mode}_{breakpoint_name}"
         try:

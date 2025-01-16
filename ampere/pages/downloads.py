@@ -27,17 +27,17 @@ def get_viz_downloads(
     repo: str,
     breakpoint_name: str,
 ) -> tuple[Figure, dict]:
-    # if date_range == date_bounds:
-    #     mode = "dark" if dark_mode else "light"
-    #     f_name = f"downloads_{repo}_{group}_{mode}"
-    #     try:
-    #         fig = read_plotly_fig_pickle(f_name)
-    #         print(f"obtained {group} fig from cache")
-    #         return fig, {}
+    if date_range == date_bounds:
+        mode = "dark" if dark_mode else "light"
+        f_name = f"downloads_{repo}_{group}_{mode}"
+        try:
+            fig = read_plotly_fig_pickle(f_name)
+            print(f"obtained {group} fig from cache")
+            return fig, {}
 
-    #     except Exception as e:
-    #         print(e)
-    #         pass
+        except Exception as e:
+            print(e)
+            pass
 
     fig = viz_downloads(
         pd.DataFrame(df_data),
