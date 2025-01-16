@@ -21,14 +21,22 @@ from ampere.viz import (
         Input("summary-date-slider", "min"),
         Input("summary-date-slider", "max"),
         Input("summary-date-slider", "value"),
+        Input("breakpoints", "widthBreakpoint"),
     ],
 )
 def toggle_slider_tooltip_visibility(
-    min_date_seconds: int, max_date_seconds: int, date_range: list[int]
+    min_date_seconds: int,
+    max_date_seconds: int,
+    date_range: list[int],
+    breakpoint_name: str,
 ) -> dict[Any, Any]:
     always_visible = (
         date_range[0] == min_date_seconds and date_range[1] == max_date_seconds
     )
+    if breakpoint_name == ScreenWidth.xs:
+        tooltip_font_size = "12px"
+    else:
+        tooltip_font_size = "16px"
     return {
         "placement": "bottom",
         "always_visible": always_visible,
@@ -36,7 +44,7 @@ def toggle_slider_tooltip_visibility(
         "style": {
             "background": AmperePalette.PAGE_ACCENT_COLOR2,
             "color": AmperePalette.BRAND_TEXT_COLOR,
-            "fontSize": "16px",
+            "fontSize": tooltip_font_size,
             "paddingLeft": "4px",
             "paddingRight": "4px",
             "borderRadius": "10px",
@@ -213,6 +221,24 @@ def update_summary_graph_fade(fig1, fig2, fig3):
     return all([fig1, fig2, fig3])
 
 
+@callback(
+    [
+        Output("date-filter-width", "width"),
+        Output("filter-padding-width", "width"),
+        Output("filter-row", "style"),
+    ],
+    Input("breakpoints", "widthBreakpoint"),
+)
+def update_filter_for_mobile(breakpoint_name: str):
+    filter_style = {"top": "60px"}
+    if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
+        filter_style.update({"paddingTop": "20px"})
+        return 11, 1, filter_style
+
+    filter_style.update({"position": "sticky", "z-index": "100"})
+    return 3, 8, filter_style
+
+
 def layout():
     return [
         dcc.Store("summary-df", data=get_summary_records()),
@@ -236,19 +262,33 @@ def layout():
                                 },
                             ),
                             width=3,
+                            id="date-filter-width",
                         ),
-                        dbc.Col(width=8),
+                        dbc.Col(width=8, id="filter-padding-width"),
                     ],
                     style={
                         "position": "sticky",
                         "z-index": "100",
                         "top": "60px",
                     },
+                    id="filter-row",
                 ),
                 html.Br(),
-                dcc.Graph("summary-stars", style={"visibility": "hidden"}),
-                dcc.Graph("summary-issues", style={"visibility": "hidden"}),
-                dcc.Graph("summary-commits", style={"visibility": "hidden"}),
+                dcc.Graph(
+                    "summary-stars",
+                    style={"visibility": "hidden"},
+                    config={"displayModeBar": False},
+                ),
+                dcc.Graph(
+                    "summary-issues",
+                    style={"visibility": "hidden"},
+                    config={"displayModeBar": False},
+                ),
+                dcc.Graph(
+                    "summary-commits",
+                    style={"visibility": "hidden"},
+                    config={"displayModeBar": False},
+                ),
             ],
             style={"transition": "opacity 200ms ease-in", "minHeight": "100vh"},
             is_in=False,

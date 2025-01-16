@@ -8,7 +8,7 @@ from plotly.graph_objects import Figure
 
 from ampere.app_shared import cache
 from ampere.common import timeit
-from ampere.styling import AmperePalette
+from ampere.styling import AmperePalette, ScreenWidth
 from ampere.viz import (
     get_repos_with_downloads,
     read_dataframe_pickle,
@@ -25,6 +25,7 @@ def get_viz_downloads(
     date_bounds: list[int],
     group: str,
     repo: str,
+    breakpoint_name: str,
 ) -> tuple[Figure, dict]:
     if date_range == date_bounds:
         mode = "dark" if dark_mode else "light"
@@ -43,6 +44,7 @@ def get_viz_downloads(
         group_name=group,
         date_range=date_range,
         dark_mode=dark_mode,
+        screen_width=ScreenWidth(breakpoint_name),
     )
 
     return fig, {}
@@ -65,6 +67,7 @@ def dash_get_repos_with_downloads():
         Input("color-mode-switch", "value"),
         Input("downloads-date-bounds", "data"),
         Input("repo-selection", "value"),
+        Input("breakpoints", "widthBreakpoint"),
     ],
 )
 def viz_downloads_overall(
@@ -73,6 +76,7 @@ def viz_downloads_overall(
     dark_mode: bool,
     date_bounds: list[int],
     repo_name: str,
+    breakpoint_name: str,
 ):
     return get_viz_downloads(
         df_data=df_data,
@@ -81,6 +85,7 @@ def viz_downloads_overall(
         date_bounds=date_bounds,
         group="overall",
         repo=repo_name,
+        breakpoint_name=breakpoint_name,
     )
 
 
@@ -95,6 +100,7 @@ def viz_downloads_overall(
         Input("color-mode-switch", "value"),
         Input("downloads-date-bounds", "data"),
         Input("repo-selection", "value"),
+        Input("breakpoints", "widthBreakpoint"),
     ],
 )
 def viz_downloads_by_package_version(
@@ -103,6 +109,7 @@ def viz_downloads_by_package_version(
     dark_mode: bool,
     date_bounds: list[int],
     repo_name: str,
+    breakpoint_name: str,
 ):
     return get_viz_downloads(
         df_data=df_data,
@@ -111,6 +118,7 @@ def viz_downloads_by_package_version(
         date_bounds=date_bounds,
         group="package_version",
         repo=repo_name,
+        breakpoint_name=breakpoint_name,
     )
 
 
@@ -125,6 +133,7 @@ def viz_downloads_by_package_version(
         Input("color-mode-switch", "value"),
         Input("downloads-date-bounds", "data"),
         Input("repo-selection", "value"),
+        Input("breakpoints", "widthBreakpoint"),
     ],
 )
 def viz_downloads_by_python_version(
@@ -133,6 +142,7 @@ def viz_downloads_by_python_version(
     dark_mode: bool,
     date_bounds: list[int],
     repo_name: str,
+    breakpoint_name: str,
 ):
     return get_viz_downloads(
         df_data=df_data,
@@ -141,6 +151,7 @@ def viz_downloads_by_python_version(
         date_bounds=date_bounds,
         group="python_version",
         repo=repo_name,
+        breakpoint_name=breakpoint_name,
     )
 
 
@@ -174,15 +185,24 @@ def get_downloads_records(repo_name: str) -> list[dict]:
         Input("date-slider", "min"),
         Input("date-slider", "max"),
         Input("date-slider", "value"),
+        Input("breakpoints", "widthBreakpoint"),
     ],
 )
 @timeit
 def toggle_slider_tooltip_visibility(
-    min_date_seconds: int, max_date_seconds: int, date_range: list[int]
+    min_date_seconds: int,
+    max_date_seconds: int,
+    date_range: list[int],
+    breakpoint_name: str,
 ) -> dict[Any, Any]:
     always_visible = (
         date_range[0] == min_date_seconds and date_range[1] == max_date_seconds
     )
+    if breakpoint_name == ScreenWidth.xs:
+        font_size = "12px"
+    else:
+        font_size = "16px"
+
     return {
         "placement": "bottom",
         "always_visible": always_visible,
@@ -190,7 +210,7 @@ def toggle_slider_tooltip_visibility(
         "style": {
             "background": AmperePalette.PAGE_ACCENT_COLOR2,
             "color": AmperePalette.BRAND_TEXT_COLOR,
-            "fontSize": "16px",
+            "fontSize": font_size,
             "paddingLeft": "4px",
             "paddingRight": "4px",
             "borderRadius": "10px",
@@ -239,14 +259,44 @@ def get_downloads_records_date_ranges(df_data: list[dict]):
 
 
 @callback(
-    [Output("repo-selection", "className"), Output("repo-selection", "style")],
-    Input("color-mode-switch", "value"),
+    [
+        Output("dl-repo-filter-width", "width"),
+        Output("dl-date-filter-width", "width"),
+        Output("dl-filter-padding-width", "width"),
+        Output("dl-filter-row", "style"),
+    ],
+    Input("breakpoints", "widthBreakpoint"),
 )
-def update_dropdown_menu_color(dark_mode: bool):
+def update_filter_for_mobile(breakpoint_name: str):
+    filter_style = {"top": "60px"}
+    if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
+        filter_style.update({"paddingTop": "20px"})
+        return 4, 7, 1, filter_style
+
+    filter_style.update({"position": "sticky", "z-index": "100"})
+    return 2, 3, 8, filter_style
+
+
+@callback(
+    [
+        Output("repo-selection", "className"),
+        Output("repo-selection", "style"),
+    ],
+    [
+        Input("color-mode-switch", "value"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
+)
+def update_dropdown_menu_color(dark_mode: bool, breakpoint_name: str):
     class_name = "" if dark_mode else "light-mode"
+    if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
+        font_size = "12px"
+    else:
+        font_size = "20px"
+
     style = {
         "borderRadius": "10px",
-        "fontSize": "20px",
+        "fontSize": font_size,
         "marginRight": "10%",
         "marginTop": "2%",
         "paddingBottom": "2px",
@@ -273,7 +323,7 @@ def layout():
                                 searchable=False,
                                 id="repo-selection",
                             ),
-                            width=2,
+                            id="dl-repo-filter-width",
                         ),
                         dbc.Col(
                             html.Div(
@@ -288,21 +338,29 @@ def layout():
                                     "marginTop": "6px",
                                 },
                             ),
-                            width=3,
+                            id="dl-date-filter-width",
                         ),
-                        dbc.Col(width=8),
+                        dbc.Col(id="dl-filter-padding-width"),
                     ],
-                    style={
-                        "position": "sticky",
-                        "z-index": "100",
-                        "top": "60px",
-                    },
+                    id="dl-filter-row",
                 ),
                 html.Br(),
                 html.Br(),
-                dcc.Graph("downloads-overall", style={"visibility": "hidden"}),
-                dcc.Graph("downloads-package-version", style={"visibility": "hidden"}),
-                dcc.Graph("downloads-python-version", style={"visibility": "hidden"}),
+                dcc.Graph(
+                    "downloads-overall",
+                    style={"visibility": "hidden"},
+                    config={"displayModeBar": False},
+                ),
+                dcc.Graph(
+                    "downloads-package-version",
+                    style={"visibility": "hidden"},
+                    config={"displayModeBar": False},
+                ),
+                dcc.Graph(
+                    "downloads-python-version",
+                    style={"visibility": "hidden"},
+                    config={"displayModeBar": False},
+                ),
             ],
             style={"transition": "opacity 200ms ease-in", "minHeight": "100vh"},
             is_in=False,

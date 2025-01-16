@@ -8,6 +8,7 @@ from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import (
     AmperePalette,
     ColumnInfo,
+    ScreenWidth,
     get_ampere_dt_style,
     style_dt_background_colors_by_rank,
     table_title_style,
@@ -76,12 +77,23 @@ def handle_col_widths(
         "title": 250,
         "body": 400,
     }
+
+    xs_col_widths = {
+        "repo": 100,
+        "author": 100,
+        "date": 105,
+        "days old": 80,
+        "comments": 100,
+        "title": 250,
+        "body": 400,
+    }
+
     width_lookup = {
         "xl": col_widths,
         "lg": col_widths,
         "md": small_col_widths,
         "sm": small_col_widths,
-        "xs": small_col_widths,
+        "xs": xs_col_widths,
     }
 
     width_adjustment = [
@@ -111,10 +123,12 @@ def handle_summary_col_widths(
     style_cell_conditional = [
         i for i in style_cell_conditional if "minWidth" not in str(i)
     ]
-    if breakpoint_name in ["lg", "xl"]:
+    if breakpoint_name in [ScreenWidth.xl, ScreenWidth.lg]:
         col_width = 50
-    else:
+    elif breakpoint_name in [ScreenWidth.md, ScreenWidth.sm]:
         col_width = 60
+    else:
+        col_width = 90
 
     style_cell_conditional.append(
         {"if": {"column_id": "repo"}, "minWidth": col_width, "maxWidth": col_width}
@@ -148,6 +162,10 @@ def handle_title_margins(style_incoming: dict, breakpoint_name: str) -> dict:
         margin_adjustment = margin_adjustments["other"]
 
     style.update(margin_adjustment)
+
+    if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
+        style["fontSize"] = "16px"
+
     return style
 
 
@@ -232,6 +250,9 @@ def get_styled_issues_summary_table(dark_mode: bool, breakpoint_name: str):
         summary_style["style_table"], breakpoint_name
     )
 
+    if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
+        summary_style["style_table"]["font_size"] = "12px"
+
     tbl = (
         dash_table.DataTable(
             data=summary_data,
@@ -287,6 +308,9 @@ def get_styled_issues_table(dark_mode: bool, breakpoint_name: str):
     base_style["style_table"] = handle_table_margins(
         base_style["style_table"], breakpoint_name
     )
+
+    if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
+        base_style["style_table"]["font_size"] = "12px"
 
     tbl = (
         dash_table.DataTable(
