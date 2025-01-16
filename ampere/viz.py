@@ -139,16 +139,6 @@ def viz_summary(
         facet_col="metric_type",  # single var facet col for plot title
     )
     fig.update_layout(plot_bgcolor=bg_color, paper_bgcolor=bg_color)
-    # fig.for_each_annotation(
-    #     lambda a: a.update(
-    #         text="<b>" + a.text.split("=")[-1] + "</b>",
-    #         font_size=18,
-    #         bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
-    #         font_color="white",
-    #         borderpad=5,
-    #         y=1.02,
-    #     )
-    # )
     fig.update_yaxes(matches=None, showticklabels=True, showgrid=False)
     fig.update_xaxes(showgrid=False)
     fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
@@ -164,7 +154,7 @@ def viz_summary(
                 itemsizing="constant",
                 orientation="h",
                 yanchor="top",
-                y=1.35,
+                y=1.45,
                 xanchor="center",
                 x=0.5,
                 font=dict(size=legend_font_size, weight="bold"),
@@ -187,7 +177,7 @@ def viz_summary(
             bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
             font_color="white",
             borderpad=5,
-            y=0.905,
+            y=1.001,
         )
     )
 
