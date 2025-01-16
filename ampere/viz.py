@@ -139,16 +139,16 @@ def viz_summary(
         facet_col="metric_type",  # single var facet col for plot title
     )
     fig.update_layout(plot_bgcolor=bg_color, paper_bgcolor=bg_color)
-    fig.for_each_annotation(
-        lambda a: a.update(
-            text="<b>" + a.text.split("=")[-1] + "</b>",
-            font_size=18,
-            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
-            font_color="white",
-            borderpad=5,
-            y=1.02,
-        )
-    )
+    # fig.for_each_annotation(
+    #     lambda a: a.update(
+    #         text="<b>" + a.text.split("=")[-1] + "</b>",
+    #         font_size=18,
+    #         bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
+    #         font_color="white",
+    #         borderpad=5,
+    #         y=1.02,
+    #     )
+    # )
     fig.update_yaxes(matches=None, showticklabels=True, showgrid=False)
     fig.update_xaxes(showgrid=False)
     fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
@@ -263,6 +263,7 @@ def viz_downloads(
     group_name: str,
     date_range: Optional[list[int]] = None,
     dark_mode: bool = False,
+    screen_width: ScreenWidth = ScreenWidth.lg,
 ) -> Figure:
     df_filtered = df.query(f"group_name=='{group_name}'")
     if date_range is not None:
@@ -304,15 +305,43 @@ def viz_downloads(
         category_orders={"group_value": categories},
     )
 
+    if screen_width == ScreenWidth.xs:
+        legend_font_size = 12
+        annotation_font_size = 14
+        tick_font_size = 10
+
+        fig.update_layout(
+            legend=dict(
+                title=None,
+                itemsizing="constant",
+                orientation="h",
+                yanchor="top",
+                y=1.475,
+                xanchor="center",
+                x=0.5,
+                font=dict(size=legend_font_size),
+            )
+        )
+    else:
+        legend_font_size = 14
+        annotation_font_size = 18
+        tick_font_size = 14
+        fig.update_layout(
+            legend=dict(
+                title=None,
+                itemsizing="constant",
+                font=dict(size=legend_font_size),
+            )
+        )
     fig.update_layout(plot_bgcolor=bg_color, paper_bgcolor=bg_color)
     fig.for_each_annotation(
         lambda a: a.update(
             text="<b>" + a.text.split("=")[-1].replace("_", " ") + "</b>",
-            font_size=18,
+            font_size=annotation_font_size,
             bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
             font_color="white",
             borderpad=5,
-            y=1.02,
+            y=1.001,
         )
     )
 
@@ -323,7 +352,7 @@ def viz_downloads(
             linewidth=1,
             linecolor=font_color,
             mirror=True,
-            tickfont_size=14,
+            tickfont_size=tick_font_size,
         )
     )
     fig.for_each_xaxis(
@@ -334,7 +363,7 @@ def viz_downloads(
             linecolor=font_color,
             mirror=True,
             showticklabels=True,
-            tickfont_size=14,
+            tickfont_size=tick_font_size,
         )
     )
     fig.update_yaxes(matches=None, showticklabels=True, showgrid=False)
@@ -348,9 +377,10 @@ def viz_downloads(
             "yanchor": "top",
         },
         margin=dict(t=50, l=0, r=0),
-        legend=dict(title=None, itemsizing="constant", font=dict(size=14)),
-        legend_title_text="",
     )
+
+    if group_name == "overall":
+        fig.update_layout(showlegend=False)
 
     return fig
 
