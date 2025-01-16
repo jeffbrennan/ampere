@@ -3,7 +3,7 @@ import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_frontend_db_con
-from ampere.styling import AmperePalette, get_ampere_dt_style
+from ampere.styling import AmperePalette, ScreenWidth, get_ampere_dt_style
 
 
 def create_feed_table() -> pd.DataFrame:
@@ -106,6 +106,8 @@ def style_feed_table(dark_mode: bool, breakpoint_name: str):
 
     feed_style["style_table"].update(adjusted_style_table)
     feed_style["style_cell_conditional"].extend(adjusted_style_cell_conditional)
+    if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
+        feed_style["style_cell"]["font_size"] = "12px"
 
     tbl = dash_table.DataTable(
         df.to_dict("records"),
