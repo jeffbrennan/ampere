@@ -22,8 +22,8 @@ with downloads_melted as (
     {% if is_incremental() %}
         where
             download_timestamp
-            > (
-                select coalesce(max(download_date) + interval 7 days, date '1900-01-01') -- noqa
+            >= (
+                select coalesce(max(download_date) + interval 7 day, date '1900-01-01') -- noqa
                 from {{ this }}
             )
     {% endif %}
@@ -43,14 +43,14 @@ downloads_trunc as (
 
 select
     repo,
-    download_date + interval 7 day as download_date,
+    download_date,
     group_name,
     group_value,
     sum(download_count)::uinteger as download_count
 from downloads_trunc
 where
     download_date
-    <= (
+    >= (
         select max(b.download_date) - interval 7 day
         from downloads_trunc as b
     )
