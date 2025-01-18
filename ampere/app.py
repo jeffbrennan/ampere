@@ -258,13 +258,13 @@ def layout(initial_background_color: str):
 
 def main(env: str = "prod"):
     envs = {
-        "prod": {"host": "0.0.0.0", "debug": False, "serve_locally": False},
+        "prod": {"host": "0.0.0.0", "debug": False, "serve_locally": True},
         "dev": {"host": "127.0.0.1", "debug": True, "serve_locally": True},
     }
 
     app = dash.Dash(
         use_pages=True,
-        external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.FONT_AWESOME],
+        external_stylesheets=["assets/css/bootstrap.min.css"],
         suppress_callback_exceptions=True,
         compress=True,
         serve_locally=envs[env]["serve_locally"],
