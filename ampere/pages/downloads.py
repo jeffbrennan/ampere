@@ -29,7 +29,7 @@ def get_viz_downloads(
 ) -> tuple[Figure, dict]:
     if date_range == date_bounds:
         mode = "dark" if dark_mode else "light"
-        f_name = f"downloads_{repo}_{group}_{mode}"
+        f_name = f"downloads_{repo}_{group}_{mode}_{breakpoint_name}"
         try:
             fig = read_plotly_fig_pickle(f_name)
             print(f"obtained {group} fig from cache")

@@ -105,19 +105,31 @@ def cache_downloads_plots() -> None:
     repos = get_repos_with_downloads()
     groups = ["overall", "package_version", "python_version"]
     modes = ["light", "dark"]
+    screen_widths = [
+        ScreenWidth.xs,
+        ScreenWidth.sm,
+        ScreenWidth.md,
+        ScreenWidth.lg,
+        ScreenWidth.xl,
+    ]
 
     for repo in repos:
         df = get_downloads_data(repo)
         dump_obj_to_pickle(f"downloads_df_{repo}", df)
         for group in groups:
             for mode in modes:
-                dark_mode = mode == "dark"
-                pkl_name = f"downloads_{repo}_{group}_{mode}"
-                print(f"caching {pkl_name}...")
-                fig = viz_downloads(
-                    df, group_name=group, date_range=None, dark_mode=dark_mode
-                )
-                dump_obj_to_pickle(pkl_name, fig)
+                for width in screen_widths:
+                    dark_mode = mode == "dark"
+                    pkl_name = f"downloads_{repo}_{group}_{mode}_{width}"
+                    print(f"caching {pkl_name}...")
+                    fig = viz_downloads(
+                        df,
+                        group_name=group,
+                        date_range=None,
+                        dark_mode=dark_mode,
+                        screen_width=width,
+                    )
+                    dump_obj_to_pickle(pkl_name, fig)
 
 
 def cache_stargazer_network():
