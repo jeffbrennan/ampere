@@ -43,14 +43,14 @@ downloads_trunc as (
 
 select
     repo,
-    download_date,
+    download_date + interval 7 day as download_date,
     group_name,
     group_value,
     sum(download_count)::uinteger as download_count
 from downloads_trunc
 where
     download_date
-    >= (
+    <= (
         select max(b.download_date) - interval 7 day
         from downloads_trunc as b
     )
