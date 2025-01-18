@@ -5,6 +5,46 @@
     font-style: normal;
 }
 
+#ampere-page {
+  transition: background-color 0.3s ease;
+}
+
+body,
+.Select input,
+.Select-value-label,
+.form-check-input,
+#ampere-page,
+.dash-table-container {
+  font-family: "JetBrains Mono", serif !important;
+  font-weight: 600 !important;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td,
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th,
+.dash-cell-value {
+  font-family: "JetBrains Mono", serif !important;
+  font-weight: 400 !important;
+}
+
+.gtitle,
+.g-gtitle,
+.plotly-graph-div,
+.js-plotly-plot .plotly .modebar,
+.annotation-text,
+.legend-item-text,
+.ytitle,
+.xtitle,
+.zerolinelayer,
+.tick text,
+.legendtext {
+  font-family: "JetBrains Mono", serif !important;
+  font-weight: 400 !important;
+}
+
+._dash-loading {
+  display: none !important;
+}
+
 .rc-slider-tooltip-inner {
   background: #5560fa !important;
   padding-top: 8px !important;
@@ -34,10 +74,9 @@
   outline: none !important;
 }
 
-/* RC Slider tooltip z-index handling */
 .rc-slider-tooltip[style*="left: 0%"],
 .rc-slider-tooltip[style*="left: 0px"] {
-  z-index: 1100 !important; /* Higher than default active state */
+  z-index: 1100 !important;
 }
 
 .rc-slider-tooltip {
@@ -67,14 +106,6 @@
     box-shadow: none !important;
 }
 
-._dash-loading {
-  display: none !important;
-}
-
-#ampere-page {
-  transition: background-color 0.3s ease;
-}
-
 .form-switch .form-check-input {
   box-shadow: none !important;
   outline: none !important;
@@ -84,42 +115,6 @@
 .form-switch .form-check-input:not(:checked) {
   background-color: white !important;
   border-color: gray !important;
-}
-
-
-/* Base elements */
-body,
-.Select input,
-.Select-value-label,
-.form-check-input,
-#ampere-page,
-.dash-table-container {
-  font-family: "JetBrains Mono", serif !important;
-  font-weight: 600 !important;
-}
-
-/* DataTable elements */
-.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td,
-.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th,
-.dash-cell-value {
-  font-family: "JetBrains Mono", serif !important;
-  font-weight: 400 !important;
-}
-
-/* Plotly elements */
-.gtitle,
-.g-gtitle,
-.plotly-graph-div,
-.js-plotly-plot .plotly .modebar,
-.annotation-text,
-.legend-item-text,
-.ytitle,
-.xtitle,
-.zerolinelayer,
-.tick text,
-.legendtext {
-  font-family: "JetBrains Mono", serif !important;
-  font-weight: 400 !important;
 }
 
 .dropdown-menu {
@@ -136,7 +131,6 @@ body,
   border-right: 2px solid #555 !important;
 }
 
-/* Remove dropdown arrow */
 .Select-arrow-zone {
   display: none !important;
 }
@@ -145,10 +139,9 @@ body,
   display: none !important;
 }
 
-/* Dropdown styling */
 .Select-control {
   padding-right: 0 !important;
-  background-color: #5560fa !important;  /* Navbar color */
+  background-color: #5560fa !important;
   border: none !important;
   color: white !important;
   padding-bottom: 0px !important;
@@ -164,7 +157,6 @@ body,
   color: white !important;
 }
 
-/* Dark mode menu styling */
 .Select-menu-outer {
   background-color:rgb(30,30,30) !important;
   border: none !important;
@@ -180,7 +172,6 @@ body,
   background-color: rgb(30, 30, 30) !important;
 }
 
-/* Light mode menu styling */
 .light-mode .Select-menu-outer {
   background-color: rgb(255, 255, 255) !important;
 }
@@ -194,7 +185,6 @@ body,
   background-color: rgb(233, 233, 233) !important;
 }
 
-/* Mobile layout */
 .navbar-container {
   display: grid !important;
   grid-template-areas: 
@@ -205,7 +195,6 @@ body,
   width: 100% !important;
 }
 
-/* Mobile padding adjustments */
 @media (max-width: 767px) {
   .nav-link {
     padding-left: 1rem !important;
@@ -216,7 +205,6 @@ body,
   }
 }
 
-/* Desktop layout */
 @media (min-width: 768px) {
   .navbar-container {
     display: grid !important;
@@ -243,7 +231,6 @@ body,
   }
 }
 
-/* Shared styles */
 .navbar-brand {
   grid-area: brand !important;
   justify-self: start !important;
@@ -267,11 +254,6 @@ body,
     outline: none !important;
 }
 
-.color-mode-switch {
-  grid-area: switch !important;
-  justify-self: end !important;
-}
-
 .navbar-collapse {
   grid-area: menu !important;
   width: 100% !important;
@@ -281,4 +263,9 @@ body,
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+.color-mode-switch {
+  grid-area: switch !important;
+  justify-self: end !important;
 }
