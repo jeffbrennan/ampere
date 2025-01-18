@@ -257,7 +257,7 @@ def layout(initial_background_color: str):
 
 
 def init_app(env: str = "prod"):
-    serve_locally = {"dev": True, "prod": True}[env]
+    serve_locally = {"dev": True, "prod": False}[env]
 
     app = dash.Dash(
         use_pages=True,
