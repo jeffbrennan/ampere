@@ -256,18 +256,15 @@ def layout(initial_background_color: str):
     )
 
 
-def main(env: str = "prod"):
-    envs = {
-        "prod": {"host": "0.0.0.0", "debug": False, "serve_locally": False},
-        "dev": {"host": "127.0.0.1", "debug": True, "serve_locally": True},
-    }
+def init_app(env: str = "prod"):
+    serve_locally = {"dev": True, "prod": True}[env]
 
     app = dash.Dash(
         use_pages=True,
-        external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.FONT_AWESOME],
+        external_stylesheets=["assets/css/bootstrap.min.css"],
         suppress_callback_exceptions=True,
         compress=True,
-        serve_locally=envs[env]["serve_locally"],
+        serve_locally=serve_locally,
     )
 
     initial_background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
@@ -312,10 +309,10 @@ def main(env: str = "prod"):
     dash.register_page(status.__name__, name="status", layout=status.layout)
     dash.register_page(about.__name__, name="about", layout=about.layout)
 
-    return app, server, envs
+    return app, server
 
 
-if __name__ == "__main__":
+def run_app(app):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--env",
@@ -323,8 +320,16 @@ if __name__ == "__main__":
         default="prod",
         help="Environment to run the app in. Default is prod",
     )
+    envs = {
+        "prod": {"host": "0.0.0.0", "debug": False},
+        "dev": {"host": "127.0.0.1", "debug": True},
+    }
 
     env = parser.parse_args().env
-    app, server, envs = main(env)
     app.run(host=envs[env]["host"], debug=envs[env]["debug"])
-_, server, _ = main()
+
+
+app, server = init_app()
+
+if __name__ == "__main__":
+    run_app(app)
