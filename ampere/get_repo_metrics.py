@@ -39,7 +39,7 @@ class APIRequest:
     headers: dict = field(
         default_factory=lambda: {
             "Accept": "application/vnd.github+json",
-            "Authorization": f'Bearer {get_secret("GITHUB_TOKEN")}',
+            "Authorization": f"Bearer {get_secret('GITHUB_TOKEN')}",
             "X-GitHub-Api-Version": "2022-11-28",
         }
     )
@@ -380,7 +380,7 @@ def get_repos(org_name: str) -> list[Repo]:
                 stargazers_count=result["stargazers_count"],
                 open_issues_count=result["open_issues_count"],
                 pushed_at=result["pushed_at"],
-                created_at=result["updated_at"],
+                created_at=result["created_at"],
                 updated_at=result["updated_at"],
                 retrieved_at=response.timestamp,
             )
