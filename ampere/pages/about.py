@@ -2,24 +2,45 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
-from ampere.common import get_frontend_db_con
+from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import ScreenWidth, get_ampere_dt_style
 
 
+@timeit
 def create_repo_table() -> pd.DataFrame:
     with get_frontend_db_con() as con:
         df = con.sql(
             """
+        with downloads_total as (
+            select
+                repo,
+                sum(download_count) as total_downloads
+            from mart_downloads_summary
+            where group_name = 'overall'
+            group by all
+        ),
+        downloads_past_week as (
+            select
+                repo,
+                download_count as downloads_past_week
+            from mart_downloads_summary
+            where group_name = 'overall'
+            and download_date = (select max(download_date) from mart_downloads_summary) 
+       )
         select
-            concat('[', repo_name, ']', '(https://www.github.com/mrpowers-io/', repo_name, ')') as repo_name,
-            forks_count                                                                         as forks,
-            stargazers_count                                                                    as stargazers,
-            open_issues_count                                                                   as "open issues",
-            round(date_part('day', current_date - created_at) / 365, 1)                         as "age (years)",
-            strftime(created_at, '%Y-%m-%d')                                                    as created,
-            strftime(updated_at, '%Y-%m-%d')                                                    as updated,
-        from stg_repos
-        order by stargazers_count desc
+            concat('[', a.repo_name, ']', '(https://www.github.com/mrpowers-io/', a.repo_name, ')') as repo_name,
+            a.forks_count                                                                           as forks,
+            a.stargazers_count                                                                      as stargazers,
+            a.open_issues_count                                                                     as "open issues",
+            round(date_part('day', current_date - a.created_at) / 365, 1)                           as "age (years)",
+            strftime(a.created_at, '%Y-%m-%d')                                                      as created,
+            strftime(a.updated_at, '%Y-%m-%d')                                                      as updated,
+            b.total_downloads                                                                       as "downloads (total)",
+            c.downloads_past_week                                                                   as "downloads (past week)"
+        from stg_repos a
+        left join downloads_total as b on a.repo_name = b.repo
+        left join downloads_past_week as c on a.repo_name = c.repo
+        order by a.stargazers_count desc
         """,
         ).to_df()
 
@@ -105,17 +126,22 @@ def get_styled_about_table(dark_mode: bool, breakpoint_name: str):
     else:
         about_style["style_table"].update(lg_margins)
 
-    # print(about_style)
+    tbl_cols = []
+    for col in df.columns:
+        if col == "repo_name":
+            tbl_cols.append(
+                {"id": "repo_name", "name": "repo", "presentation": "markdown"}
+            )
+        elif "downloads" in col:
+            tbl_cols.append(
+                {"name": col, "id": col, "type": "numeric", "format": {"specifier": ",d"}}
+            )
+        else:
+            tbl_cols.append({"id": col, "name": col})
+
     tbl = dash_table.DataTable(
         df.to_dict("records"),
-        columns=[
-            (
-                {"id": x, "name": "repo", "presentation": "markdown"}
-                if x == "repo_name"
-                else {"id": x, "name": x}
-            )
-            for x in df.columns
-        ],
+        columns=tbl_cols,
         **about_style,
     )
 
