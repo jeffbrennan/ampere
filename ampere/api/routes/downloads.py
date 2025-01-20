@@ -1,14 +1,13 @@
 from dataclasses import dataclass
 from enum import StrEnum, auto
 from functools import cache
-from typing import Literal
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from pydantic import TypeAdapter
 
+from ampere.api.limiter import limiter
 from ampere.api.models import DownloadPublic, DownloadsPublic
 from ampere.common import get_frontend_db_con
-from ampere.get_repo_metrics import get_repo_names
 from ampere.viz import get_repos_with_downloads
 
 router = APIRouter(prefix="/downloads", tags=["downloads"])
@@ -64,7 +63,9 @@ def get_downloads_base(
 
 
 @router.get("/hourly", response_model=DownloadsPublic)
+@limiter.limit("6/minute")
 def read_downloads_hourly(
+    request: Request,
     repo: RepoEnum,  # type: ignore
     group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
     n_days: int = Query(default=7, le=30),
@@ -80,7 +81,9 @@ def read_downloads_hourly(
 
 
 @router.get("/daily", response_model=DownloadsPublic)
+@limiter.limit("6/minute")
 def read_downloads_daily(
+    request: Request,
     repo: RepoEnum,  # type: ignore
     group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
     n_days: int = Query(default=30, le=365),
@@ -96,7 +99,9 @@ def read_downloads_daily(
 
 
 @router.get("/weekly", response_model=DownloadsPublic)
+@limiter.limit("6/minute")
 def read_downloads_weekly(
+    request: Request,
     repo: RepoEnum,  # type: ignore
     group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
     n_days: int = Query(default=30, le=365),
@@ -112,7 +117,9 @@ def read_downloads_weekly(
 
 
 @router.get("/monthly", response_model=DownloadsPublic)
+@limiter.limit("6/minute")
 def read_downloads_monthly(
+    request: Request,
     repo: RepoEnum,  # type: ignore
     group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
     n_days: int = Query(default=6, le=12 * 10),
