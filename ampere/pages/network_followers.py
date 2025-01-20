@@ -83,12 +83,15 @@ def get_styled_followers_table(dark_mode: bool, breakpoint_name: str):
         Output("network-followers-graph", "style"),
         Output("network-followers-graph-fade", "is_in"),
     ],
-    Input("color-mode-switch", "value"),
+    [
+        Input("color-mode-switch", "value"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
 )
 @timeit
-def show_summary_graph(dark_mode: bool):
+def show_summary_graph(dark_mode: bool, breakpoint_name: str):
     mode = "dark" if dark_mode else "light"
-    fig = read_plotly_fig_pickle(f"follower_network_{mode}")
+    fig = read_plotly_fig_pickle(f"follower_network_{mode}_{breakpoint_name}")
     return (
         fig,
         {

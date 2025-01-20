@@ -20,6 +20,16 @@ from ampere.viz import (
     viz_summary,
 )
 
+SCREEN_WIDTHS = [
+    ScreenWidth.xs,
+    ScreenWidth.sm,
+    ScreenWidth.md,
+    ScreenWidth.lg,
+    ScreenWidth.xl,
+]
+
+MODES = ["light", "dark"]
+
 
 def dump_obj_to_pickle(pkl_name: str, obj: Any):
     out_dir = Path(__file__).parents[1] / "data" / "viz"
@@ -75,19 +85,11 @@ def create_follower_network() -> None:
 def cache_summary_plots() -> None:
     df = pd.DataFrame(get_summary_data())
     metrics = ["stars", "issues", "commits"]
-    modes = ["light", "dark"]
-    screen_widths = [
-        ScreenWidth.xs,
-        ScreenWidth.sm,
-        ScreenWidth.md,
-        ScreenWidth.lg,
-        ScreenWidth.xl,
-    ]
 
     for metric in metrics:
-        for mode in modes:
+        for mode in MODES:
             dark_mode = mode == "dark"
-            for width in screen_widths:
+            for width in SCREEN_WIDTHS:
                 fig = viz_summary(
                     df,
                     metric_type=metric,
@@ -104,21 +106,12 @@ def cache_summary_plots() -> None:
 def cache_downloads_plots() -> None:
     repos = get_repos_with_downloads()
     groups = ["overall", "package_version", "python_version"]
-    modes = ["light", "dark"]
-    screen_widths = [
-        ScreenWidth.xs,
-        ScreenWidth.sm,
-        ScreenWidth.md,
-        ScreenWidth.lg,
-        ScreenWidth.xl,
-    ]
-
     for repo in repos:
         df = get_downloads_data(repo)
         dump_obj_to_pickle(f"downloads_df_{repo}", df)
         for group in groups:
-            for mode in modes:
-                for width in screen_widths:
+            for mode in MODES:
+                for width in SCREEN_WIDTHS:
                     dark_mode = mode == "dark"
                     pkl_name = f"downloads_{repo}_{group}_{mode}_{width}"
                     print(f"caching {pkl_name}...")
@@ -133,21 +126,21 @@ def cache_downloads_plots() -> None:
 
 
 def cache_stargazer_network():
-    modes = ["light", "dark"]
-    for mode in modes:
-        dark_mode = mode == "dark"
-        fig = viz_star_network(dark_mode)
-        f_name = f"stargazer_network_{mode}"
-        dump_obj_to_pickle(f_name, fig)
+    for mode in MODES:
+        for width in SCREEN_WIDTHS:
+            dark_mode = mode == "dark"
+            fig = viz_star_network(dark_mode, width)
+            f_name = f"stargazer_network_{mode}_{width}"
+            dump_obj_to_pickle(f_name, fig)
 
 
 def cache_follower_network():
-    modes = ["light", "dark"]
-    for mode in modes:
-        dark_mode = mode == "dark"
-        fig = viz_follower_network(dark_mode)
-        f_name = f"follower_network_{mode}"
-        dump_obj_to_pickle(f_name, fig)
+    for mode in MODES:
+        for width in SCREEN_WIDTHS:
+            dark_mode = mode == "dark"
+            fig = viz_follower_network(dark_mode, width)
+            f_name = f"follower_network_{mode}_{width}"
+            dump_obj_to_pickle(f_name, fig)
 
 
 @timeit

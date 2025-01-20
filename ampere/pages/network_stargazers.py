@@ -27,12 +27,15 @@ def create_stargazers_table() -> pd.DataFrame:
         Output("network-stargazer-table", "style"),
         Output("network-stargazer-graph-fade", "is_in"),
     ],
-    Input("color-mode-switch", "value"),
+    [
+        Input("color-mode-switch", "value"),
+        Input("breakpoints", "widthBreakpoint"),
+    ],
 )
 @timeit
-def get_stylized_network_graph(dark_mode: bool):
+def get_stylized_network_graph(dark_mode: bool, breakpoint_name: str):
     mode = "dark" if dark_mode else "light"
-    fname = f"stargazer_network_{mode}"
+    fname = f"stargazer_network_{mode}_{breakpoint_name}"
     fig = read_plotly_fig_pickle(fname)
 
     return (

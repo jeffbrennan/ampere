@@ -139,8 +139,12 @@ def viz_summary(
         facet_col="metric_type",  # single var facet col for plot title
     )
     fig.update_layout(plot_bgcolor=bg_color, paper_bgcolor=bg_color)
-    fig.update_yaxes(matches=None, showticklabels=True, showgrid=False)
-    fig.update_xaxes(showgrid=False)
+
+    fixed_axes = screen_width == ScreenWidth.xs
+    fig.update_yaxes(
+        matches=None, showticklabels=True, showgrid=False, fixedrange=fixed_axes
+    )
+    fig.update_xaxes(showgrid=False, fixedrange=fixed_axes)
     fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
 
     if screen_width == ScreenWidth.xs:
@@ -158,7 +162,8 @@ def viz_summary(
                 xanchor="center",
                 x=0.5,
                 font=dict(size=legend_font_size, weight="bold"),
-            )
+            ),
+            dragmode=False,
         )
     else:
         legend_font_size = 14
@@ -310,7 +315,8 @@ def viz_downloads(
                 xanchor="center",
                 x=0.5,
                 font=dict(size=legend_font_size),
-            )
+            ),
+            dragmode=False,
         )
     else:
         legend_font_size = 14
@@ -356,8 +362,11 @@ def viz_downloads(
             tickfont_size=tick_font_size,
         )
     )
-    fig.update_yaxes(matches=None, showticklabels=True, showgrid=False)
-    fig.update_xaxes(showgrid=False)
+    fixed_axes = screen_width == ScreenWidth.xs
+    fig.update_yaxes(
+        matches=None, showticklabels=True, showgrid=False, fixedrange=fixed_axes
+    )
+    fig.update_xaxes(showgrid=False, fixedrange=fixed_axes)
 
     fig.update_layout(
         title={
@@ -400,6 +409,7 @@ def create_star_network_plot(
     repos: list[str],
     stargazers: list[StargazerNetworkRecord],
     dark_mode: bool,
+    screen_width: ScreenWidth,
 ) -> go.Figure:
     if dark_mode:
         edge_color = "rgba(255, 255, 255, 0.3)"
@@ -491,11 +501,16 @@ def create_star_network_plot(
         paper_bgcolor=background_color,
         legend=dict(font=dict(color=legend_text_color)),
     )
+
+    if screen_width == ScreenWidth.xs:
+        fig.update_xaxes(fixedrange=True)
+        fig.update_yaxes(fixedrange=True)
+        fig.update_layout(dragmode=False)
     return fig
 
 
 @timeit
-def viz_star_network(dark_mode: bool) -> Figure:
+def viz_star_network(dark_mode: bool, screen_width: ScreenWidth) -> Figure:
     with get_frontend_db_con() as con:
         stargazers = con.sql(
             """
@@ -515,7 +530,7 @@ def viz_star_network(dark_mode: bool) -> Figure:
     repos = [i for i in repo_palette if i in repos_with_stargazers]
 
     network = read_network_graph_pickle("star_network")
-    fig = create_star_network_plot(network, repos, stargazers, dark_mode)
+    fig = create_star_network_plot(network, repos, stargazers, dark_mode, screen_width)
     return fig
 
 
@@ -525,6 +540,7 @@ def create_follower_network_plot(
     follower_info: list[Followers],
     follower_details: dict[int, FollowerDetails],
     dark_mode: bool,
+    screen_width: ScreenWidth,
 ) -> go.Figure:
     if dark_mode:
         edge_color = "rgba(255, 255, 255, 0.3)"
@@ -644,11 +660,16 @@ def create_follower_network_plot(
         paper_bgcolor=background_color,
         legend=dict(font=dict(color=legend_text_color)),
     )
+
+    if screen_width == ScreenWidth.xs:
+        fig.update_xaxes(fixedrange=True)
+        fig.update_yaxes(fixedrange=True)
+        fig.update_layout(dragmode=False)
     return fig
 
 
 @timeit
-def viz_follower_network(dark_mode: bool) -> Figure:
+def viz_follower_network(dark_mode: bool, screen_width: ScreenWidth) -> Figure:
     with get_frontend_db_con() as con:
         followers = (
             con.sql("select user_id, follower_id from int_internal_followers")
@@ -685,10 +706,7 @@ def viz_follower_network(dark_mode: bool) -> Figure:
     network = read_network_graph_pickle("follower_network")
 
     fig = create_follower_network_plot(
-        network,
-        followers,
-        follower_details,
-        dark_mode,
+        network, followers, follower_details, dark_mode, screen_width
     )
     return fig
 
