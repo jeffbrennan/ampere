@@ -2,7 +2,7 @@ with
 unknown_python as (
     select
         repo,
-        download_date,
+        download_timestamp as download_date,
         group_name,
         group_value,
         download_count
@@ -135,11 +135,11 @@ overall as (
     select
         repo,
         download_date,
-        'overall' as group_name,
-        'overall' as group_value,
+        group_name,
+        group_value,
         sum(download_count) as download_count
     from {{ ref('int_downloads_melted_weekly') }}
-    where group_name = 'system_name'
+    where group_name = 'overall'
     group by all
 ),
 
