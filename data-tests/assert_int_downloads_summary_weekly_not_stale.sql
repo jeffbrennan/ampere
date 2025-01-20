@@ -4,7 +4,7 @@ with melted_dates as (
     group by all
 ),
 weekly_dates as (
-    select group_name, max(download_date) as max_date
+    select group_name, max(download_timestamp) as max_date
     from {{ref('int_downloads_melted_weekly')}}
     where group_name in (select distinct group_name from melted_dates)
     group by all

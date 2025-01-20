@@ -1,7 +1,7 @@
 with dates as (
     select
         group_name, 
-        min(download_date) as min_timestamp
+        min(download_timestamp) as min_timestamp
     from {{ ref('int_downloads_melted_weekly') }}
     group by all
 )

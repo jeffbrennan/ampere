@@ -1,7 +1,7 @@
 with dates as (
     select
         group_name, 
-        max(download_date) as max_timestamp
+        max(download_timestamp) as max_timestamp
     from {{ ref('int_downloads_melted_weekly') }}
     group by all
 )
