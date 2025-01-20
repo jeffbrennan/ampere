@@ -78,9 +78,15 @@ def refresh_pypi_downloads_from_bigquery(
 ) -> int:
     results = get_pypi_downloads_from_bigquery(query_config, dry_run)
     if results is None:
-        print("no results to write!")
+        print("dry run - exiting early")
         return 0
 
+    if len(results) == 0:
+        print(
+            f"0 downloads found for time period: {query_config.min_date} - {query_config.max_date}"
+        )
+        record_pypi_query(query_config)
+        return 0
     write_delta_table(results, write_config)
 
     record_pypi_query(query_config)
