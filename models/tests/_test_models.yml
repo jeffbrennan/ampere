@@ -1,0 +1,19 @@
+models:
+  - name: test_int_feed_events_mart_feed_events_match
+    meta:
+      dagster:
+        group: github_metrics_daily_4
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [event_type]
+    columns:
+      - name: event_type
+        data_type: string
+      - name: max_int_timestamp
+        data_type: timestamp with time zone
+      - name: max_mart_timestamp
+        data_type: timestamp with time zone

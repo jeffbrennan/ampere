@@ -1,22 +1,17 @@
-with int_timestamps as (
-    select
-        event_type,
-        max(event_timestamp) as max_timestamp
-    from {{ ref('int_feed_events') }}
-    group by all
-),
-mart_timestamps as (
-    select
-        event_type,
-        max(event_timestamp) as max_timestamp
-    from {{ ref('mart_feed_events') }}
-    group by all
-)
+{{
+    config(
+        meta={
+            'dagster': {
+                'ref': {
+                    'name': 'mart_feed_events',
+                    'package_name': 'ampere'
+                },
+            }
+        }
+    )
+}}
 select
-    a.event_type,
-    a.max_timestamp as max_int_timestamp,
-    b.max_timestamp as max_mart_timestamp
-from int_timestamps a
-inner join mart_timestamps b
-on a.event_type = b.event_type
-where max_int_timestamp <> max_mart_timestamp
+    event_type,
+    max_int_timestamp,
+    max_mart_timestamp
+from {{ ref('test_int_feed_events_mart_feed_events_match') }}
