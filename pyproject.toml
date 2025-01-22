@@ -39,6 +39,8 @@ flask-caching = "^2.3.0"
 flask-compress = "^1.17"
 shandy-sqlfmt = { extras = ["jinjafmt"], version = "^0.24.0" }
 dash-daq = "^0.5.0"
+fastapi = {version = "^0.115.6", extras = ["standard"]}
+slowapi = "^0.1.9"
 
 [build-system]
 requires = ["poetry-core"]

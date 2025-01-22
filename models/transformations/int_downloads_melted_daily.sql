@@ -23,7 +23,7 @@ with downloads_melted as (
         where
             download_timestamp
             >= (
-                select coalesce(max(download_timestamp) + interval 7 day, date '1900-01-01') -- noqa
+                select coalesce(max(download_timestamp) + interval 1 day, date '1900-01-01') -- noqa
                 from {{ this }}
             )
     {% endif %}
@@ -33,7 +33,7 @@ with downloads_melted as (
 downloads_trunc as (
     select
         repo,
-        time_bucket('7 day', download_timestamp) as download_timestamp,
+        time_bucket('1 day', download_timestamp) as download_timestamp,
         group_name,
         group_value,
         sum(download_count) as download_count
@@ -43,15 +43,9 @@ downloads_trunc as (
 
 select
     repo,
-    download_timestamp + interval 7 day as download_timestamp,
+    download_timestamp,
     group_name,
     group_value,
     sum(download_count)::uinteger as download_count
 from downloads_trunc
-where
-    download_timestamp
-    <= (
-        select max(b.download_timestamp) - interval 7 day
-        from downloads_trunc as b
-    )
 group by all

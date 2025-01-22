@@ -80,13 +80,28 @@ melted as (
         system_release as group_value,
         download_count
     from base
+),
+summed as (
+    select
+        project as repo,
+        timestamp as download_timestamp,
+        group_name,
+        group_value,
+        sum(download_count)::uinteger as download_count
+    from melted
+    group by all
+),
+overall as (
+    select
+        repo,
+        download_timestamp,
+        'overall' as group_name,
+        'overall' as group_value,
+        sum(download_count)::uinteger as download_count
+    from summed
+    where group_name = 'system_name'
+    group by all
 )
-
-select
-    project as repo,
-    timestamp as download_timestamp,
-    group_name,
-    group_value,
-    sum(download_count)::uinteger as download_count
-from melted
-group by all
+select * from summed
+union all
+select * from overall

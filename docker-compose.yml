@@ -41,6 +41,19 @@ services:
       - ampere_data:/ampere/data
     networks:
       - jb-proxy
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile-api
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`api-ampere.jeffbrennan.dev`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls.certresolver=myresolver"
+    volumes:
+      - ampere_data:/ampere/data
+    networks:
+      - jb-proxy
   frontend:
     build:
       context: .
