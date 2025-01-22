@@ -53,7 +53,7 @@ def get_downloads_base(
     where repo = ?
     and group_name = ?
     and download_timestamp >= now() - interval {config.n_days} days
-    order by download_timestamp, download_count {'desc' if config.descending else 'asc'}
+    order by download_timestamp {'desc' if config.descending else 'asc'}
     limit {config.limit}
     """
 
