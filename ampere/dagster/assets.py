@@ -249,7 +249,7 @@ def dagster_get_users(context: AssetExecutionContext) -> None:
 @asset(
     compute_kind="python",
     key=["refresh_star_network"],
-    deps=["int_network_stargazers"],
+    deps=["int_network_stargazers", "github_metrics_backend_to_frontend"],
     group_name="github_metrics_daily_4",
 )
 def dagster_refresh_star_network(context: AssetExecutionContext) -> None:
@@ -262,7 +262,11 @@ def dagster_refresh_star_network(context: AssetExecutionContext) -> None:
 @asset(
     compute_kind="python",
     key=["refresh_follower_network"],
-    deps=["int_network_follower_details"],
+    deps=[
+        "int_network_follower_details",
+        "github_metrics_backend_to_frontend",
+        "refresh_star_network",
+    ],
     group_name="github_metrics_daily_4",
 )
 def dagster_refresh_follower_network(context: AssetExecutionContext) -> None:
