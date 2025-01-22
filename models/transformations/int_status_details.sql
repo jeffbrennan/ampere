@@ -109,8 +109,8 @@ with
         select
             ['downloads'] as page,
             'int_downloads_melted_weekly' as "model",
-            'download_date' as timestamp_col,
-            max(download_date)::timestamp as "timestamp",
+            'download_timestamp' as timestamp_col,
+            max(download_timestamp)::timestamp as "timestamp",
             count(*) as records
         from {{ ref("int_downloads_melted_weekly") }}
         union all

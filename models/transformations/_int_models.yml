@@ -105,13 +105,13 @@ models:
           group: bigquery_daily
     constraints:
       - type: primary_key
-        columns: [ repo, download_timestamp, group_name, group_value ]
+        columns: [ repo, download_date, group_name, group_value ]
     columns:
       - name: repo
         data_tests:
           - not_null
         data_type: string
-      - name: download_timestamp
+      - name: download_date
         data_type: timestamp with time zone
       - name: group_name
         data_type: string
@@ -119,7 +119,6 @@ models:
         data_type: string
       - name: download_count
         data_type: uinteger
-        columns: [ repo, download_date, group_name, group_value ]
   - name: int_feed_events
     meta:
       dagster:
