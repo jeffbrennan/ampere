@@ -59,3 +59,6 @@ module_name = "ampere.dagster.definitions"
 [tool.sqlfmt]
 exclude = ["target/**/*", "dbt_packages/**/*"]
 line_length = 90
+
+[tool.poetry.scripts]
+ampere = "ampere.cli.app:app"
