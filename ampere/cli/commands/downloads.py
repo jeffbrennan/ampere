@@ -3,7 +3,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from ampere.api.models import DownloadPublic, DownloadsPublic
+from ampere.api.models import DownloadsPublic
 from ampere.api.routes.downloads import (
     DownloadsGranularity,
     DownloadsPublicGroup,
@@ -11,6 +11,7 @@ from ampere.api.routes.downloads import (
     RepoEnum,
 )
 from ampere.cli.common import get_api_url
+from ampere.cli.models import CLIOutputFormat
 from ampere.cli.state import State
 from ampere.common import timeit
 
@@ -58,6 +59,7 @@ def list_downloads(
     n_days: int = 30,
     limit: int = 50,
     descending: bool = True,
+    output: CLIOutputFormat = CLIOutputFormat.table,
 ):
     response = get_downloads_response(
         GetDownloadsPublicConfig(
@@ -69,6 +71,9 @@ def list_downloads(
             descending=descending,
         )
     )
+    if output == CLIOutputFormat.json:
+        console.print_json(response.model_dump_json())
+        return
 
     table = format_downloads_list_output(response)
     console.print(table)
