@@ -40,9 +40,14 @@ class DownloadsGranularity(StrEnum):
     monthly = auto()
 
 
+class DownloadsSummaryGranularity(StrEnum):
+    weekly = auto()
+    monthly = auto()
+
+
 @dataclass
 class GetDownloadsPublicConfig:
-    granularity: DownloadsGranularity
+    granularity: DownloadsGranularity | DownloadsSummaryGranularity
     repo: RepoEnum  # type: ignore
     group: DownloadsPublicGroup
     n_days: int
