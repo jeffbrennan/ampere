@@ -33,8 +33,16 @@ class DownloadsPublicGroup(StrEnum):
     system_release = auto()
 
 
+class DownloadsGranularity(StrEnum):
+    hourly = auto()
+    daily = auto()
+    weekly = auto()
+    monthly = auto()
+
+
 @dataclass
 class GetDownloadsPublicConfig:
+    granularity: DownloadsGranularity
     repo: RepoEnum  # type: ignore
     group: DownloadsPublicGroup
     n_days: int
@@ -75,7 +83,12 @@ def read_downloads_hourly(
     return get_downloads_base(
         table_name="int_downloads_melted",
         config=GetDownloadsPublicConfig(
-            repo=repo, group=group, n_days=n_days, limit=limit, descending=descending
+            granularity=DownloadsGranularity.hourly,
+            repo=repo,
+            group=group,
+            n_days=n_days,
+            limit=limit,
+            descending=descending,
         ),
     )
 
@@ -93,7 +106,12 @@ def read_downloads_daily(
     return get_downloads_base(
         table_name="int_downloads_melted_daily",
         config=GetDownloadsPublicConfig(
-            repo=repo, group=group, n_days=n_days, limit=limit, descending=descending
+            granularity=DownloadsGranularity.daily,
+            repo=repo,
+            group=group,
+            n_days=n_days,
+            limit=limit,
+            descending=descending,
         ),
     )
 
@@ -111,7 +129,12 @@ def read_downloads_weekly(
     return get_downloads_base(
         table_name="int_downloads_melted_weekly",
         config=GetDownloadsPublicConfig(
-            repo=repo, group=group, n_days=n_days, limit=limit, descending=descending
+            granularity=DownloadsGranularity.weekly,
+            repo=repo,
+            group=group,
+            n_days=n_days,
+            limit=limit,
+            descending=descending,
         ),
     )
 
@@ -129,6 +152,11 @@ def read_downloads_monthly(
     return get_downloads_base(
         table_name="int_downloads_melted_monthly",
         config=GetDownloadsPublicConfig(
-            repo=repo, group=group, n_days=n_days, limit=limit, descending=descending
+            granularity=DownloadsGranularity.monthly,
+            repo=repo,
+            group=group,
+            n_days=n_days,
+            limit=limit,
+            descending=descending,
         ),
     )
