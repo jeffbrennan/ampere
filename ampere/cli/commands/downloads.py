@@ -1,3 +1,4 @@
+from typing import Annotated
 import requests
 import typer
 from rich.console import Console
@@ -53,8 +54,8 @@ def get_downloads_response(config: GetDownloadsPublicConfig) -> DownloadsPublic:
 @downloads_app.command("list")
 @timeit
 def list_downloads(
-    granularity: DownloadsGranularity,
-    repo: RepoEnum,  # type: ignore
+    granularity: Annotated[DownloadsGranularity, typer.Option(prompt=True)],
+    repo: Annotated[RepoEnum, typer.Option(prompt=True)],  # type: ignore
     group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
     n_days: int = 30,
     limit: int = 50,
