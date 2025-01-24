@@ -60,13 +60,15 @@ def get_downloads_base(
 ) -> DownloadsPublic:
     con = get_frontend_db_con()
     params = [config.repo.value, config.group]
+    sort_order = 'desc' if config.descending else 'asc'
+
     query = f"""
     select * 
     from {table_name}
     where repo = ?
     and group_name = ?
     and download_timestamp >= now() - interval {config.n_days} days
-    order by download_timestamp {'desc' if config.descending else 'asc'}
+    order by download_timestamp {sort_order}, download_count {sort_order}
     limit {config.limit}
     """
 
