@@ -87,13 +87,27 @@ def get_downloads_response(config: GetDownloadsPublicConfig) -> DownloadsPublic:
 @downloads_app.command("list")
 @timeit
 def list_downloads(
-    granularity: Annotated[DownloadsGranularity, typer.Option(prompt=True)],
-    repo: Annotated[RepoEnum, typer.Option(prompt=True)],  # type: ignore
-    group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
-    n_days: int = 30,
-    limit: int = 50,
-    descending: bool = True,
-    output: CLIOutputFormat = CLIOutputFormat.table,
+    granularity: Annotated[
+        DownloadsGranularity,
+        typer.Option(
+            "--granularity",
+            "-g",
+            prompt=True,
+        ),
+    ],
+    repo: Annotated[
+        Optional[RepoEnum],  # type: ignore
+        typer.Option("--repo", "-r", prompt=True),
+    ],
+    group: Annotated[
+        DownloadsPublicGroup, typer.Option("--group", "-gr")
+    ] = DownloadsPublicGroup.overall,
+    n_days: Annotated[int, typer.Option("--n-days", "-n")] = 180,
+    limit: Annotated[int, typer.Option("--limit", "-l")] = 30,
+    descending: Annotated[bool, typer.Option("--desc/--asc", "-d/-a")] = True,
+    output: Annotated[
+        CLIOutputFormat, typer.Option("--output", "-o")
+    ] = CLIOutputFormat.table,
 ):
     response = get_downloads_response(
         GetDownloadsPublicConfig(
@@ -137,11 +151,25 @@ def create_downloads_summary(
 @downloads_app.command("summary")
 @timeit
 def summarize_downloads(
-    granularity: Annotated[DownloadsSummaryGranularity, typer.Option(prompt=True)],
-    repo: Optional[RepoEnum] = None,  # type: ignore
-    group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
-    output: CLIOutputFormat = CLIOutputFormat.table,
-    descending: bool = True,
+    granularity: Annotated[
+        DownloadsSummaryGranularity,
+        typer.Option(
+            "--granularity",
+            "-g",
+            prompt=True,
+        ),
+    ],
+    repo: Annotated[
+        Optional[RepoEnum],  # type: ignore
+        typer.Option("--repo", "-r"),
+    ] = None,
+    group: Annotated[
+        DownloadsPublicGroup, typer.Option("--group", "-gr")
+    ] = DownloadsPublicGroup.overall,
+    descending: Annotated[bool, typer.Option("--desc/--asc", "-d/-a")] = True,
+    output: Annotated[
+        CLIOutputFormat, typer.Option("--output", "-o")
+    ] = CLIOutputFormat.table,
 ):
     filters = {
         granularity.monthly: {"limit": 2, "n_days": 7 * 4 * 3},
