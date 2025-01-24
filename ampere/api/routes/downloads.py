@@ -76,7 +76,7 @@ def get_downloads_base(
 
 
 @router.get("/hourly", response_model=DownloadsPublic)
-@limiter.limit("6/minute")
+@limiter.limit("60/minute")
 def read_downloads_hourly(
     request: Request,
     repo: RepoEnum,  # type: ignore
@@ -99,7 +99,7 @@ def read_downloads_hourly(
 
 
 @router.get("/daily", response_model=DownloadsPublic)
-@limiter.limit("6/minute")
+@limiter.limit("60/minute")
 def read_downloads_daily(
     request: Request,
     repo: RepoEnum,  # type: ignore
@@ -122,7 +122,7 @@ def read_downloads_daily(
 
 
 @router.get("/weekly", response_model=DownloadsPublic)
-@limiter.limit("6/minute")
+@limiter.limit("60/minute")
 def read_downloads_weekly(
     request: Request,
     repo: RepoEnum,  # type: ignore
@@ -145,7 +145,7 @@ def read_downloads_weekly(
 
 
 @router.get("/monthly", response_model=DownloadsPublic)
-@limiter.limit("6/minute")
+@limiter.limit("60/minute")
 def read_downloads_monthly(
     request: Request,
     repo: RepoEnum,  # type: ignore
