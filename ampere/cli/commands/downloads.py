@@ -1,3 +1,5 @@
+import time
+from concurrent.futures import ThreadPoolExecutor
 from enum import StrEnum, auto
 from typing import Annotated, Optional
 
@@ -15,7 +17,7 @@ from ampere.api.routes.downloads import (
     GetDownloadsPublicConfig,
     RepoEnum,
 )
-from ampere.cli.common import get_api_url
+from ampere.cli.common import CLIEnvironment, get_api_url
 from ampere.cli.models import CLIOutputFormat
 from ampere.cli.state import State
 from ampere.common import timeit
@@ -68,6 +70,9 @@ def format_downloads_list_output(response: DownloadsPublic) -> Table:
 
 @timeit
 def get_downloads_response(config: GetDownloadsPublicConfig) -> DownloadsPublic:
+    if State.env == CLIEnvironment.dev:
+        time.sleep(0.4)
+
     base_url = get_api_url(State.env)
     url = f"{base_url}/downloads/{config.granularity}"
     response = requests.get(
@@ -181,9 +186,9 @@ def summarize_downloads(
     else:
         repos = [repo]
 
-    all_records = []
+    configs = []
     for repo in repos:
-        records = get_downloads_response(
+        configs.append(
             GetDownloadsPublicConfig(
                 granularity=granularity,
                 repo=repo,
@@ -194,7 +199,8 @@ def summarize_downloads(
             )
         )
 
-        all_records.append(records)
+    with ThreadPoolExecutor(max_workers=len(repos)) as executor:
+        all_records = list(executor.map(get_downloads_response, configs))
 
     summary = create_downloads_summary(all_records, granularity)
     if output == CLIOutputFormat.json:
