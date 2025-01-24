@@ -111,7 +111,7 @@ def format_downloads_list_output(response: DownloadsPublic, descending: bool) ->
         table.add_row(
             item.download_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
             group_value,
-            str(item.download_count),
+            f"{item.download_count:,}",
             f"{pct:.2f}%",
         )
     return table
