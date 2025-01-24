@@ -12,3 +12,9 @@ def get_api_url(env: CLIEnvironment) -> str:
         CLIEnvironment.dev: "http://127.0.0.1:8000",
     }
     return url_lookup[env]
+
+
+def get_flag_emoji(country_code: str) -> str:
+    """Converts a two-letter country code to a flag emoji."""
+    code_points = [ord(c) + 127397 for c in country_code.upper()]
+    return "".join(chr(i) for i in code_points)
