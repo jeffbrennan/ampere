@@ -64,33 +64,34 @@ def format_downloads_summary_output(
     table.add_column(f"last {period}", justify="right")
     table.add_column(f"this {period}", justify="right")
     table.add_column("% change", justify="right")
-    table.add_column("% total", justify="right")
+
+    if group != DownloadsPublicGroup.overall:
+        table.add_column("% total", justify="right")
 
     prev_repo = records[0].repo
-    pct_total = 0
     for record in records:
-        if record.repo != prev_repo:
-            print(prev_repo, pct_total)
-            pct_total = 0
+        if record.repo != prev_repo and group != DownloadsPublicGroup.overall:
             table.add_section()
 
-        pct_total += record.pct_total
         prev_repo = record.repo
-
         if record.group == "country_code" and len(record.group_value) == 2:
             group_emoji = get_flag_emoji(record.group_value)
             group_value = f"{group_emoji} {record.group_value}"
         else:
             group_value = record.group_value
 
-        table.add_row(
+        row_contents = [
             record.repo,
             group_value,
             f"{record.last_period:,}",
             f"{record.this_period:,}",
             str(round(record.pct_change, 2)),
-            str(round(record.pct_total, 2)),
-        )
+        ]
+
+        if group != DownloadsPublicGroup.overall:
+            row_contents.append(str(round(record.pct_total, 2)))
+
+        table.add_row(*row_contents)
 
     return table
 
@@ -314,7 +315,17 @@ def summarize_downloads(
         DownloadsPublicGroup, typer.Option("--group", "-gr")
     ] = DownloadsPublicGroup.overall,
     descending: Annotated[bool, typer.Option("--desc/--asc", "-d/-a")] = True,
-    min_group_pct_of_total: Annotated[float, typer.Option("--min-pct", "-m")] = 0.1,
+    min_group_pct_of_total: Annotated[
+        float,
+        typer.Option(
+            "--min-pct",
+            "-m",
+            help="""
+            The minimum download count % of total in the most recent period for the specified repo and group.
+            Group values with a % total lower than this threshold will be collapsed into an 'other' category.
+            """,
+        ),
+    ] = 0.1,
     output: Annotated[
         CLIOutputFormat, typer.Option("--output", "-o")
     ] = CLIOutputFormat.table,
