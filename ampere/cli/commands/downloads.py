@@ -31,7 +31,9 @@ downloads_app = typer.Typer()
 
 class DownloadsSummary(BaseModel):
     granularity: DownloadsSummaryGranularity
+    group: DownloadsPublicGroup
     repo: RepoEnum  # type: ignore
+    group_value: str
     min_date: datetime.datetime
     max_date: datetime.datetime
     last_period: int
@@ -48,7 +50,8 @@ def format_downloads_summary_output(
     min_date = min([record.min_date for record in records])
     max_date = max([record.max_date for record in records])
 
-    title = f"Downloads Summary"
+    group = records[0].group
+    title = f"{group} downloads summary"
     subtitle = f"{min_date.strftime('%Y-%m-%d')} to {max_date.strftime('%Y-%m-%d')}"
     title_full = f"{title}\n{subtitle}"
 
@@ -56,14 +59,20 @@ def format_downloads_summary_output(
         title=title_full, title_justify="left", title_style="bold", box=box.ROUNDED
     )
     table.add_column("repo", justify="left")
+    table.add_column("group", justify="left")
     table.add_column(f"last {period}", justify="right")
     table.add_column(f"this {period}", justify="right")
     table.add_column("% change", justify="right")
 
-    records = sorted(records, key=lambda x: x.pct_change, reverse=descending)
+    prev_repo = records[0].repo
     for record in records:
+        if record.repo != prev_repo:
+            table.add_section()
+        prev_repo = record.repo
+
         table.add_row(
             record.repo,
+            record.group_value,
             f"{record.last_period:,}",
             f"{record.this_period:,}",
             str(round(record.pct_change, 2)),
@@ -179,28 +188,76 @@ def list_downloads(
     console.print(table)
 
 
+@timeit
 def create_downloads_summary(
-    records: list[DownloadsPublic], granularity: DownloadsSummaryGranularity
+    records: list[DownloadsPublic],
+    group: DownloadsPublicGroup,
+    granularity: DownloadsSummaryGranularity,
+    descending: bool,
 ) -> list[DownloadsSummary]:
     summary = []
-    for record in records:
-        min_date = min([item.download_timestamp for item in record.data])
-        max_date = max([item.download_timestamp for item in record.data])
-        last_period = record.data[-2].download_count
-        this_period = record.data[-1].download_count
-        pct_change = (this_period - last_period) / last_period * 100
-        summary.append(
-            DownloadsSummary(
-                granularity=granularity,
-                repo=record.data[-1].repo,
-                last_period=last_period,
-                this_period=this_period,
-                pct_change=pct_change,
-                min_date=min_date,
-                max_date=max_date,
-            )
-        )
+    # need to get this and last for each of the group values, for each repo
+    # group - group_value - repo - download_count - download_timestamp
+    for repo_data in records:
+        group_val_lookup = {}
+        repo = repo_data.data[0].repo
+        for item in repo_data.data:
+            if descending:
+                if item.group_value not in group_val_lookup:
+                    group_val_lookup[item.group_value] = {
+                        "min_date": item.download_timestamp,
+                        "max_date": item.download_timestamp,
+                        "this_period": item.download_count,
+                        "last_period": 0,
+                    }
+                else:
+                    group_val_lookup[item.group_value].update(
+                        {
+                            "min_date": item.download_timestamp,
+                            "last_period": item.download_count,
+                        }
+                    )
+                continue
 
+            if item.group_value not in group_val_lookup:
+                group_val_lookup[item.group_value] = {
+                    "min_date": item.download_timestamp,
+                    "max_date": item.download_timestamp,
+                    "this_period": 0,
+                    "last_period": item.download_count,
+                }
+            else:
+                group_val_lookup.update(
+                    {
+                        "max_date": item.download_timestamp,
+                        "this_period": item.download_count,
+                    }
+                )
+
+        for k, v in group_val_lookup.items():
+            last_period = v["last_period"]
+            this_period = v["this_period"]
+            if last_period == 0:
+                pct_change = 100
+            else:
+                pct_change = (this_period - last_period) / last_period * 100
+            summary.append(
+                DownloadsSummary(
+                    granularity=granularity,
+                    group=group,
+                    group_value=k,
+                    repo=repo,
+                    last_period=last_period,
+                    this_period=this_period,
+                    pct_change=pct_change,
+                    min_date=v["min_date"],
+                    max_date=v["max_date"],
+                )
+            )
+    for record in summary:
+        print(record.repo, record.group_value, record.this_period, record.last_period)
+
+    summary = sorted(summary, key=lambda x: (x.repo, x.this_period), reverse=descending)
     return summary
 
 
@@ -227,8 +284,8 @@ def summarize_downloads(
     ] = CLIOutputFormat.table,
 ):
     filters = {
-        granularity.monthly: {"limit": 2, "n_days": 7 * 4 * 3},
-        granularity.weekly: {"limit": 2, "n_days": 7 * 3},
+        granularity.monthly: {"limit": 10000, "n_days": 7 * 4 * 3},
+        granularity.weekly: {"limit": 10000, "n_days": 7 * 3},
     }
 
     if repo is None:
@@ -252,7 +309,7 @@ def summarize_downloads(
     with ThreadPoolExecutor(max_workers=len(repos)) as executor:
         all_records = list(executor.map(get_downloads_response, configs))
 
-    summary = create_downloads_summary(all_records, granularity)
+    summary = create_downloads_summary(all_records, group, granularity, descending)
     if output == CLIOutputFormat.json:
         for model in summary:
             console.print_json(model.model_dump_json())
