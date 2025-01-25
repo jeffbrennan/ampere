@@ -67,9 +67,14 @@ def format_downloads_summary_output(
     table.add_column("% total", justify="right")
 
     prev_repo = records[0].repo
+    pct_total = 0
     for record in records:
         if record.repo != prev_repo:
+            print(prev_repo, pct_total)
+            pct_total = 0
             table.add_section()
+
+        pct_total += record.pct_total
         prev_repo = record.repo
 
         if record.group == "country_code" and len(record.group_value) == 2:
@@ -203,7 +208,9 @@ def create_downloads_summary(
     group: DownloadsPublicGroup,
     granularity: DownloadsSummaryGranularity,
     descending: bool,
+    min_pct_of_total: float,
 ) -> list[DownloadsSummary]:
+    others: dict[RepoEnum, DownloadsSummary] = {}  # type: ignore
     summary = []
     # need to get this and last for each of the group values, for each repo
     # group - group_value - repo - download_count - download_timestamp
@@ -253,22 +260,37 @@ def create_downloads_summary(
                 pct_change = (this_period - last_period) / last_period * 100
 
             pct_total = this_period / total_this_period * 100
-            summary.append(
-                DownloadsSummary(
-                    granularity=granularity,
-                    group=group,
-                    group_value=k,
-                    repo=repo,
-                    last_period=last_period,
-                    this_period=this_period,
-                    min_date=v["min_date"],
-                    max_date=v["max_date"],
-                    pct_change=pct_change,
-                    pct_total=pct_total,
-                )
+
+            record_parsed = DownloadsSummary(
+                granularity=granularity,
+                group=group,
+                group_value=k,
+                repo=repo,
+                last_period=last_period,
+                this_period=this_period,
+                min_date=v["min_date"],
+                max_date=v["max_date"],
+                pct_change=pct_change,
+                pct_total=pct_total,
             )
-    for record in summary:
-        print(record.repo, record.group_value, record.this_period, record.last_period)
+            if pct_total < min_pct_of_total:
+                record_parsed.group_value = "other"
+                if repo not in others:
+                    others[repo] = record_parsed
+                    continue
+                others[repo].this_period += this_period
+                others[repo].last_period += last_period
+                others[repo].pct_total += pct_total
+
+            else:
+                summary.append(record_parsed)
+
+    if len(others) > 0:
+        for k, v in others.items():
+            if v.last_period == 0:
+                continue
+            v.pct_change = (v.this_period - v.last_period) / v.last_period * 100
+            summary.append(v)
 
     summary = sorted(summary, key=lambda x: (x.repo, x.this_period), reverse=descending)
     return summary
@@ -292,6 +314,7 @@ def summarize_downloads(
         DownloadsPublicGroup, typer.Option("--group", "-gr")
     ] = DownloadsPublicGroup.overall,
     descending: Annotated[bool, typer.Option("--desc/--asc", "-d/-a")] = True,
+    min_group_pct_of_total: Annotated[float, typer.Option("--min-pct", "-m")] = 0.1,
     output: Annotated[
         CLIOutputFormat, typer.Option("--output", "-o")
     ] = CLIOutputFormat.table,
@@ -315,14 +338,20 @@ def summarize_downloads(
                 group=group,
                 n_days=filters[granularity]["n_days"],
                 limit=filters[granularity]["limit"],
-                descending=False,
+                descending=True,
             )
         )
 
     with ThreadPoolExecutor(max_workers=len(repos)) as executor:
         all_records = list(executor.map(get_downloads_response, configs))
 
-    summary = create_downloads_summary(all_records, group, granularity, descending)
+    summary = create_downloads_summary(
+        all_records,
+        group,
+        granularity,
+        descending,
+        min_group_pct_of_total,
+    )
     if output == CLIOutputFormat.json:
         for model in summary:
             console.print_json(model.model_dump_json())
