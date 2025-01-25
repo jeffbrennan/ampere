@@ -43,9 +43,7 @@ class DownloadsSummary(BaseModel):
 
 
 def format_downloads_summary_output(
-    records: list[DownloadsSummary],
-    granularity: DownloadsSummaryGranularity,
-    descending: bool,
+    records: list[DownloadsSummary], granularity: DownloadsSummaryGranularity
 ) -> Table:
     period = granularity.name.removesuffix("ly")
     min_date = min([record.min_date for record in records])
@@ -213,8 +211,7 @@ def create_downloads_summary(
 ) -> list[DownloadsSummary]:
     others: dict[RepoEnum, DownloadsSummary] = {}  # type: ignore
     summary = []
-    # need to get this and last for each of the group values, for each repo
-    # group - group_value - repo - download_count - download_timestamp
+
     for repo_data in records:
         group_val_lookup = {}
         repo = repo_data.data[0].repo
@@ -244,7 +241,7 @@ def create_downloads_summary(
                     "last_period": item.download_count,
                 }
             else:
-                group_val_lookup.update(
+                group_val_lookup[item.group_value].update(
                     {
                         "max_date": item.download_timestamp,
                         "this_period": item.download_count,
@@ -368,5 +365,5 @@ def summarize_downloads(
             console.print_json(model.model_dump_json())
         return
 
-    table = format_downloads_summary_output(summary, granularity, descending)
+    table = format_downloads_summary_output(summary, granularity)
     console.print(table)
