@@ -221,35 +221,18 @@ def create_downloads_summary(
         group_val_lookup = {}
         repo = repo_data.data[0].repo
         for item in repo_data.data:
-            if descending:
-                if item.group_value not in group_val_lookup:
-                    group_val_lookup[item.group_value] = {
-                        "min_date": item.download_timestamp,
-                        "max_date": item.download_timestamp,
-                        "this_period": item.download_count,
-                        "last_period": 0,
-                    }
-                else:
-                    group_val_lookup[item.group_value].update(
-                        {
-                            "min_date": item.download_timestamp,
-                            "last_period": item.download_count,
-                        }
-                    )
-                continue
-
             if item.group_value not in group_val_lookup:
                 group_val_lookup[item.group_value] = {
                     "min_date": item.download_timestamp,
                     "max_date": item.download_timestamp,
-                    "this_period": 0,
-                    "last_period": item.download_count,
+                    "this_period": item.download_count,
+                    "last_period": 0,
                 }
             else:
                 group_val_lookup[item.group_value].update(
                     {
-                        "max_date": item.download_timestamp,
-                        "this_period": item.download_count,
+                        "min_date": item.download_timestamp,
+                        "last_period": item.download_count,
                     }
                 )
 
@@ -362,7 +345,7 @@ def summarize_downloads(
                 group=group,
                 n_days=filters[granularity]["n_days"],
                 limit=filters[granularity]["limit"],
-                descending=True,
+                descending=True,  # get the most recent data regardless of the sort order
             )
         )
 
