@@ -1,7 +1,6 @@
 import datetime
 import time
 from concurrent.futures import ThreadPoolExecutor
-from enum import StrEnum, auto
 from typing import Annotated, Optional
 
 import requests
@@ -9,7 +8,7 @@ import typer
 from pydantic import BaseModel
 from rich import box
 from rich.console import Console
-from rich.table import Row, Table
+from rich.table import Table
 
 from ampere.api.models import DownloadsPublic
 from ampere.api.routes.downloads import (
@@ -115,7 +114,7 @@ def format_downloads_summary_output(
     return table
 
 
-def format_downloads_list_output(response: DownloadsPublic, descending: bool) -> Table:
+def format_downloads_list_output(response: DownloadsPublic) -> Table:
     repo = response.data[0].repo
     group = response.data[0].group_name
 
@@ -206,7 +205,7 @@ def list_downloads(
         DownloadsPublicGroup, typer.Option("--group", "-gr")
     ] = DownloadsPublicGroup.overall,
     n_days: Annotated[int, typer.Option("--n-days", "-n")] = 180,
-    limit: Annotated[int, typer.Option("--limit", "-l")] = 30,
+    limit: Annotated[int, typer.Option("--limit", "-l")] = 10_000,
     descending: Annotated[bool, typer.Option("--desc/--asc", "-d/-a")] = True,
     output: Annotated[
         CLIOutputFormat, typer.Option("--output", "-o")
@@ -226,7 +225,7 @@ def list_downloads(
         console.print_json(response.model_dump_json())
         return
 
-    table = format_downloads_list_output(response, descending)
+    table = format_downloads_list_output(response)
     console.print(table)
 
 
@@ -347,7 +346,7 @@ def create_downloads_summary(
 
         if not show_subtotal:
             _ = v.pop(subtotal_index)
-        
+
         # final group level sort to account for new "other" category
         if k in others:
             v.append(others[k])
