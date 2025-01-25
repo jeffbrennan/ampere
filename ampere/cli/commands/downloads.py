@@ -39,6 +39,7 @@ class DownloadsSummary(BaseModel):
     last_period: int
     this_period: int
     pct_change: float
+    pct_total: float
 
 
 def format_downloads_summary_output(
@@ -63,6 +64,7 @@ def format_downloads_summary_output(
     table.add_column(f"last {period}", justify="right")
     table.add_column(f"this {period}", justify="right")
     table.add_column("% change", justify="right")
+    table.add_column("% total", justify="right")
 
     prev_repo = records[0].repo
     for record in records:
@@ -70,12 +72,19 @@ def format_downloads_summary_output(
             table.add_section()
         prev_repo = record.repo
 
+        if record.group == "country_code" and len(record.group_value) == 2:
+            group_emoji = get_flag_emoji(record.group_value)
+            group_value = f"{group_emoji} {record.group_value}"
+        else:
+            group_value = record.group_value
+
         table.add_row(
             record.repo,
-            record.group_value,
+            group_value,
             f"{record.last_period:,}",
             f"{record.this_period:,}",
             str(round(record.pct_change, 2)),
+            str(round(record.pct_total, 2)),
         )
 
     return table
@@ -234,6 +243,7 @@ def create_downloads_summary(
                     }
                 )
 
+        total_this_period = sum([i["this_period"] for i in group_val_lookup.values()])
         for k, v in group_val_lookup.items():
             last_period = v["last_period"]
             this_period = v["this_period"]
@@ -241,6 +251,8 @@ def create_downloads_summary(
                 pct_change = 100
             else:
                 pct_change = (this_period - last_period) / last_period * 100
+
+            pct_total = this_period / total_this_period * 100
             summary.append(
                 DownloadsSummary(
                     granularity=granularity,
@@ -249,9 +261,10 @@ def create_downloads_summary(
                     repo=repo,
                     last_period=last_period,
                     this_period=this_period,
-                    pct_change=pct_change,
                     min_date=v["min_date"],
                     max_date=v["max_date"],
+                    pct_change=pct_change,
+                    pct_total=pct_total,
                 )
             )
     for record in summary:
