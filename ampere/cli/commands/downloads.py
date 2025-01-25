@@ -283,14 +283,25 @@ def create_downloads_summary(
             else:
                 summary.append(record_parsed)
 
-    if len(others) > 0:
-        for k, v in others.items():
-            if v.last_period == 0:
-                continue
+    for k, v in others.items():
+        if v.last_period == 0:
+            v.pct_change = 100
+        else:
             v.pct_change = (v.this_period - v.last_period) / v.last_period * 100
-            summary.append(v)
 
-    summary = sorted(summary, key=lambda x: (x.repo, x.this_period), reverse=descending)
+        summary.append(v)
+
+    summary_repos = set([i.repo for i in summary])
+    repo_order = sorted(
+        summary_repos,
+        key=lambda x: sum([i.this_period for i in summary if i.repo == x]),
+    )
+
+    summary = sorted(
+        summary,
+        key=lambda x: (repo_order.index(x.repo), x.this_period),
+        reverse=descending,
+    )
     return summary
 
 
