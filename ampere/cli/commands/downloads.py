@@ -76,7 +76,8 @@ def format_downloads_summary_output(
         table.add_column("% total", justify="right")
 
     for repo_records in config.records.values():
-        table.add_section()
+        if config.group != DownloadsPublicGroup.overall:
+            table.add_section()
         for record in repo_records:
             if record.group == "country_code" and len(record.group_value) == 2:
                 group_emoji = get_flag_emoji(record.group_value)
@@ -348,8 +349,9 @@ def create_downloads_summary(
             _ = v.pop(subtotal_index)
         
         # final group level sort to account for new "other" category
-        v.append(others[k])
-        v.sort(key=lambda x: x.this_period, reverse=descending)
+        if k in others:
+            v.append(others[k])
+            v.sort(key=lambda x: x.this_period, reverse=descending)
 
     # top level repo level sort by total downloads
     summary_totals.sort(key=lambda x: x[1], reverse=descending)
