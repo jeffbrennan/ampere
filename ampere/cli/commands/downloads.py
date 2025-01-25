@@ -108,7 +108,8 @@ def format_downloads_list_output(response: DownloadsPublic, descending: bool) ->
     table.add_column("timestamp", justify="center")
     table.add_column("group value", justify="left")
     table.add_column("downloads", justify="right")
-    table.add_column("%", justify="right")
+    if group != DownloadsPublicGroup.overall:
+        table.add_column("%", justify="right")
 
     totals_by_timestamp = {}
     for item in response.data:
@@ -118,7 +119,7 @@ def format_downloads_list_output(response: DownloadsPublic, descending: bool) ->
 
     prev_timestamp = response.data[0].download_timestamp
     for item in response.data:
-        if item.download_timestamp != prev_timestamp:
+        if item.download_timestamp != prev_timestamp and group != DownloadsPublicGroup.overall:
             table.add_section()
         prev_timestamp = item.download_timestamp
 
@@ -130,12 +131,16 @@ def format_downloads_list_output(response: DownloadsPublic, descending: bool) ->
         else:
             group_value = item.group_value
 
-        table.add_row(
+        row_contents = [
             item.download_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
             group_value,
             f"{item.download_count:,}",
-            f"{pct:.2f}%",
-        )
+        ]
+        if group != DownloadsPublicGroup.overall:
+            row_contents.append(str(round(pct, 2)))
+
+        table.add_row(*row_contents)
+
     return table
 
 
