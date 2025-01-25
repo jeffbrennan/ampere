@@ -9,7 +9,7 @@ import typer
 from pydantic import BaseModel
 from rich import box
 from rich.console import Console
-from rich.table import Table
+from rich.table import Row, Table
 
 from ampere.api.models import DownloadsPublic
 from ampere.api.routes.downloads import (
@@ -19,7 +19,7 @@ from ampere.api.routes.downloads import (
     GetDownloadsPublicConfig,
     RepoEnum,
 )
-from ampere.cli.common import CLIEnvironment, get_api_url, get_flag_emoji
+from ampere.cli.common import CLIEnvironment, get_api_url, get_flag_emoji, get_pct_change
 from ampere.cli.models import CLIOutputFormat
 from ampere.cli.state import State
 from ampere.common import timeit
@@ -42,16 +42,25 @@ class DownloadsSummary(BaseModel):
     pct_total: float
 
 
+class DownloadsSummaryOutput(BaseModel):
+    records: dict[RepoEnum, list[DownloadsSummary]]  # type: ignore
+    group: DownloadsPublicGroup
+    min_date: datetime.datetime
+    max_date: datetime.datetime
+    grand_total_this_period: int
+    grand_total_last_period: int
+    grand_total_pct_change: float
+
+
 def format_downloads_summary_output(
-    records: list[DownloadsSummary], granularity: DownloadsSummaryGranularity
+    config: DownloadsSummaryOutput,
+    granularity: DownloadsSummaryGranularity,
+    show_grand_total: bool,
 ) -> Table:
     period = granularity.name.removesuffix("ly")
-    min_date = min([record.min_date for record in records])
-    max_date = max([record.max_date for record in records])
 
-    group = records[0].group
-    title = f"{group} downloads summary"
-    subtitle = f"{min_date.strftime('%Y-%m-%d')} to {max_date.strftime('%Y-%m-%d')}"
+    title = f"{config.group} downloads summary"
+    subtitle = f"{config.min_date.strftime('%Y-%m-%d')} to {config.max_date.strftime('%Y-%m-%d')}"
     title_full = f"{title}\n{subtitle}"
 
     table = Table(
@@ -63,34 +72,45 @@ def format_downloads_summary_output(
     table.add_column(f"this {period}", justify="right")
     table.add_column("% change", justify="right")
 
-    if group != DownloadsPublicGroup.overall:
+    if config.group != DownloadsPublicGroup.overall:
         table.add_column("% total", justify="right")
 
-    prev_repo = records[0].repo
-    for record in records:
-        if record.repo != prev_repo and group != DownloadsPublicGroup.overall:
-            table.add_section()
+    for repo_records in config.records.values():
+        table.add_section()
+        for record in repo_records:
+            if record.group == "country_code" and len(record.group_value) == 2:
+                group_emoji = get_flag_emoji(record.group_value)
+                group_value = f"{group_emoji} {record.group_value}"
+            else:
+                group_value = record.group_value
 
-        prev_repo = record.repo
-        if record.group == "country_code" and len(record.group_value) == 2:
-            group_emoji = get_flag_emoji(record.group_value)
-            group_value = f"{group_emoji} {record.group_value}"
-        else:
-            group_value = record.group_value
+            row_contents = [
+                record.repo,
+                group_value,
+                f"{record.last_period:,}",
+                f"{record.this_period:,}",
+                f"{record.pct_change:.2f}%",
+            ]
+            style = "bold" if record.group_value == "subtotal" else None
 
-        row_contents = [
-            record.repo,
-            group_value,
-            f"{record.last_period:,}",
-            f"{record.this_period:,}",
-            str(round(record.pct_change, 2)),
-        ]
+            if (
+                config.group != DownloadsPublicGroup.overall
+                and record.group_value != "subtotal"
+            ):
+                row_contents.append(f"{record.pct_total:.2f}%")
 
-        if group != DownloadsPublicGroup.overall:
-            row_contents.append(str(round(record.pct_total, 2)))
+            table.add_row(*row_contents, style=style)
 
-        table.add_row(*row_contents)
-
+    if show_grand_total:
+        table.add_section()
+        table.add_row(
+            "total",
+            "",
+            f"{config.grand_total_last_period:,}",
+            f"{config.grand_total_this_period:,}",
+            f"{config.grand_total_pct_change:.2f}%",
+            style="bold",
+        )
     return table
 
 
@@ -119,7 +139,10 @@ def format_downloads_list_output(response: DownloadsPublic, descending: bool) ->
 
     prev_timestamp = response.data[0].download_timestamp
     for item in response.data:
-        if item.download_timestamp != prev_timestamp and group != DownloadsPublicGroup.overall:
+        if (
+            item.download_timestamp != prev_timestamp
+            and group != DownloadsPublicGroup.overall
+        ):
             table.add_section()
         prev_timestamp = item.download_timestamp
 
@@ -213,11 +236,18 @@ def create_downloads_summary(
     granularity: DownloadsSummaryGranularity,
     descending: bool,
     min_pct_of_total: float,
-) -> list[DownloadsSummary]:
+    show_subtotal: bool,
+) -> DownloadsSummaryOutput:
     others: dict[RepoEnum, DownloadsSummary] = {}  # type: ignore
-    summary = []
+    repo_summaries: dict[RepoEnum, list[DownloadsSummary]] = {}  # type: ignore
+
+    grand_total_this_period = 0
+    grand_total_last_period = 0
+    min_dates = []
+    max_dates = []
 
     for repo_data in records:
+        summary = []
         group_val_lookup = {}
         repo = repo_data.data[0].repo
         for item in repo_data.data:
@@ -236,15 +266,43 @@ def create_downloads_summary(
                     }
                 )
 
-        total_this_period = sum([i["this_period"] for i in group_val_lookup.values()])
+        total_this_period = 0
+        total_last_period = 0
+        total_min_date = None
+        total_max_date = None
+        for val in group_val_lookup.values():
+            total_this_period += val["this_period"]
+            total_last_period += val["last_period"]
+
+            if total_min_date is None or val["min_date"] < total_min_date:
+                total_min_date = val["min_date"]
+            if total_max_date is None or val["max_date"] > total_max_date:
+                total_max_date = val["max_date"]
+
+        assert all([total_min_date, total_max_date])
+        grand_total_last_period += total_last_period
+        grand_total_this_period += total_this_period
+        min_dates.append(total_min_date)
+        max_dates.append(total_max_date)
+
+        subtotal_record = DownloadsSummary(
+            granularity=granularity,
+            group=group,
+            group_value="subtotal",
+            repo=repo,
+            last_period=total_last_period,
+            this_period=total_this_period,
+            min_date=min([i["min_date"] for i in group_val_lookup.values()]),
+            max_date=max([i["max_date"] for i in group_val_lookup.values()]),
+            pct_change=get_pct_change(total_last_period, total_this_period),
+            pct_total=100,
+        )
+
         for k, v in group_val_lookup.items():
             last_period = v["last_period"]
             this_period = v["this_period"]
-            if last_period == 0:
-                pct_change = 100
-            else:
-                pct_change = (this_period - last_period) / last_period * 100
 
+            pct_change = get_pct_change(last_period, this_period)
             pct_total = this_period / total_this_period * 100
 
             record_parsed = DownloadsSummary(
@@ -266,31 +324,51 @@ def create_downloads_summary(
                     continue
                 others[repo].this_period += this_period
                 others[repo].last_period += last_period
-                others[repo].pct_total += pct_total
 
             else:
                 summary.append(record_parsed)
 
-    for k, v in others.items():
-        if v.last_period == 0:
-            v.pct_change = 100
+        if descending:
+            summary.insert(0, subtotal_record)
         else:
-            v.pct_change = (v.this_period - v.last_period) / v.last_period * 100
+            summary.append(subtotal_record)
 
-        summary.append(v)
+        repo_summaries[repo] = summary
 
-    summary_repos = set([i.repo for i in summary])
-    repo_order = sorted(
-        summary_repos,
-        key=lambda x: sum([i.this_period for i in summary if i.repo == x]),
+    for k, v in others.items():
+        pct_change = get_pct_change(v.last_period, v.this_period)
+        v.pct_change = pct_change
+
+    summary_totals = []
+    for k, v in repo_summaries.items():
+        subtotal_index = 0 if descending else -1
+        summary_totals.append((k, v[subtotal_index].this_period))
+
+        if not show_subtotal:
+            _ = v.pop(subtotal_index)
+        
+        # final group level sort to account for new "other" category
+        v.append(others[k])
+        v.sort(key=lambda x: x.this_period, reverse=descending)
+
+    # top level repo level sort by total downloads
+    summary_totals.sort(key=lambda x: x[1], reverse=descending)
+
+    sorted_repo_summaries = {}
+    for i in summary_totals:
+        sorted_repo_summaries[i[0]] = repo_summaries[i[0]]
+
+    return DownloadsSummaryOutput(
+        records=sorted_repo_summaries,
+        group=group,
+        min_date=min(min_dates),
+        max_date=max(max_dates),
+        grand_total_last_period=grand_total_last_period,
+        grand_total_this_period=grand_total_this_period,
+        grand_total_pct_change=get_pct_change(
+            grand_total_last_period, grand_total_this_period
+        ),
     )
-
-    summary = sorted(
-        summary,
-        key=lambda x: (repo_order.index(x.repo), x.this_period),
-        reverse=descending,
-    )
-    return summary
 
 
 @downloads_app.command("summary")
@@ -322,6 +400,8 @@ def summarize_downloads(
             """,
         ),
     ] = 0.1,
+    show_subtotal: Annotated[bool, typer.Option("--show-subtotal", "-st")] = False,
+    show_grand_total: Annotated[bool, typer.Option("--show-grand-total", "-gt")] = False,
     output: Annotated[
         CLIOutputFormat, typer.Option("--output", "-o")
     ] = CLIOutputFormat.table,
@@ -353,16 +433,19 @@ def summarize_downloads(
         all_records = list(executor.map(get_downloads_response, configs))
 
     summary = create_downloads_summary(
-        all_records,
-        group,
-        granularity,
-        descending,
-        min_group_pct_of_total,
+        records=all_records,
+        group=group,
+        granularity=granularity,
+        descending=descending,
+        min_pct_of_total=min_group_pct_of_total,
+        show_subtotal=show_subtotal,
     )
     if output == CLIOutputFormat.json:
-        for model in summary:
+        for model in summary.records:
             console.print_json(model.model_dump_json())
         return
 
-    table = format_downloads_summary_output(summary, granularity)
+    table = format_downloads_summary_output(
+        config=summary, granularity=granularity, show_grand_total=show_grand_total
+    )
     console.print(table)
