@@ -60,7 +60,7 @@ def get_downloads_base(
 ) -> DownloadsPublic:
     con = get_frontend_db_con()
     params = [config.repo.value, config.group]
-    sort_order = 'desc' if config.descending else 'asc'
+    sort_order = "desc" if config.descending else "asc"
 
     query = f"""
     select * 
@@ -83,8 +83,8 @@ def read_downloads_hourly(
     request: Request,
     repo: RepoEnum,  # type: ignore
     group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
-    n_days: int = Query(default=7, le=30),
-    limit: int = Query(default=7 * 24, le=7 * 30),
+    n_days: int = Query(default=7, le=24 * 365 * 5),
+    limit: int = Query(default=7 * 24, le=100_000),
     descending: bool = Query(default=True),
 ):
     return get_downloads_base(
@@ -106,8 +106,8 @@ def read_downloads_daily(
     request: Request,
     repo: RepoEnum,  # type: ignore
     group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
-    n_days: int = Query(default=30, le=365),
-    limit: int = Query(default=100, le=365),
+    n_days: int = Query(default=30, le=365 * 5),
+    limit: int = Query(default=100, le=100_000),
     descending: bool = Query(default=True),
 ):
     return get_downloads_base(
@@ -129,8 +129,8 @@ def read_downloads_weekly(
     request: Request,
     repo: RepoEnum,  # type: ignore
     group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
-    n_days: int = Query(default=30, le=365),
-    limit: int = Query(default=100, le=365),
+    n_days: int = Query(default=30, le=365 * 5),
+    limit: int = Query(default=100, le=10_000),
     descending: bool = Query(default=True),
 ):
     return get_downloads_base(
@@ -152,8 +152,8 @@ def read_downloads_monthly(
     request: Request,
     repo: RepoEnum,  # type: ignore
     group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
-    n_days: int = Query(default=6, le=12 * 10),
-    limit: int = Query(default=100, le=12 * 10),
+    n_days: int = Query(default=60, le=365 * 5),
+    limit: int = Query(default=100, le=10_000),
     descending: bool = Query(default=True),
 ):
     return get_downloads_base(
