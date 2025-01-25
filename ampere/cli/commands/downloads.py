@@ -21,7 +21,6 @@ from ampere.api.routes.downloads import (
 from ampere.cli.common import CLIEnvironment, get_api_url, get_flag_emoji, get_pct_change
 from ampere.cli.models import CLIOutputFormat
 from ampere.cli.state import State
-from ampere.common import timeit
 
 console = Console()
 
@@ -229,7 +228,6 @@ def list_downloads(
     console.print(table)
 
 
-@timeit
 def create_downloads_summary(
     records: list[DownloadsPublic],
     group: DownloadsPublicGroup,
