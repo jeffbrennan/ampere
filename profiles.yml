@@ -10,3 +10,4 @@ ampere:
       settings:
         memory_limit: "8GB"
         max_temp_directory_size: "100GB"
+        TimeZone: UTC
