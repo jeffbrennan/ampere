@@ -3,7 +3,7 @@
         meta={
             'dagster': {
                 'ref': {
-                    'name': 'int_downloads_summary_weekly',
+                    'name': 'int_downloads_melted_weekly',
                     'package_name': 'ampere'
                 },
             }

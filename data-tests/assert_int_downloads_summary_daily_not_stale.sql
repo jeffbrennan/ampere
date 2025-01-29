@@ -3,7 +3,7 @@
         meta={
             'dagster': {
                 'ref': {
-                    'name': 'int_downloads_summary_weekly',
+                    'name': 'int_downloads_melted_daily',
                     'package_name': 'ampere'
                 },
             }
@@ -12,5 +12,5 @@
 }}
 select * from 
 {{ref('test_downloads_summary_not_stale')}} 
-where weekly_days_diff >= 1
+where daily_days_diff >= 1
 
