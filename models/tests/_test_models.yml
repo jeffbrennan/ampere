@@ -17,7 +17,7 @@ models:
         data_type: timestamp with time zone
       - name: max_mart_timestamp
         data_type: timestamp with time zone
-  - name: test_downloads_summary_weekly_not_stale
+  - name: test_downloads_summary_not_stale
     meta:
       dagster:
         group: bigquery_daily
