@@ -17,3 +17,23 @@ models:
         data_type: timestamp with time zone
       - name: max_mart_timestamp
         data_type: timestamp with time zone
+  - name: test_downloads_summary_not_stale
+    meta:
+      dagster:
+        group: bigquery_daily
+    config:
+      contract:
+        enforced: true
+      on_schema_change: append_new_columns
+    constraints:
+      - type: primary_key
+        columns: [egroup_name]
+    columns:
+      - name: group_name
+        data_type: string
+      - name: melted_max_date
+        data_type: timestamp with time zone
+      - name: weekly_max_date
+        data_type: timestamp with time zone
+      - name: days_diff
+        data_type: integer

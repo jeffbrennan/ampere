@@ -233,21 +233,14 @@ def toggle_slider_tooltip_visibility(
 @timeit
 def get_downloads_records_date_ranges(df_data: list[dict]):
     df = pd.DataFrame(df_data)
-    df["download_date"] = pd.to_datetime(df["download_date"], utc=True)
+    df["download_date"] = pd.to_datetime(df["download_date"])
     min_timestamp = df["download_date"].min().timestamp()
     max_timestamp = df["download_date"].max().timestamp()
 
-    min_timestamp_ymd = datetime.datetime.fromtimestamp(min_timestamp).strftime(
-        "%Y-%m-%d"
-    )
-    max_timestamp_ymd = datetime.datetime.fromtimestamp(max_timestamp).strftime(
-        "%Y-%m-%d"
-    )
-
     date_slider_value = [min_timestamp, max_timestamp]
     date_slider_marks = {
-        min_timestamp: {"label": min_timestamp_ymd, "style": {"fontSize": 0}},
-        max_timestamp: {"label": max_timestamp_ymd, "style": {"fontSize": 0}},
+        min_timestamp: {"style": {"fontSize": 0}},
+        max_timestamp: {"style": {"fontSize": 0}},
     }
     return (
         min_timestamp,

@@ -19,10 +19,10 @@ set dotenv-load
     poetry run python ampere/mirror.py
 
 @front:
-    poetry run duckdb -readonly data/frontend.duckdb
+    poetry run duckdb -readonly data/frontend.duckdb --init data/init.sql
 
 @back:
-    poetry run duckdb data/backend.duckdb
+    poetry run duckdb data/backend.duckdb --init data/init.sql
 
 @reload *FLAGS:
     dbt build &&
