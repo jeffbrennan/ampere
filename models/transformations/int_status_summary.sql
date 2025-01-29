@@ -34,7 +34,7 @@ with
             ) as hours_stale,
             case
                 when timestamp_col = 'retrieved_at' then 24
-                when timestamp_col in ('download_timestamp', 'download_date') then 24 * 7 + 24
+                when timestamp_col in ('download_timestamp', 'download_date') then 24 * 2 + 10 + 1
                 else 24 * 7 * 4  -- metric data that can vary (not every day will have a new commit etc.)
             end as hours_stale_threshold,
             hours_stale > hours_stale_threshold as stale,
