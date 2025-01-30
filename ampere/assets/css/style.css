@@ -173,16 +173,16 @@ body,
 }
 
 .light-mode .Select-menu-outer {
-  background-color: rgb(255, 255, 255) !important;
+  background-color: rgb(250, 249, 245) !important;
 }
 
 .light-mode .VirtualizedSelectOption {
-  background-color: rgb(255, 255, 255) !important;
+  background-color: rgb(250, 249, 245) !important;
   color: black !important;
 }
 
 .light-mode .VirtualizedSelectFocusedOption {
-  background-color: rgb(233, 233, 233) !important;
+  background-color: rgb(250, 249, 245) !important;
 }
 
 .navbar-container {
