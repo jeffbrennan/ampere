@@ -1,7 +1,7 @@
 @font-face {
     font-family: "JetBrains Mono";
     src: url("/assets/fonts/jetbrainsmonoregular.woff2") format("woff2");
-    font-weight: 400;
+    font-weight: 600;
     font-style: normal;
 }
 
@@ -126,9 +126,7 @@ body,
 }
 
 .dropdown-item {
-  border-bottom: 2px solid #555 !important;
-  border-left: 2px solid #555 !important;
-  border-right: 2px solid #555 !important;
+  border: 2px solid rgb(33, 33, 33) !important;
 }
 
 .Select-arrow-zone {

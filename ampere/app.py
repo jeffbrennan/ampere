@@ -36,10 +36,12 @@ from ampere.styling import AmperePalette, ScreenWidth
 def update_downloads_link_color(pathname: str, dark_mode: bool):
     if dark_mode:
         text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+        highlighted_text_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
+        highlighted_background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
     else:
         text_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+        highlighted_text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
+        highlighted_background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
 
     pages = ["downloads", "feed", "issues", "network", "status", "about"]
     output_styles = [{"color": text_color} for _ in range(len(pages))]
@@ -50,12 +52,43 @@ def update_downloads_link_color(pathname: str, dark_mode: bool):
     current_page = pathname.removeprefix("/").split("-")[0]
 
     output_styles[pages.index(current_page)] = {
-        "color": text_color,
-        "backgroundColor": background_color,
+        "color": highlighted_text_color,
+        "backgroundColor": highlighted_background_color,
         "borderRadius": "10px",
     }
 
     return output_styles
+
+
+@callback(
+    [
+        Output("navbar-brand", "style"),
+        Output("navbar", "color"),
+        Output("stargazers-dropdown", "style"),
+        Output("followers-dropdown", "style"),
+    ],
+    Input("color-mode-switch", "value"),
+)
+def update_navbar_color(dark_mode: bool):
+    if dark_mode:
+        text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
+        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+    else:
+        text_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
+        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+
+    dropdown_style = {
+        "color": text_color,
+        "backgroundColor": background_color,
+        "borderBottom": f"2px solid {text_color}",
+    }
+
+    return (
+        {"color": text_color, "backgroundColor": background_color},
+        background_color,
+        dropdown_style,
+        dropdown_style,
+    )
 
 
 @callback(
@@ -70,27 +103,6 @@ def update_page_color(dark_mode: bool):
         base_style["backgroundColor"] = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
 
     return base_style
-
-
-@callback(
-    [
-        Output("stargazers-dropdown", "style"),
-        Output("followers-dropdown", "style"),
-    ],
-    Input("color-mode-switch", "value"),
-)
-def update_network_dropdown_color(dark_mode: bool):
-    if dark_mode:
-        text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-    else:
-        text_color = AmperePalette.PAGE_ACCENT_COLOR
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-
-    return (
-        {"color": text_color, "backgroundColor": background_color},
-        {"color": text_color, "backgroundColor": background_color},
-    )
 
 
 @callback(
@@ -117,7 +129,9 @@ def layout(initial_background_color: str):
     navbar = dbc.Navbar(
         dbc.Container(
             [
-                dbc.NavbarBrand("ampere", href="/", class_name="navbar-brand"),
+                dbc.NavbarBrand(
+                    "ampere", href="/", class_name="navbar-brand", id="navbar-brand"
+                ),
                 dbc.NavbarToggler(id="navbar-toggler", className="navbar-toggler"),
                 dbc.Collapse(
                     dbc.Nav(
@@ -132,17 +146,11 @@ def layout(initial_background_color: str):
                                 )
                             ),
                             dbc.NavItem(
-                                dbc.NavLink(
-                                    id="feed-link",
-                                    children="feed",
-                                    href="feed",
-                                )
+                                dbc.NavLink(id="feed-link", children="feed", href="feed")
                             ),
                             dbc.NavItem(
                                 dbc.NavLink(
-                                    id="issues-link",
-                                    children="issues",
-                                    href="issues",
+                                    id="issues-link", children="issues", href="issues"
                                 )
                             ),
                             dbc.DropdownMenu(
@@ -151,36 +159,26 @@ def layout(initial_background_color: str):
                                         id="stargazers-dropdown",
                                         children="stargazers",
                                         href="network-stargazers",
-                                        style={
-                                            "color": AmperePalette.PAGE_ACCENT_COLOR,
-                                            "borderBottom": "1px solid white",
-                                        },
                                     ),
                                     dbc.DropdownMenuItem(
                                         id="followers-dropdown",
                                         children="followers",
                                         href="network-followers",
-                                        style={"color": AmperePalette.PAGE_ACCENT_COLOR},
                                     ),
                                 ],
                                 id="network-link",
                                 nav=True,
                                 in_navbar=True,
                                 label="networks",
-                                toggle_style={"color": "red"},
                             ),
                             dbc.NavItem(
                                 dbc.NavLink(
-                                    id="status-link",
-                                    children="status",
-                                    href="status",
+                                    id="status-link", children="status", href="status"
                                 )
                             ),
                             dbc.NavItem(
                                 dbc.NavLink(
-                                    id="about-link",
-                                    children="about",
-                                    href="about",
+                                    id="about-link", children="about", href="about"
                                 )
                             ),
                         ],
@@ -209,9 +207,8 @@ def layout(initial_background_color: str):
             fluid=True,
             class_name="navbar-container",
         ),
-        color=AmperePalette.PAGE_ACCENT_COLOR,
+        id="navbar",
         dark=True,
-        fixed="top",
         style={"width": "100%"},
     )
 
