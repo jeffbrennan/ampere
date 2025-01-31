@@ -21,6 +21,7 @@ from ampere.styling import AmperePalette, ScreenWidth
 
 @callback(
     [
+        Output("navbar-brand", "style"),
         Output("downloads-link", "style"),
         Output("feed-link", "style"),
         Output("issues-link", "style"),
@@ -43,10 +44,10 @@ def update_downloads_link_color(pathname: str, dark_mode: bool):
         highlighted_text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
         highlighted_background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
 
-    pages = ["downloads", "feed", "issues", "network", "status", "about"]
+    pages = ['', "downloads", "feed", "issues", "network", "status", "about"]
     output_styles = [{"color": text_color} for _ in range(len(pages))]
 
-    if pathname in ["/", "network"]:
+    if pathname in ["network"]:
         return output_styles
 
     current_page = pathname.removeprefix("/").split("-")[0]
@@ -54,7 +55,7 @@ def update_downloads_link_color(pathname: str, dark_mode: bool):
     output_styles[pages.index(current_page)] = {
         "color": highlighted_text_color,
         "backgroundColor": highlighted_background_color,
-        "borderRadius": "10px",
+        "borderRadius": "20px",
     }
 
     return output_styles
@@ -62,7 +63,6 @@ def update_downloads_link_color(pathname: str, dark_mode: bool):
 
 @callback(
     [
-        Output("navbar-brand", "style"),
         Output("navbar", "color"),
         Output("stargazers-dropdown", "style"),
         Output("followers-dropdown", "style"),
@@ -84,7 +84,6 @@ def update_navbar_color(dark_mode: bool):
     }
 
     return (
-        {"color": text_color, "backgroundColor": background_color},
         background_color,
         dropdown_style,
         dropdown_style,

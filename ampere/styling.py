@@ -92,9 +92,9 @@ def style_dt_background_colors_by_rank(
     styles = []
     rows_to_update = 3
     if dark_mode:
-        text_color = "white"
+        text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
     else:
-        text_color = "black"
+        text_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
 
     for col in cols:
         colors = generate_heatmap_palette(dark_mode, col.palette)
@@ -128,13 +128,13 @@ def style_dt_background_colors_by_rank(
 
 def get_ampere_dt_style(dark_mode: bool = False) -> dict:
     if dark_mode:
-        color = "white"
+        color = AmperePalette.BRAND_TEXT_COLOR_DARK
         even_row_color = AmperePalette.TABLE_EVEN_ROW_COLOR_DARK
         odd_row_color = AmperePalette.TABLE_ODD_ROW_COLOR_DARK
         background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
 
     else:
-        color = "black"
+        color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
         even_row_color = AmperePalette.TABLE_EVEN_ROW_COLOR_LIGHT
         odd_row_color = AmperePalette.TABLE_ODD_ROW_COLOR_LIGHT
         background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
@@ -156,9 +156,10 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
                 "paddingRight": "12px",
                 "margin": "0",
                 "fontWeight": "bold",
-                "borderLeft": "none",
-                # "borderLeft": f"2px solid {color}",
+                "borderLeft": f"2px solid {color}",
                 "borderRight": f"2px solid {color}",
+                "position": "relative",
+                "zIndex": 1,
             },
             style_filter={
                 "backgroundColor": background_color,
@@ -179,8 +180,10 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
                 "borderBottom": "0",
                 "paddingRight": "5px",
                 "paddingLeft": "5px",
-                "borderLeft": "none",
+                "borderLeft": f"2px solid {color}",
                 "borderRight": f"2px solid {color}",
+                "position": "relative",
+                "zIndex": 1,
             },
             style_cell_conditional=[],
             style_data_conditional=[
@@ -227,14 +230,14 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
                 "margin": {"b": 100},
                 "border": "none",
                 "borderBottom": f"2px solid {color}",
-                "borderTop": f"2px solid {color}",
-                "borderLeft": f"2px solid {color}",
+                # "borderTop": f"2px solid {color}",
+                # "borderLeft": f"2px solid {color}",
             },
         )
     )
     return dt_style
 
-
+# TODO: make color and background color dynamic
 table_title_style = {
     # "color": AmperePalette.BRAND_TEXT_COLOR,
     "backgroundColor": AmperePalette.PAGE_ACCENT_COLOR,

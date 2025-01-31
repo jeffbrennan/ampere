@@ -3,7 +3,7 @@ import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_frontend_db_con, timeit
-from ampere.styling import ScreenWidth, get_ampere_dt_style
+from ampere.styling import AmperePalette, ScreenWidth, get_ampere_dt_style
 
 
 @timeit
@@ -58,7 +58,11 @@ def create_repo_table() -> pd.DataFrame:
     ],
 )
 def get_styled_about_text(dark_mode: bool, breakpoint_name: str):
-    color = "white" if dark_mode else "black"
+    color = (
+        AmperePalette.BRAND_TEXT_COLOR_DARK
+        if dark_mode
+        else AmperePalette.BRAND_TEXT_COLOR_LIGHT
+    )
     if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
         font_size = "12px"
         margin_left = "0vw"

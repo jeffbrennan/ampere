@@ -259,6 +259,7 @@ def get_downloads_records_date_ranges(df_data: list[dict]):
 
 @callback(
     [
+        # Output("dl-filter-padding-width-left", "width"),
         Output("dl-repo-filter-width", "width"),
         Output("dl-date-filter-width", "width"),
         Output("dl-filter-padding-width", "width"),
@@ -267,12 +268,13 @@ def get_downloads_records_date_ranges(df_data: list[dict]):
     Input("breakpoints", "widthBreakpoint"),
 )
 def update_filter_for_mobile(breakpoint_name: str):
-    filter_style = {"top": "60px"}
+    filter_style = {"top": "60px", "marginLeft": "1em"}
     if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
         filter_style.update({"paddingTop": "20px"})
+        # return 0, 4, 7, 1, filter_style
         return 4, 7, 1, filter_style
 
-    filter_style.update({"position": "sticky", "z-index": "100"})
+    # return 1, 3, 3, 6, filter_style
     return 2, 3, 8, filter_style
 
 
@@ -287,7 +289,7 @@ def update_filter_for_mobile(breakpoint_name: str):
     ],
 )
 def update_dropdown_menu_color(dark_mode: bool, breakpoint_name: str):
-    class_name = "" if dark_mode else "light-mode"
+    class_name = "dark-mode" if dark_mode else "light-mode"
     if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
         font_size = "12px"
     else:
@@ -313,6 +315,7 @@ def layout():
             children=[
                 dbc.Row(
                     children=[
+                        # dbc.Col(id="dl-filter-padding-width-left"),
                         dbc.Col(
                             dcc.Dropdown(
                                 dash_get_repos_with_downloads(),

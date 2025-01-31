@@ -40,12 +40,12 @@ def toggle_slider_tooltip_visibility(
     else:
         tooltip_font_size = "16px"
 
-    if dark_mode:
-        background = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-        color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
-    else:
-        background = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-        color = AmperePalette.BRAND_TEXT_COLOR_DARK
+    background = AmperePalette.PAGE_ACCENT_COLOR
+    color = (
+        AmperePalette.BRAND_TEXT_COLOR_DARK
+        if dark_mode
+        else AmperePalette.BRAND_TEXT_COLOR_LIGHT
+    )
 
     return {
         "placement": "bottom",
@@ -245,7 +245,7 @@ def update_filter_for_mobile(breakpoint_name: str):
         filter_style.update({"paddingTop": "20px"})
         return 11, 1, filter_style
 
-    filter_style.update({"position": "sticky", "z-index": "100"})
+    # filter_style.update({"position": "sticky", "z-index": "100"})
     return 3, 8, filter_style
 
 
@@ -277,7 +277,7 @@ def layout():
                         dbc.Col(width=8, id="filter-padding-width"),
                     ],
                     style={
-                        "position": "sticky",
+                        # "position": "sticky",
                         "z-index": "100",
                         "top": "60px",
                     },
