@@ -1,5 +1,4 @@
 import datetime
-import json
 import pickle
 from pathlib import Path
 from typing import Any, Optional
@@ -117,11 +116,11 @@ def viz_summary(
         )
 
     if dark_mode:
-        font_color = "white"
+        font_color = AmperePalette.BRAND_TEXT_COLOR_DARK
         bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
         template = "plotly_dark"
     else:
-        font_color = "black"
+        font_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
         bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
         template = "plotly_white"
 
@@ -161,7 +160,11 @@ def viz_summary(
                 y=1.45,
                 xanchor="center",
                 x=0.5,
-                font=dict(size=legend_font_size, weight="bold"),
+                font=dict(
+                    size=legend_font_size,
+                    weight="bold",
+                    color=font_color,
+                ),
             ),
             dragmode=False,
         )
@@ -171,7 +174,12 @@ def viz_summary(
         tick_font_size = 14
         fig.update_layout(
             legend=dict(
-                title=None, itemsizing="constant", font=dict(size=legend_font_size)
+                title=None,
+                itemsizing="constant",
+                font=dict(
+                    size=legend_font_size,
+                    color=font_color,
+                ),
             )
         )
 
@@ -179,8 +187,8 @@ def viz_summary(
         lambda a: a.update(
             text="<b>" + a.text.split("=")[-1] + "</b>",
             font_size=annotation_font_size,
-            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
-            font_color="white",
+            bgcolor=AmperePalette.PAGE_ACCENT_COLOR,
+            font_color=font_color,
             borderpad=5,
             y=1.001,
         )
@@ -281,11 +289,11 @@ def viz_downloads(
     )
 
     if dark_mode:
-        font_color = "white"
+        font_color = AmperePalette.BRAND_TEXT_COLOR_DARK
         bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
         template = "plotly_dark"
     else:
-        font_color = "black"
+        font_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
         bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
         template = "plotly_white"
 
@@ -314,7 +322,7 @@ def viz_downloads(
                 y=1.475,
                 xanchor="center",
                 x=0.5,
-                font=dict(size=legend_font_size),
+                font=dict(size=legend_font_size, color=font_color),
             ),
             dragmode=False,
         )
@@ -326,7 +334,7 @@ def viz_downloads(
             legend=dict(
                 title=None,
                 itemsizing="constant",
-                font=dict(size=legend_font_size),
+                font=dict(size=legend_font_size, color=font_color),
             )
         )
     fig.update_layout(plot_bgcolor=bg_color, paper_bgcolor=bg_color)
@@ -334,8 +342,9 @@ def viz_downloads(
         lambda a: a.update(
             text="<b>" + a.text.split("=")[-1].replace("_", " ") + "</b>",
             font_size=annotation_font_size,
-            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
-            font_color="white",
+            # bgcolor=AmperePalette.PAGE_ACCENT_COLOR,
+            bgcolor=bg_color,
+            font_color=font_color,
             borderpad=5,
             y=1.001,
         )

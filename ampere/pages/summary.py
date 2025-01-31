@@ -22,6 +22,7 @@ from ampere.viz import (
         Input("summary-date-slider", "max"),
         Input("summary-date-slider", "value"),
         Input("breakpoints", "widthBreakpoint"),
+        Input("color-mode-switch", "value"),
     ],
 )
 def toggle_slider_tooltip_visibility(
@@ -29,6 +30,7 @@ def toggle_slider_tooltip_visibility(
     max_date_seconds: int,
     date_range: list[int],
     breakpoint_name: str,
+    dark_mode: bool,
 ) -> dict[Any, Any]:
     always_visible = (
         date_range[0] == min_date_seconds and date_range[1] == max_date_seconds
@@ -37,13 +39,21 @@ def toggle_slider_tooltip_visibility(
         tooltip_font_size = "12px"
     else:
         tooltip_font_size = "16px"
+
+    if dark_mode:
+        background = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+        color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
+    else:
+        background = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+        color = AmperePalette.BRAND_TEXT_COLOR_DARK
+
     return {
         "placement": "bottom",
         "always_visible": always_visible,
         "transform": "secondsToYMD",
         "style": {
-            "background": AmperePalette.PAGE_ACCENT_COLOR2,
-            "color": AmperePalette.BRAND_TEXT_COLOR,
+            "background": background,
+            "color": color,
             "fontSize": tooltip_font_size,
             "paddingLeft": "4px",
             "paddingRight": "4px",

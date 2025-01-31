@@ -8,17 +8,16 @@ from ampere.common import timeit
 
 
 class AmperePalette(StrEnum):
-    PAGE_ACCENT_COLOR = "#304FFE"
-    PAGE_ACCENT_COLOR2 = "#5560fa"
-    PAGE_LIGHT_GRAY = "#EEEEEE"
-    BRAND_TEXT_COLOR = "#FFFFFF"
-    BRAND_TEXT_COLOR_MUTED = "#E3E7FA"
-    PAGE_BACKGROUND_COLOR_LIGHT = "rgb(250, 249, 245)"
-    TABLE_EVEN_ROW_COLOR_LIGHT = "rgb(250, 249, 245)"
+    PAGE_ACCENT_COLOR = "rgb(247, 111, 83)"
+    PAGE_BACKGROUND_COLOR_LIGHT = "rgb(242, 240, 227)"
+    TABLE_EVEN_ROW_COLOR_LIGHT = "rgb(242, 240, 227)"
     TABLE_ODD_ROW_COLOR_LIGHT = "rgb(239, 230, 210)"
-    PAGE_BACKGROUND_COLOR_DARK = "rgb(30, 30, 39)"
-    TABLE_EVEN_ROW_COLOR_DARK = "rgb(30, 30, 30)"
+    BRAND_TEXT_COLOR_LIGHT = "rgb(33, 33, 33)"
+
+    PAGE_BACKGROUND_COLOR_DARK = "rgb(33, 33, 33)"
+    TABLE_EVEN_ROW_COLOR_DARK = "rgb(33, 33, 33)"
     TABLE_ODD_ROW_COLOR_DARK = "rgb(50, 50, 50)"
+    BRAND_TEXT_COLOR_DARK = "rgb(242, 240, 227)"
 
 
 class ScreenWidth(StrEnum):
@@ -152,8 +151,8 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
             filter_options={"case": "insensitive", "placeholder_text": ""},
             page_size=100,
             style_header={
-                "backgroundColor": AmperePalette.PAGE_ACCENT_COLOR2,
-                "color": AmperePalette.BRAND_TEXT_COLOR,
+                # "backgroundColor": AmperePalette.PAGE_ACCENT_COLOR2,
+                # "color": AmperePalette.BRAND_TEXT_COLOR,
                 "paddingRight": "12px",
                 "margin": "0",
                 "fontWeight": "bold",
@@ -213,7 +212,7 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
                 ),
                 dict(
                     selector="input.current-page",
-                    rule=f"background-color: {AmperePalette.PAGE_ACCENT_COLOR2}; border-bottom: 0 !important;",
+                    rule=f"background-color: {AmperePalette.PAGE_ACCENT_COLOR}; border-bottom: 0 !important;",
                 ),
                 dict(
                     selector='.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner .dash-header > div input[type="text"], .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner .dash-filter > div input[type="text"]',
@@ -237,8 +236,8 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
 
 
 table_title_style = {
-    "color": AmperePalette.BRAND_TEXT_COLOR,
-    "backgroundColor": AmperePalette.PAGE_ACCENT_COLOR2,
+    # "color": AmperePalette.BRAND_TEXT_COLOR,
+    "backgroundColor": AmperePalette.PAGE_ACCENT_COLOR,
     "paddingBottom": "0",
     "paddingLeft": "10px",
     "paddingRight": "10px",

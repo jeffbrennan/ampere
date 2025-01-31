@@ -46,7 +46,7 @@ body,
 }
 
 .rc-slider-tooltip-inner {
-  background: #5560fa !important;
+  background: rgb(247, 111, 83) !important;
   padding-top: 8px !important;
 }
 
@@ -56,13 +56,13 @@ body,
 }
 
 .rc-slider-handle {
-  background-color: #5560fa;
-  border: solid 2px #5560FA;
+  background-color: rgb(247, 111, 83);
+  border: solid 2px rgb(247, 111, 83);
 }
 
 .rc-slider-dot {
   background-color: #C3C7E6;
-  border: solid 1px #5560fa;
+  border: solid 1px rgb(247, 111, 83);
 }
 
 
@@ -109,7 +109,7 @@ body,
 .form-switch .form-check-input {
   box-shadow: none !important;
   outline: none !important;
-  background-color: rgb(30, 30, 30) !important;
+  background-color: rgb(33, 33, 33) !important;
 }
 
 .form-switch .form-check-input:not(:checked) {
@@ -141,7 +141,7 @@ body,
 
 .Select-control {
   padding-right: 0 !important;
-  background-color: #5560fa !important;
+  background-color: rgb(247, 111, 83) !important;
   border: none !important;
   color: white !important;
   padding-bottom: 0px !important;
@@ -158,31 +158,31 @@ body,
 }
 
 .Select-menu-outer {
-  background-color:rgb(30,30,30) !important;
+  background-color:rgb(33, 33, 33) !important;
   border: none !important;
   margin-top: 0 !important;
 }
 
 .VirtualizedSelectOption {
-  background-color: rgb(30, 30, 30) !important;
+  background-color: rgb(33, 33, 33) !important;
   color: white !important;
 }
 
 .VirtualizedSelectFocusedOption {
-  background-color: rgb(30, 30, 30) !important;
+  background-color: rgb(33, 33, 33) !important;
 }
 
 .light-mode .Select-menu-outer {
-  background-color: rgb(250, 249, 245) !important;
+  background-color: rgb(242, 240, 227) !important;
 }
 
 .light-mode .VirtualizedSelectOption {
-  background-color: rgb(250, 249, 245) !important;
+  background-color: rgb(242, 240, 227) !important;
   color: black !important;
 }
 
 .light-mode .VirtualizedSelectFocusedOption {
-  background-color: rgb(250, 249, 245) !important;
+  background-color: rgb(242, 240, 227) !important;
 }
 
 .navbar-container {

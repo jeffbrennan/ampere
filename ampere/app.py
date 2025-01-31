@@ -34,26 +34,20 @@ from ampere.styling import AmperePalette, ScreenWidth
     ],
 )
 def update_downloads_link_color(pathname: str, dark_mode: bool):
-    output_styles = [
-        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-    ]
+    if dark_mode:
+        text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
+        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+    else:
+        text_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
+        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+
+    pages = ["downloads", "feed", "issues", "network", "status", "about"]
+    output_styles = [{"color": text_color} for _ in range(len(pages))]
 
     if pathname in ["/", "network"]:
         return output_styles
 
-    pages = ["downloads", "feed", "issues", "network", "status", "about"]
     current_page = pathname.removeprefix("/").split("-")[0]
-    if dark_mode:
-        text_color = AmperePalette.BRAND_TEXT_COLOR_MUTED
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-    else:
-        text_color = AmperePalette.PAGE_ACCENT_COLOR
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
 
     output_styles[pages.index(current_page)] = {
         "color": text_color,
@@ -87,7 +81,7 @@ def update_page_color(dark_mode: bool):
 )
 def update_network_dropdown_color(dark_mode: bool):
     if dark_mode:
-        text_color = AmperePalette.BRAND_TEXT_COLOR_MUTED
+        text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
         background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
     else:
         text_color = AmperePalette.PAGE_ACCENT_COLOR
@@ -134,7 +128,6 @@ def layout(initial_background_color: str):
                                     id="downloads-link",
                                     children="downloads",
                                     href="downloads",
-                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
                                     class_name="downloads-link",
                                 )
                             ),
@@ -143,7 +136,6 @@ def layout(initial_background_color: str):
                                     id="feed-link",
                                     children="feed",
                                     href="feed",
-                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
                                 )
                             ),
                             dbc.NavItem(
@@ -151,7 +143,6 @@ def layout(initial_background_color: str):
                                     id="issues-link",
                                     children="issues",
                                     href="issues",
-                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
                                 )
                             ),
                             dbc.DropdownMenu(
@@ -176,16 +167,13 @@ def layout(initial_background_color: str):
                                 nav=True,
                                 in_navbar=True,
                                 label="networks",
-                                toggle_style={
-                                    "color": AmperePalette.BRAND_TEXT_COLOR_MUTED
-                                },
+                                toggle_style={"color": "red"},
                             ),
                             dbc.NavItem(
                                 dbc.NavLink(
                                     id="status-link",
                                     children="status",
                                     href="status",
-                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
                                 )
                             ),
                             dbc.NavItem(
@@ -193,7 +181,6 @@ def layout(initial_background_color: str):
                                     id="about-link",
                                     children="about",
                                     href="about",
-                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
                                 )
                             ),
                         ],

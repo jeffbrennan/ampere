@@ -1,4 +1,3 @@
-import datetime
 from typing import Any
 
 import dash_bootstrap_components as dbc
@@ -186,6 +185,7 @@ def get_downloads_records(repo_name: str) -> list[dict]:
         Input("date-slider", "max"),
         Input("date-slider", "value"),
         Input("breakpoints", "widthBreakpoint"),
+        Input("color-mode-switch", "value"),
     ],
 )
 @timeit
@@ -194,6 +194,7 @@ def toggle_slider_tooltip_visibility(
     max_date_seconds: int,
     date_range: list[int],
     breakpoint_name: str,
+    dark_mode: bool,
 ) -> dict[Any, Any]:
     always_visible = (
         date_range[0] == min_date_seconds and date_range[1] == max_date_seconds
@@ -203,13 +204,18 @@ def toggle_slider_tooltip_visibility(
     else:
         font_size = "16px"
 
+    if dark_mode:
+        text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
+    else:
+        text_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
+
     return {
         "placement": "bottom",
         "always_visible": always_visible,
         "transform": "secondsToYMD",
         "style": {
-            "background": AmperePalette.PAGE_ACCENT_COLOR2,
-            "color": AmperePalette.BRAND_TEXT_COLOR,
+            "background": AmperePalette.PAGE_ACCENT_COLOR,
+            "color": text_color,
             "fontSize": font_size,
             "paddingLeft": "4px",
             "paddingRight": "4px",
