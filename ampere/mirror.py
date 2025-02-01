@@ -63,7 +63,7 @@ def write_backend_views_to_frontend() -> None:
     """).fetchall()
 
     for view_name, view_definition in views:
-        view_definition_clean = view_definition.replace('backend', 'frontend')
+        view_definition_clean = view_definition.replace("backend", "frontend")
         print(f"creating view {view_name}...")
         frontend_con.sql(f"{view_definition_clean}")
 

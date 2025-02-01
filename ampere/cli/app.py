@@ -9,6 +9,7 @@ app = typer.Typer()
 app.add_typer(downloads_app, name="downloads")
 app.add_typer(feed_app, name="feed")
 
+
 @app.callback()
 def main(env: CLIEnvironment = CLIEnvironment.prod):
     State.env = env
