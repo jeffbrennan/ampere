@@ -208,7 +208,13 @@ def layout(initial_background_color: str):
                     dbc.Button(
                         id="color-mode-switch",
                         n_clicks=0,
-                        children=html.I(className="fas fa-sun"),
+                        children=html.I(
+                            className="fas fa-moon",
+                            style={
+                                "color": AmperePalette.PAGE_BACKGROUND_COLOR_DARK,
+                                "transform": "scale(1.3)",
+                            },
+                        ),
                         className="me-1",
                         color="link",
                     )
