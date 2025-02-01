@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import pickle
 from pathlib import Path
@@ -94,7 +96,7 @@ def read_plotly_fig_json(f_name: str) -> Figure:
 
 
 def filter_df_by_date_range(
-    df: pd.DataFrame, date_range: Optional[list[int]] = None
+    df: pd.DataFrame, col_name: str, date_range: Optional[list[int]] = None
 ) -> pd.DataFrame:
     if date_range is None:
         return df
@@ -102,8 +104,8 @@ def filter_df_by_date_range(
     filter_date_min = datetime.datetime.fromtimestamp(date_range[0])
     filter_date_max = datetime.datetime.fromtimestamp(date_range[1])
 
-    return df.query(f"metric_date >= '{filter_date_min}'").query(
-        f"metric_date <= '{filter_date_max}'"
+    return df.query(f"{col_name} >= '{filter_date_min}'").query(
+        f"{col_name} <= '{filter_date_max}'"
     )
 
 
@@ -134,9 +136,9 @@ def style_area_fig(fig: Figure, dark_mode: bool, screen_width: ScreenWidth) -> F
             dragmode=False,
         )
     else:
-        legend_font_size = 14
+        legend_font_size = 16
         annotation_font_size = 20
-        tick_font_size = 14
+        tick_font_size = 16
         fig.update_layout(
             legend=dict(
                 title=None,
@@ -159,7 +161,7 @@ def style_area_fig(fig: Figure, dark_mode: bool, screen_width: ScreenWidth) -> F
         lambda y: y.update(
             title="",
             showline=True,
-            linewidth=1,
+            linewidth=2,
             linecolor=font_color,
             mirror=True,
             tickfont_size=tick_font_size,
@@ -169,7 +171,7 @@ def style_area_fig(fig: Figure, dark_mode: bool, screen_width: ScreenWidth) -> F
         lambda x: x.update(
             title="",
             showline=True,
-            linewidth=1,
+            linewidth=2,
             linecolor=font_color,
             mirror=True,
             showticklabels=True,
@@ -194,6 +196,7 @@ def style_area_fig(fig: Figure, dark_mode: bool, screen_width: ScreenWidth) -> F
 
     return fig
 
+
 def viz_summary(
     df: pd.DataFrame,
     metric_type: str,
@@ -201,8 +204,9 @@ def viz_summary(
     screen_width: ScreenWidth = ScreenWidth.lg,
     dark_mode: bool = False,
 ) -> Figure:
-    df_filtered = df.query(f"metric_type == '{metric_type}'").sort_values("metric_date")
-    df_filtered = filter_df_by_date_range(df_filtered, date_range)
+    df_filtered = df.query(f"metric_type == '{metric_type}'")
+
+    df_filtered = filter_df_by_date_range(df_filtered, "metric_date", date_range)
 
     template = "plotly_dark" if dark_mode else "plotly_white"
     repo_palette = generate_repo_palette()
@@ -269,7 +273,7 @@ def viz_downloads(
     screen_width: ScreenWidth = ScreenWidth.lg,
 ) -> Figure:
     df_filtered = df.query(f"group_name=='{group_name}'")
-    df_filtered = filter_df_by_date_range(df_filtered, date_range)
+    df_filtered = filter_df_by_date_range(df_filtered, "download_date", date_range)
 
     max_date = df_filtered["download_date"].max()
     categories = (
