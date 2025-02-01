@@ -88,25 +88,6 @@ body,
     outline: none !important;
 }
 
-.rc-slider-tooltip[style*="left: 0%"],
-.rc-slider-tooltip[style*="left: 0px"] {
-    z-index: 1100 !important;
-}
-
-.rc-slider-tooltip {
-    z-index: 900 !important;
-}
-
-.rc-slider-tooltip-placement-top {
-    z-index: 900 !important;
-}
-
-.rc-slider-tooltip.rc-slider-tooltip-active,
-.rc-slider-tooltip-placement-top.rc-slider-tooltip-active {
-    z-index: 1000 !important;
-}
-
-
 /* light */
 .light-mode .rc-slider-tooltip-inner {
     color: rgb(33, 33, 33) !important;
@@ -121,13 +102,13 @@ body,
 .light-mode .rc-slider-handle:hover,
 .light-mode .rc-slider-handle:focus,
 .light-mode .rc-slider-handle:active,
-.light-mode .rc-slider-handle.rc-slider-handle-dragging {
+.light-mode .rc-slider-handle.rc-slider-handle-dragging,
+.light-mode .rc-slider-handle {
     border: 2px solid rgb(33, 33, 33) !important;
 }
 
 .light-mode .rc-slider-handle {
     background-color: rgb(242, 240, 227);
-    border: solid 2px rgb(33, 33, 33);
 }
 
 .light-mode .rc-slider-rail,
@@ -143,7 +124,7 @@ body,
     border: 1px solid rgb(242, 240, 227) !important;
 }
 
-.dark-mode .rc-slider-track, .rc-slider-dot {
+.dark-mode .rc-slider-track {
     background-color: rgb(242, 240, 227) !important;
 }
 
@@ -151,13 +132,13 @@ body,
 .dark-mode .rc-slider-handle:hover,
 .dark-mode .rc-slider-handle:focus,
 .dark-mode .rc-slider-handle:active,
-.dark-mode .rc-slider-handle.rc-slider-handle-dragging {
+.dark-mode .rc-slider-handle.rc-slider-handle-dragging,
+.dark-mode .rc-slider-handle {
     border: 2px solid rgb(242, 240, 227) !important;
 }
 
 .dark-mode .rc-slider-handle {
     background-color: rgb(33, 33, 33);
-    border: solid 2px rgb(242, 240, 227);
 }
 
 
@@ -167,29 +148,6 @@ body,
     border: solid 1px rgb(242, 240, 227) !important;
 }
 
-
-.form-switch .form-check-input {
-    box-shadow: none !important;
-    outline: none !important;
-    background-color: rgb(33, 33, 33) !important;
-}
-
-.form-switch .form-check-input:not(:checked) {
-    background-color: white !important;
-    border-color: gray !important;
-}
-
-.dropdown-menu {
-    border: 2px rgb(33, 33, 33) !important;
-    border-radius: 10px !important;
-    padding: 0 !important;
-    margin-bottom: 0 !important;
-    margin-top: 9px !important;
-}
-
-.dropdown-item {
-    border: 2px solid rgb(33, 33, 33) !important;
-}
 
 /* repo selector */
 

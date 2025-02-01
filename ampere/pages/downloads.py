@@ -180,26 +180,11 @@ def get_downloads_records(repo_name: str) -> list[dict]:
 
 @callback(
     Output("date-slider", "tooltip"),
-    [
-        Input("date-slider", "min"),
-        Input("date-slider", "max"),
-        Input("date-slider", "value"),
-        Input("breakpoints", "widthBreakpoint"),
-    ],
+    Input("breakpoints", "widthBreakpoint"),
 )
 @timeit
-def toggle_slider_tooltip_visibility(
-    min_date_seconds: int,
-    max_date_seconds: int,
-    date_range: list[int],
-    breakpoint_name: str,
-) -> dict[Any, Any]:
-    return update_tooltip(
-        min_date_seconds,
-        max_date_seconds,
-        date_range,
-        breakpoint_name,
-    )
+def toggle_slider_tooltip_visibility(breakpoint_name: str) -> dict[Any, Any]:
+    return update_tooltip(breakpoint_name)
 
 
 @callback(

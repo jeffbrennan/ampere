@@ -17,25 +17,10 @@ from ampere.viz import (
 
 @callback(
     Output("summary-date-slider", "tooltip"),
-    [
-        Input("summary-date-slider", "min"),
-        Input("summary-date-slider", "max"),
-        Input("summary-date-slider", "value"),
-        Input("breakpoints", "widthBreakpoint"),
-    ],
+    Input("breakpoints", "widthBreakpoint"),
 )
-def update_summary_slider(
-    min_date_seconds: int,
-    max_date_seconds: int,
-    date_range: list[int],
-    breakpoint_name: str,
-) -> dict[Any, Any]:
-    return update_tooltip(
-        min_date_seconds,
-        max_date_seconds,
-        date_range,
-        breakpoint_name,
-    )
+def update_summary_slider(breakpoint_name: str) -> dict[Any, Any]:
+    return update_tooltip(breakpoint_name)
 
 
 @callback(

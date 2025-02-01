@@ -13,15 +13,7 @@ cache = Cache(
 )
 
 
-def update_tooltip(
-    min_date_seconds: int,
-    max_date_seconds: int,
-    date_range: list[int],
-    breakpoint_name: str,
-) -> dict[Any, Any]:
-    always_visible = (
-        date_range[0] == min_date_seconds and date_range[1] == max_date_seconds
-    )
+def update_tooltip(breakpoint_name: str) -> dict[Any, Any]:
     if breakpoint_name == ScreenWidth.xs:
         tooltip_font_size = "12px"
     else:
@@ -29,7 +21,7 @@ def update_tooltip(
 
     return {
         "placement": "bottom",
-        "always_visible": always_visible,
+        "always_visible": True,
         "transform": "secondsToYMD",
         "style": {"fontSize": tooltip_font_size},
     }
