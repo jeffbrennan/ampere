@@ -185,7 +185,6 @@ def get_downloads_records(repo_name: str) -> list[dict]:
         Input("date-slider", "max"),
         Input("date-slider", "value"),
         Input("breakpoints", "widthBreakpoint"),
-        Input("color-mode-switch", "value"),
     ],
 )
 @timeit
@@ -194,14 +193,12 @@ def toggle_slider_tooltip_visibility(
     max_date_seconds: int,
     date_range: list[int],
     breakpoint_name: str,
-    dark_mode: bool,
 ) -> dict[Any, Any]:
     return update_tooltip(
         min_date_seconds,
         max_date_seconds,
         date_range,
         breakpoint_name,
-        dark_mode,
     )
 
 

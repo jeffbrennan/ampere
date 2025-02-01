@@ -22,7 +22,6 @@ from ampere.viz import (
         Input("summary-date-slider", "max"),
         Input("summary-date-slider", "value"),
         Input("breakpoints", "widthBreakpoint"),
-        Input("color-mode-switch", "value"),
     ],
 )
 def update_summary_slider(
@@ -30,10 +29,12 @@ def update_summary_slider(
     max_date_seconds: int,
     date_range: list[int],
     breakpoint_name: str,
-    dark_mode: bool,
 ) -> dict[Any, Any]:
     return update_tooltip(
-        min_date_seconds, max_date_seconds, date_range, breakpoint_name, dark_mode
+        min_date_seconds,
+        max_date_seconds,
+        date_range,
+        breakpoint_name,
     )
 
 

@@ -71,6 +71,9 @@ body,
     box-shadow: none !important;
     outline: none !important;
     padding-top: 8px !important;
+    padding-left: 4px;
+    padding-right: 4px;
+    border-radius: 10px;
 }
 
 .rc-slider-track {
@@ -106,6 +109,7 @@ body,
 
 /* light */
 .light-mode .rc-slider-tooltip-inner {
+    color: rgb(33, 33, 33) !important;
     background: rgb(242, 240, 227) !important;
     border: 1px solid rgb(33, 33, 33) !important;
 }
@@ -134,6 +138,7 @@ body,
 
 /* dark */
 .dark-mode .rc-slider-tooltip-inner {
+    color: rgb(242, 240, 227) !important;
     background: rgb(33, 33, 33) !important;
     border: 1px solid rgb(242, 240, 227) !important;
 }
