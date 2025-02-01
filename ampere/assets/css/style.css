@@ -79,7 +79,8 @@ body,
 
 .rc-slider-handle:hover,
 .rc-slider-handle:focus,
-.rc-slider-handle:hover {
+.rc-slider-handle:active,
+.rc-slider-handle.rc-slider-handle-dragging {
     box-shadow: none !important;
     outline: none !important;
 }
@@ -113,6 +114,12 @@ body,
     background-color: rgb(33, 33, 33) !important;
 }
 
+.light-mode .rc-slider-handle:hover,
+.light-mode .rc-slider-handle:focus,
+.light-mode .rc-slider-handle:active,
+.light-mode .rc-slider-handle.rc-slider-handle-dragging {
+    border: 2px solid rgb(33, 33, 33) !important;
+}
 
 .light-mode .rc-slider-handle {
     background-color: rgb(242, 240, 227);
@@ -127,6 +134,14 @@ body,
 
 .dark-mode .rc-slider-track, .rc-slider-dot {
     background-color: rgb(242, 240, 227) !important;
+}
+
+
+.dark-mode .rc-slider-handle:hover,
+.dark-mode .rc-slider-handle:focus,
+.dark-mode .rc-slider-handle:active,
+.dark-mode .rc-slider-handle.rc-slider-handle-dragging {
+    border: 2px solid rgb(242, 240, 227) !important;
 }
 
 .dark-mode .rc-slider-handle {
@@ -162,9 +177,9 @@ body,
 /* common */
 .Select-control {
     padding-right: 0 !important;
-    padding-bottom: 0px !important;
-    padding-top: 0px !important;
-    margin-top: 0px !important;
+    padding-bottom: 0 !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
 }
 
 .Select-menu-outer {
@@ -214,7 +229,6 @@ body,
     color: rgb(33, 33, 33) !important;
 }
 
-.
 .light-mode .Select-menu-outer {
     background-color: rgb(242, 240, 227) !important;
 }
@@ -295,7 +309,7 @@ body,
         grid-area: menu !important;
         display: flex !important;
         justify-content: flex-start !important;
-        margin-left: 0rem !important;
+        margin-left: 0 !important;
         padding-left: 10px;
     }
 
