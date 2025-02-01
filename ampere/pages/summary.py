@@ -223,6 +223,14 @@ def update_filter_for_mobile(breakpoint_name: str):
     return 3, 8, filter_style
 
 
+@callback(
+    Output("filter-row", "className"),
+    Input("color-mode-switch", "value"),
+)
+def update_filter_colors(dark_mode: bool):
+    return "dark-mode" if dark_mode else "light-mode"
+
+
 def layout():
     return [
         dcc.Store("summary-df", data=get_summary_records()),
