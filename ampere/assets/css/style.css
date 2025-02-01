@@ -110,7 +110,7 @@ body,
     border: 1px solid rgb(33, 33, 33) !important;
 }
 
-.light-mode .rc-slider-track, .rc-slider-dot {
+.light-mode .rc-slider-track {
     background-color: rgb(33, 33, 33) !important;
 }
 
@@ -124,6 +124,12 @@ body,
 .light-mode .rc-slider-handle {
     background-color: rgb(242, 240, 227);
     border: solid 2px rgb(33, 33, 33);
+}
+
+.light-mode .rc-slider-rail,
+.light-mode .rc-slider-dot {
+    border: 1px solid rgb(33, 33, 33) !important;
+    background-color: rgb(242, 240, 227) !important;
 }
 
 /* dark */
@@ -148,6 +154,14 @@ body,
     background-color: rgb(33, 33, 33);
     border: solid 2px rgb(242, 240, 227);
 }
+
+
+.dark-mode .rc-slider-rail,
+.dark-mode .rc-slider-dot {
+    background-color: rgb(33, 33, 33) !important;
+    border: solid 1px rgb(242, 240, 227) !important;
+}
+
 
 .form-switch .form-check-input {
     box-shadow: none !important;
