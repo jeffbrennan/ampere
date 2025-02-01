@@ -44,7 +44,7 @@ def update_downloads_link_color(pathname: str, dark_mode: bool):
         highlighted_text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
         highlighted_background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
 
-    pages = ['', "downloads", "feed", "issues", "network", "status", "about"]
+    pages = ["", "downloads", "feed", "issues", "network", "status", "about"]
     output_styles = [{"color": text_color} for _ in range(len(pages))]
 
     if pathname in ["network"]:
@@ -124,6 +124,34 @@ def close_navbar_on_navigate(_):
     return False
 
 
+@callback(
+    [
+        Output("color-mode-switch", "children"),
+        Output("color-mode-switch", "value"),
+    ],
+    Input("color-mode-switch", "n_clicks"),
+    State("color-mode-switch", "children"),
+)
+def toggle_color_mode(n_clicks, _):
+    is_dark = n_clicks % 2 == 1
+    if is_dark:
+        return html.I(
+            className="fas fa-sun",
+            style={
+                "color": AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT,
+                "transform": "scale(1.3)",
+            },
+        ), True
+
+    return html.I(
+        className="fas fa-moon",
+        style={
+            "color": AmperePalette.PAGE_BACKGROUND_COLOR_DARK,
+            "transform": "scale(1.3)",
+        },
+    ), False
+
+
 def layout(initial_background_color: str):
     navbar = dbc.Navbar(
         dbc.Container(
@@ -188,18 +216,12 @@ def layout(initial_background_color: str):
                     navbar=True,
                 ),
                 dbc.NavItem(
-                    dbc.Switch(
+                    dbc.Button(
                         id="color-mode-switch",
-                        value=False,
-                        persistence=True,
-                        label="🌛",
-                        input_style={"marginTop": "14px", "marginBottom": "0px"},
-                        label_style={
-                            "fontSize": "1.5em",
-                            "marginTop": "4px",
-                            "marginBottom": "0px",
-                        },
-                        class_name="color-mode-switch",
+                        n_clicks=0,
+                        children=html.I(className="fas fa-sun"),
+                        className="me-1",
+                        color="link",
                     )
                 ),
             ],
@@ -244,7 +266,7 @@ def init_app(env: str = "prod"):
 
     app = dash.Dash(
         use_pages=True,
-        external_stylesheets=["assets/css/bootstrap.min.css"],
+        external_stylesheets=["assets/css/bootstrap.min.css", dbc.icons.FONT_AWESOME],
         suppress_callback_exceptions=True,
         compress=True,
         serve_locally=serve_locally,
