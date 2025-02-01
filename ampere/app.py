@@ -141,6 +141,14 @@ def toggle_color_mode(n_clicks, _):
     ), False
 
 
+@callback(
+    Output("ampere-page", "className"),
+    Input("color-mode-switch", "value"),
+)
+def toggle_page_color(dark_mode: bool):
+    return "dark-mode" if dark_mode else "light-mode"
+
+
 def layout(initial_background_color: str):
     navbar = dbc.Navbar(
         dbc.Container(
@@ -148,7 +156,7 @@ def layout(initial_background_color: str):
                 dbc.NavbarBrand(
                     "ampere", href="/", class_name="navbar-brand", id="navbar-brand"
                 ),
-                dbc.NavbarToggler(id="navbar-toggler", className="navbar-toggler"),
+                dbc.NavbarToggler(id="navbar-toggler"),
                 dbc.Collapse(
                     dbc.Nav(
                         [

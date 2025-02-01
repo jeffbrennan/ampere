@@ -306,16 +306,33 @@ body,
     padding-right: 1em;
 }
 
+/* navbar toggler */
+
+/* common */
 .navbar-toggler {
     grid-area: toggler !important;
     justify-self: center !important;
     transform: scale(0.7, 0.9) !important;
-    border: 4px solid rgb(33, 33, 33) !important;
     border-radius: 10px !important;
 }
 
-.navbar-toggler-icon {
+
+/* light */
+.light-mode .navbar-toggler {
+    border: solid 4px rgb(33, 33, 33) !important;
+}
+
+.light-mode .navbar-toggler-icon {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(33, 33, 33, 1)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='3' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* dark */
+.dark-mode .navbar-toggler {
+    border: solid 4px rgb(242, 240, 227) !important;
+}
+
+.dark-mode .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(242, 240, 227, 1)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='3' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
 .navbar-toggler:focus,
