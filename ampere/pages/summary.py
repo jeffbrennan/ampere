@@ -5,9 +5,9 @@ import pandas as pd
 from dash import Input, Output, callback, dcc, html
 from plotly.graph_objs import Figure
 
-from ampere.app_shared import cache
+from ampere.app_shared import cache, update_tooltip
 from ampere.common import timeit
-from ampere.styling import AmperePalette, ScreenWidth
+from ampere.styling import ScreenWidth
 from ampere.viz import (
     get_summary_data,
     read_plotly_fig_pickle,
@@ -25,41 +25,16 @@ from ampere.viz import (
         Input("color-mode-switch", "value"),
     ],
 )
-def toggle_slider_tooltip_visibility(
+def update_summary_slider(
     min_date_seconds: int,
     max_date_seconds: int,
     date_range: list[int],
     breakpoint_name: str,
     dark_mode: bool,
 ) -> dict[Any, Any]:
-    always_visible = (
-        date_range[0] == min_date_seconds and date_range[1] == max_date_seconds
+    return update_tooltip(
+        min_date_seconds, max_date_seconds, date_range, breakpoint_name, dark_mode
     )
-    if breakpoint_name == ScreenWidth.xs:
-        tooltip_font_size = "12px"
-    else:
-        tooltip_font_size = "16px"
-
-    background = AmperePalette.PAGE_ACCENT_COLOR
-    color = (
-        AmperePalette.BRAND_TEXT_COLOR_DARK
-        if dark_mode
-        else AmperePalette.BRAND_TEXT_COLOR_LIGHT
-    )
-
-    return {
-        "placement": "bottom",
-        "always_visible": always_visible,
-        "transform": "secondsToYMD",
-        "style": {
-            "background": background,
-            "color": color,
-            "fontSize": tooltip_font_size,
-            "paddingLeft": "4px",
-            "paddingRight": "4px",
-            "borderRadius": "10px",
-        },
-    }
 
 
 @callback(
@@ -245,7 +220,6 @@ def update_filter_for_mobile(breakpoint_name: str):
         filter_style.update({"paddingTop": "20px"})
         return 11, 1, filter_style
 
-    # filter_style.update({"position": "sticky", "z-index": "100"})
     return 3, 8, filter_style
 
 
@@ -273,14 +247,11 @@ def layout():
                             ),
                             width=3,
                             id="date-filter-width",
+                            style={"marginLeft": "5%"},
                         ),
                         dbc.Col(width=8, id="filter-padding-width"),
                     ],
-                    style={
-                        # "position": "sticky",
-                        "z-index": "100",
-                        "top": "60px",
-                    },
+                    style={"z-index": "100", "top": "60px"},
                     id="filter-row",
                 ),
                 html.Br(),
