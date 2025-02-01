@@ -253,7 +253,7 @@ def update_filter_for_mobile(breakpoint_name: str):
         filter_style.update({"paddingTop": "20px"})
         return 4, 7, 1, filter_style
 
-    return 1, 3, 8, filter_style
+    return 2, 4, 7, filter_style
 
 
 @callback(
@@ -282,6 +282,14 @@ def update_dropdown_menu_color(dark_mode: bool, breakpoint_name: str):
         "paddingTop": "2px",
     }
     return class_name, style
+
+
+@callback(
+    Output("dl-filter-row", "className"),
+    Input("color-mode-switch", "value"),
+)
+def update_filter_colors(dark_mode: bool):
+    return "dark-mode" if dark_mode else "light-mode"
 
 
 def layout():
