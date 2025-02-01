@@ -6,7 +6,7 @@
 }
 
 #ampere-page {
-  transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease;
 }
 
 body,
@@ -15,25 +15,25 @@ body,
 .form-check-input,
 #ampere-page,
 .dash-table-container {
-  font-family: "JetBrains Mono", serif !important;
-  font-weight: 600 !important;
+    font-family: "JetBrains Mono", serif !important;
+    font-weight: 600 !important;
 }
 
 .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th {
-  font-family: "JetBrains Mono", serif !important;
-  font-weight: 600 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border-left: 0 !important;
-  position: relative;
-  z-index: 1000;
+    font-family: "JetBrains Mono", serif !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-left: 0 !important;
+    position: relative;
+    z-index: 1000;
 }
 
 
 .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td,
 .dash-cell-value {
-  font-family: "JetBrains Mono", serif !important;
-  font-weight: 300 !important;
+    font-family: "JetBrains Mono", serif !important;
+    font-weight: 300 !important;
 }
 
 .dash-spreadsheet-container .column-header--sort,
@@ -43,7 +43,6 @@ body,
     padding-left: 5px !important;
     color: rgb(242, 240, 227) !important;
 }
-
 
 
 .gtitle,
@@ -57,276 +56,276 @@ body,
 .zerolinelayer,
 .tick text,
 .legendtext {
-  font-family: "JetBrains Mono", serif !important;
-  font-weight: 300 !important;
+    font-family: "JetBrains Mono", serif !important;
+    font-weight: 300 !important;
 }
 
 ._dash-loading {
-  display: none !important;
+    display: none !important;
 }
 
 /* date slider */
 
 /* common */
 .rc-slider-tooltip-inner {
-  box-shadow: none !important;
-  outline: none !important;
-  padding-top: 8px !important;
+    box-shadow: none !important;
+    outline: none !important;
+    padding-top: 8px !important;
 }
 
 .rc-slider-track {
-  height: 4px !important;
+    height: 4px !important;
 }
 
 .rc-slider-handle:hover,
 .rc-slider-handle:focus,
 .rc-slider-handle:hover {
-  box-shadow: none !important;
-  outline: none !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 .rc-slider-tooltip[style*="left: 0%"],
 .rc-slider-tooltip[style*="left: 0px"] {
-  z-index: 1100 !important;
+    z-index: 1100 !important;
 }
 
 .rc-slider-tooltip {
-  z-index: 900 !important;
+    z-index: 900 !important;
 }
 
 .rc-slider-tooltip-placement-top {
-  z-index: 900 !important;
+    z-index: 900 !important;
 }
 
 .rc-slider-tooltip.rc-slider-tooltip-active,
 .rc-slider-tooltip-placement-top.rc-slider-tooltip-active {
-  z-index: 1000 !important;
+    z-index: 1000 !important;
 }
-
 
 
 /* light */
 .light-mode .rc-slider-tooltip-inner {
-  background: rgb(242, 240, 227) !important;
-  border: 1px solid rgb(33, 33, 33) !important;
+    background: rgb(242, 240, 227) !important;
+    border: 1px solid rgb(33, 33, 33) !important;
 }
 
 .light-mode .rc-slider-track, .rc-slider-dot {
-  background-color: rgb(33, 33, 33) !important;
+    background-color: rgb(33, 33, 33) !important;
 }
 
 
 .light-mode .rc-slider-handle {
-  background-color: rgb(242, 240, 227);
-  border: solid 2px rgb(33, 33, 33);
+    background-color: rgb(242, 240, 227);
+    border: solid 2px rgb(33, 33, 33);
 }
 
 /* dark */
 .dark-mode .rc-slider-tooltip-inner {
-  background: rgb(33, 33, 33) !important;
-  border: 1px solid rgb(242, 240, 227) !important;
+    background: rgb(33, 33, 33) !important;
+    border: 1px solid rgb(242, 240, 227) !important;
 }
+
 .dark-mode .rc-slider-track, .rc-slider-dot {
-  background-color: rgb(242, 240, 227) !important;
+    background-color: rgb(242, 240, 227) !important;
 }
 
 .dark-mode .rc-slider-handle {
-  background-color: rgb(33, 33, 33);
-  border: solid 2px rgb(242, 240, 227);
+    background-color: rgb(33, 33, 33);
+    border: solid 2px rgb(242, 240, 227);
 }
 
 .form-switch .form-check-input {
-  box-shadow: none !important;
-  outline: none !important;
-  background-color: rgb(33, 33, 33) !important;
+    box-shadow: none !important;
+    outline: none !important;
+    background-color: rgb(33, 33, 33) !important;
 }
 
 .form-switch .form-check-input:not(:checked) {
-  background-color: white !important;
-  border-color: gray !important;
+    background-color: white !important;
+    border-color: gray !important;
 }
 
 .dropdown-menu {
-  border: 2px rgb(33, 33, 33) !important;
-  border-radius: 10px !important;
-  padding: 0 !important;
-  margin-bottom: 0 !important;
-  margin-top: 9px !important;
+    border: 2px rgb(33, 33, 33) !important;
+    border-radius: 10px !important;
+    padding: 0 !important;
+    margin-bottom: 0 !important;
+    margin-top: 9px !important;
 }
 
 .dropdown-item {
-  border: 2px solid rgb(33, 33, 33) !important;
+    border: 2px solid rgb(33, 33, 33) !important;
 }
 
 /* repo selector */
 
 /* common */
 .Select-control {
-  padding-right: 0 !important;
-  padding-bottom: 0px !important;
-  padding-top: 0px !important;
-  margin-top: 0px !important;
+    padding-right: 0 !important;
+    padding-bottom: 0px !important;
+    padding-top: 0px !important;
+    margin-top: 0px !important;
 }
 
 .Select-menu-outer {
-  border-radius: 10px !important;
-  margin-top: 5px !important;
-  padding-top: 20px !important;
-  padding-bottom: 20px !important;
+    border-radius: 10px !important;
+    margin-top: 5px !important;
+    padding-top: 20px !important;
+    padding-bottom: 20px !important;
 }
 
 .Select-arrow-zone {
-  display: none !important;
-  outline: none !important;
+    display: none !important;
+    outline: none !important;
 }
 
 .Select-arrow {
-  display: none !important;
-  outline: none !important;
+    display: none !important;
+    outline: none !important;
 }
 
 .Select-input {
-  display: none !important;
-  outline: none !important;
+    display: none !important;
+    outline: none !important;
 }
 
 /* light */
 .light-mode .Select-control {
-  background-color: rgb(33, 33, 33) !important;
-  color: rgb(242, 240, 227) !important;
-  border: 2px rgb(33, 33, 33) !important;
+    background-color: rgb(33, 33, 33) !important;
+    color: rgb(242, 240, 227) !important;
+    border: 2px rgb(33, 33, 33) !important;
 }
 
 .light-mode .Select-menu-outer {
-  background-color: rgb(242, 240, 227) !important;
-  border: 2px solid rgb(33, 33, 33) !important;
+    background-color: rgb(242, 240, 227) !important;
+    border: 2px solid rgb(33, 33, 33) !important;
 }
 
 .light-mode .Select-value {
-  color: rgb(242, 240, 227) !important;
+    color: rgb(242, 240, 227) !important;
 }
 
 .light-mode .Select-value-label {
-  color: rgb(242, 240, 227) !important;
+    color: rgb(242, 240, 227) !important;
 }
 
 .light-mode .VirtualizedSelectOption {
-  background-color: rgb(242, 240, 227) !important;
-  color: rgb(33, 33, 33) !important;
+    background-color: rgb(242, 240, 227) !important;
+    color: rgb(33, 33, 33) !important;
 }
 
 .
 .light-mode .Select-menu-outer {
-  background-color: rgb(242, 240, 227) !important;
+    background-color: rgb(242, 240, 227) !important;
 }
 
 .light-mode .VirtualizedSelectOption {
-  background-color: rgb(242, 240, 227) !important;
-  color: black !important;
+    background-color: rgb(242, 240, 227) !important;
+    color: black !important;
 }
 
 .light-mode .VirtualizedSelectFocusedOption {
-  background-color: rgb(242, 240, 227) !important;
+    background-color: rgb(242, 240, 227) !important;
 }
 
 /* dark */
 .dark-mode .Select-control {
-  background-color: rgb(242, 240, 227) !important;
-  color: rgb(33, 33, 33) !important;
-  border: 2px rgb(33, 33, 33) !important;
+    background-color: rgb(242, 240, 227) !important;
+    color: rgb(33, 33, 33) !important;
+    border: 2px rgb(33, 33, 33) !important;
 }
 
 
 .dark-mode .Select-menu-outer {
-  background-color: rgb(33, 33, 33) !important;
-  border: 2px solid rgb(242, 240, 227) !important;
+    background-color: rgb(33, 33, 33) !important;
+    border: 2px solid rgb(242, 240, 227) !important;
 }
 
 .dark-mode .Select-value {
-  color: rgb(33, 33, 33) !important;
+    color: rgb(33, 33, 33) !important;
 }
 
 .dark-mode .Select-value-label {
-  color: rgb(33, 33, 33) !important;
+    color: rgb(33, 33, 33) !important;
 }
 
 .dark-mode .VirtualizedSelectOption {
-  background-color: rgb(33, 33, 33) !important;
-  color: rgb(242, 240, 227) !important;
+    background-color: rgb(33, 33, 33) !important;
+    color: rgb(242, 240, 227) !important;
 }
 
 .dark-mode .VirtualizedSelectFocusedOption {
-  background-color: rgb(33, 33, 33) !important;
+    background-color: rgb(33, 33, 33) !important;
 }
 
 
 .navbar-container {
-  display: grid !important;
-  grid-template-areas:
+    display: grid !important;
+    grid-template-areas:
     "brand toggler switch"
     "menu menu menu" !important;
-  grid-template-columns: 1fr auto 1fr !important;
-  align-items: center !important;
-  width: 100% !important;
-  margin-top: 0.5rem !important;
+    grid-template-columns: 1fr auto 1fr !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin-top: 0.5rem !important;
 }
 
 @media (max-width: 767px) {
-  .nav-link {
-    padding-left: 1rem !important;
-  }
+    .nav-link {
+        padding-left: 1rem !important;
+    }
 
-  .dropdown-toggle {
-    padding-left: 1rem !important;
-  }
+    .dropdown-toggle {
+        padding-left: 1rem !important;
+    }
 }
 
 @media (min-width: 768px) {
-  .navbar-container {
-    display: grid !important;
-    grid-template-areas: "brand menu switch" !important;
-    grid-template-columns: auto 1fr auto !important;
-  }
+    .navbar-container {
+        display: grid !important;
+        grid-template-areas: "brand menu switch" !important;
+        grid-template-columns: auto 1fr auto !important;
+    }
 
-  .navbar-toggler {
-    display: none !important;
-  }
+    .navbar-toggler {
+        display: none !important;
+    }
 
-  .navbar-collapse {
-    grid-area: menu !important;
-    display: flex !important;
-    justify-content: flex-start !important;
-    margin-left: 0rem !important;
-    padding-left: 10px;
-   }
+    .navbar-collapse {
+        grid-area: menu !important;
+        display: flex !important;
+        justify-content: flex-start !important;
+        margin-left: 0rem !important;
+        padding-left: 10px;
+    }
 
-  .color-mode-switch {
-    grid-area: switch !important;
-    justify-self: end !important;
-    padding-right: 1rem !important;
-    transform: scale(2, 2) !important;
-  }
+    .color-mode-switch {
+        grid-area: switch !important;
+        justify-self: end !important;
+        padding-right: 1rem !important;
+        transform: scale(2, 2) !important;
+    }
 }
 
 .navbar-brand {
-  grid-area: brand !important;
-  justify-self: start !important;
-  font-weight: bold;
-  padding-left: 1em;
-  padding-right: 1em;
+    grid-area: brand !important;
+    justify-self: start !important;
+    font-weight: bold;
+    padding-left: 1em;
+    padding-right: 1em;
 }
 
 .navbar-toggler {
-  grid-area: toggler !important;
-  justify-self: center !important;
-  transform: scale(0.7, 0.9) !important;
-  border: 4px solid rgb(33, 33, 33) !important;
-  border-radius: 10px !important;
+    grid-area: toggler !important;
+    justify-self: center !important;
+    transform: scale(0.7, 0.9) !important;
+    border: 4px solid rgb(33, 33, 33) !important;
+    border-radius: 10px !important;
 }
 
 .navbar-toggler-icon {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(33, 33, 33, 1)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='3' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
-  }
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(33, 33, 33, 1)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='3' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
 
 .navbar-toggler:focus,
 .navbar-toggler:active {
@@ -335,12 +334,12 @@ body,
 }
 
 .navbar-collapse {
-  grid-area: menu !important;
-  width: 100% !important;
+    grid-area: menu !important;
+    width: 100% !important;
 }
 
 
 .color-mode-switch {
-  grid-area: switch !important;
-  justify-self: end !important;
+    grid-area: switch !important;
+    justify-self: end !important;
 }
