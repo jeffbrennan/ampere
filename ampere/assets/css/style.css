@@ -154,9 +154,15 @@ body,
 /* common */
 .Select-control {
     padding-right: 0 !important;
-    padding-bottom: 0 !important;
-    padding-top: 0 !important;
-    margin-top: 0 !important;
+    padding-bottom: 2px !important;
+    padding-top: 2px !important;
+    margin-top: 2% !important;
+    border-radius: 10px !important;
+}
+
+.Select-control:hover {
+    box-shadow: none;
+    outline: none;
 }
 
 .Select-menu-outer {
@@ -164,6 +170,7 @@ body,
     margin-top: 5px !important;
     padding-top: 20px !important;
     padding-bottom: 20px !important;
+    margin-right: 30%;
 }
 
 .Select-arrow-zone {

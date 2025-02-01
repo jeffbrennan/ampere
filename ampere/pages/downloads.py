@@ -231,47 +231,31 @@ def get_downloads_records_date_ranges(df_data: list[dict]):
 )
 def update_filter_for_mobile(breakpoint_name: str):
     filter_style = {"top": "60px"}
-    if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
+    if breakpoint_name == ScreenWidth.xs:
         filter_style.update({"paddingTop": "20px"})
         return 4, 7, 1, filter_style
 
-    return 2, 4, 7, filter_style
+    if breakpoint_name == ScreenWidth.sm:
+        return 3, 5, 4, filter_style
+    
+    if breakpoint_name == ScreenWidth.md:
+        return 2, 4, 6, filter_style
+
+    return 1, 4, 7, filter_style
 
 
 @callback(
-    [
-        Output("repo-selection", "className"),
-        Output("repo-selection", "style"),
-    ],
-    [
-        Input("color-mode-switch", "value"),
-        Input("breakpoints", "widthBreakpoint"),
-    ],
+    Output("repo-selection", "style"),
+    Input("breakpoints", "widthBreakpoint"),
 )
-def update_dropdown_menu_color(dark_mode: bool, breakpoint_name: str):
-    class_name = "dark-mode" if dark_mode else "light-mode"
-    if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
-        font_size = "12px"
-    else:
-        font_size = "20px"
+def update_dropdown_font_size(breakpoint_name: str):
+    if breakpoint_name == ScreenWidth.xs:
+        return {"fontSize": "12px"}
 
-    style = {
-        "borderRadius": "10px",
-        "fontSize": font_size,
-        "marginRight": "10%",
-        "marginTop": "2%",
-        "paddingBottom": "2px",
-        "paddingTop": "2px",
-    }
-    return class_name, style
-
-
-@callback(
-    Output("dl-filter-row", "className"),
-    Input("color-mode-switch", "value"),
-)
-def update_filter_colors(dark_mode: bool):
-    return "dark-mode" if dark_mode else "light-mode"
+    if breakpoint_name == ScreenWidth.sm:
+        return {"fontSize": "14px"}
+    
+    return {"fontSize": "20px"}
 
 
 def layout():

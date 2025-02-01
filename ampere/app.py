@@ -245,7 +245,7 @@ def layout(initial_background_color: str):
             dash_breakpoints.WindowBreakpoints(
                 id="breakpoints",
                 widthBreakpointThresholdsPx=[
-                    500,
+                    768,
                     1200,
                     1920,
                     2560,
