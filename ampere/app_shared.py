@@ -2,7 +2,7 @@ from typing import Any
 
 from flask_caching import Cache
 
-from ampere.styling import AmperePalette, ScreenWidth
+from ampere.styling import ScreenWidth, get_ampere_colors
 
 # fixes circular import error when attempting to import cache from app.py
 cache = Cache(
@@ -28,13 +28,7 @@ def update_tooltip(
     else:
         tooltip_font_size = "16px"
 
-    if dark_mode:
-        background = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-        color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
-
-    else:
-        background = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-        color = AmperePalette.BRAND_TEXT_COLOR_DARK
+    background, color = get_ampere_colors(dark_mode, False)
 
     return {
         "placement": "bottom",

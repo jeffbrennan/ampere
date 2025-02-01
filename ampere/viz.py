@@ -16,7 +16,7 @@ from plotly.graph_objs import Figure
 from ampere.common import get_frontend_db_con, timeit
 from ampere.get_repo_metrics import read_repos
 from ampere.models import FollowerDetails, Followers, StargazerNetworkRecord
-from ampere.styling import AmperePalette, ScreenWidth
+from ampere.styling import AmperePalette, ScreenWidth, get_ampere_colors
 
 
 @timeit
@@ -110,12 +110,7 @@ def filter_df_by_date_range(
 
 
 def style_area_fig(fig: Figure, dark_mode: bool, screen_width: ScreenWidth) -> Figure:
-    if dark_mode:
-        font_color = AmperePalette.BRAND_TEXT_COLOR_DARK
-        bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-    else:
-        font_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
-        bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+    bg_color, font_color = get_ampere_colors(dark_mode, contrast=False)
 
     if screen_width == ScreenWidth.xs:
         legend_font_size = 12

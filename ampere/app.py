@@ -16,7 +16,7 @@ from ampere.pages import (
     status,
     summary,
 )
-from ampere.styling import AmperePalette, ScreenWidth
+from ampere.styling import AmperePalette, ScreenWidth, get_ampere_colors
 
 
 @callback(
@@ -35,17 +35,13 @@ from ampere.styling import AmperePalette, ScreenWidth
     ],
 )
 def update_downloads_link_color(pathname: str, dark_mode: bool):
-    if dark_mode:
-        text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
-        highlighted_text_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
-        highlighted_background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-    else:
-        text_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
-        highlighted_text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
-        highlighted_background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+    _, color = get_ampere_colors(dark_mode, contrast=False)
+    highlighted_background_color, highlighted_text_color = get_ampere_colors(
+        dark_mode, contrast=True
+    )
 
     pages = ["", "downloads", "feed", "issues", "network", "status", "about"]
-    output_styles = [{"color": text_color} for _ in range(len(pages))]
+    output_styles = [{"color": color} for _ in range(len(pages))]
 
     if pathname in ["network"]:
         return output_styles
@@ -70,21 +66,16 @@ def update_downloads_link_color(pathname: str, dark_mode: bool):
     Input("color-mode-switch", "value"),
 )
 def update_navbar_color(dark_mode: bool):
-    if dark_mode:
-        text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-    else:
-        text_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+    background, color = get_ampere_colors(dark_mode, contrast=False)
 
     dropdown_style = {
-        "color": text_color,
-        "backgroundColor": background_color,
-        "borderBottom": f"2px solid {text_color}",
+        "color": color,
+        "backgroundColor": background,
+        "borderBottom": f"2px solid {color}",
     }
 
     return (
-        background_color,
+        background,
         dropdown_style,
         dropdown_style,
     )
@@ -96,10 +87,8 @@ def update_navbar_color(dark_mode: bool):
 )
 def update_page_color(dark_mode: bool):
     base_style = {"paddingLeft": "5%", "paddingRight": "5%", "paddingBottom": "3%"}
-    if dark_mode:
-        base_style["backgroundColor"] = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-    else:
-        base_style["backgroundColor"] = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+    background, _ = get_ampere_colors(dark_mode, contrast=False)
+    base_style["backgroundColor"] = background
 
     return base_style
 
