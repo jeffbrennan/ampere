@@ -58,42 +58,6 @@ def update_downloads_link_color(pathname: str, dark_mode: bool):
 
 
 @callback(
-    [
-        Output("navbar", "color"),
-        Output("stargazers-dropdown", "style"),
-        Output("followers-dropdown", "style"),
-    ],
-    Input("color-mode-switch", "value"),
-)
-def update_navbar_color(dark_mode: bool):
-    background, color = get_ampere_colors(dark_mode, contrast=False)
-
-    dropdown_style = {
-        "color": color,
-        "backgroundColor": background,
-        "borderBottom": f"2px solid {color}",
-    }
-
-    return (
-        background,
-        dropdown_style,
-        dropdown_style,
-    )
-
-
-@callback(
-    Output("ampere-page", "style"),
-    Input("color-mode-switch", "value"),
-)
-def update_page_color(dark_mode: bool):
-    base_style = {"paddingLeft": "5%", "paddingRight": "5%", "paddingBottom": "3%"}
-    background, _ = get_ampere_colors(dark_mode, contrast=False)
-    base_style["backgroundColor"] = background
-
-    return base_style
-
-
-@callback(
     Output("navbar-collapse", "is_open"),
     [Input("navbar-toggler", "n_clicks")],
     [State("navbar-collapse", "is_open")],
@@ -142,14 +106,18 @@ def toggle_color_mode(n_clicks, _):
 
 
 @callback(
-    Output("ampere-page", "className"),
+    [
+        Output("ampere-page", "className"),
+        Output("navbar", "className"),
+    ],
     Input("color-mode-switch", "value"),
 )
 def toggle_page_color(dark_mode: bool):
-    return "dark-mode" if dark_mode else "light-mode"
+    class_name = "dark-mode" if dark_mode else "light-mode"
+    return class_name, class_name
 
 
-def layout(initial_background_color: str):
+def layout():
     navbar = dbc.Navbar(
         dbc.Container(
             [
@@ -229,11 +197,9 @@ def layout(initial_background_color: str):
                 ),
             ],
             fluid=True,
-            class_name="navbar-container",
+            id="navbar-container",
         ),
         id="navbar",
-        dark=True,
-        style={"width": "100%"},
     )
 
     return dbc.Container(
@@ -255,12 +221,6 @@ def layout(initial_background_color: str):
             dash.page_container,
         ],
         fluid=True,
-        style={
-            "paddingLeft": "5%",
-            "paddingRight": "5%",
-            "paddingBottom": "3%",
-            "backgroundColor": initial_background_color,
-        },
     )
 
 
@@ -275,7 +235,6 @@ def init_app(env: str = "prod"):
         serve_locally=serve_locally,
     )
 
-    initial_background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
     app.index_string = f"""
     <!DOCTYPE html>
     <html>
@@ -285,10 +244,11 @@ def init_app(env: str = "prod"):
             {{%favicon%}}
             {{%css%}}
             <style>
-                body {{
-                    background-color: {initial_background_color};
-                    margin: 0; /* Remove default margin */
+                body, #navbar {{
+                    background-color: {AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT} !important;
+                    margin: 0;
                 }}
+                
             </style>
         </head>
         <body>
@@ -304,7 +264,7 @@ def init_app(env: str = "prod"):
     server = app.server
     cache.init_app(server)
 
-    app.layout = layout(initial_background_color)
+    app.layout = layout()
 
     dash.register_page(summary.__name__, name="summary", path="/", layout=summary.layout)
     dash.register_page(downloads.__name__, name="downloads", layout=downloads.layout)

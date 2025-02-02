@@ -5,8 +5,40 @@
     font-style: normal;
 }
 
+#ampere-page,
+#navbar {
+    transition: background-color 0.2s ease;
+}
+
+#ampere-page.light-mode,
+#navbar.light-mode {
+    background-color: rgb(242, 240, 227) !important;
+}
+
+#ampere-page.dark-mode,
+#navbar.dark-mode {
+    background-color: rgb(33, 33, 33) !important;
+}
+
+
 #ampere-page {
-    transition: background-color 0.3s ease;
+    padding-left: 5%;
+    padding-right: 5%;
+    padding-bottom: 3%;
+}
+
+.light-mode .dropdown-menu.show {
+    background-color: rgb(242, 240, 227) !important;
+    color: rgb(33, 33, 33) !important;
+    border: 2px solid rgb(33, 33, 33) !important;
+}
+
+.light-mode .dropdown-item:hover,
+.light-mode .dropdown-item:focus,
+.light-mode .dropdown-item:active {
+    outline: none;
+    color: rgb(33, 33, 33);
+    background-color: rgb(242, 240, 227) !important;
 }
 
 body,
