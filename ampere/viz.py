@@ -158,6 +158,7 @@ def style_area_fig(fig: Figure, dark_mode: bool, screen_width: ScreenWidth) -> F
             showline=True,
             linewidth=2,
             linecolor=font_color,
+            color=font_color,
             mirror=True,
             tickfont_size=tick_font_size,
         )
@@ -168,6 +169,7 @@ def style_area_fig(fig: Figure, dark_mode: bool, screen_width: ScreenWidth) -> F
             showline=True,
             linewidth=2,
             linecolor=font_color,
+            color=font_color,
             mirror=True,
             showticklabels=True,
             tickfont_size=tick_font_size,
