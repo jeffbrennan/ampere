@@ -21,6 +21,10 @@
 }
 
 
+#navbar a {
+    margin-right: 15px;
+}
+
 #ampere-page {
     padding-left: 5%;
     padding-right: 5%;
