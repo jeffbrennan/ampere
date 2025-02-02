@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 import dash_bootstrap_components as dbc
@@ -81,7 +82,8 @@ def get_viz_summary(
     date_bounds: list[int],
     metric_type: str,
 ) -> tuple[Figure, dict]:
-    if date_range == date_bounds:
+    env = os.getenv("AMPERE_ENV")
+    if date_range == date_bounds and env == "prod":
         mode = "dark" if dark_mode else "light"
         f_name = f"summary_{metric_type}_{mode}_{breakpoint_name}"
         try:

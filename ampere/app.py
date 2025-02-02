@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import dash
 import dash_bootstrap_components as dbc
@@ -286,6 +287,8 @@ def run_app(app):
     }
 
     env = parser.parse_args().env
+    os.environ["AMPERE_ENV"] = env
+
     app.run(host=envs[env]["host"], debug=envs[env]["debug"])
 
 

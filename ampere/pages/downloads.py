@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 import dash_bootstrap_components as dbc
@@ -26,7 +27,9 @@ def get_viz_downloads(
     repo: str,
     breakpoint_name: str,
 ) -> tuple[Figure, dict]:
-    if date_range == date_bounds:
+    env = os.environ.get("AMPERE_ENV")
+
+    if date_range == date_bounds and env == "prod":
         mode = "dark" if dark_mode else "light"
         f_name = f"downloads_{repo}_{group}_{mode}_{breakpoint_name}"
         try:
