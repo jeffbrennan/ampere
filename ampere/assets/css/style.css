@@ -348,20 +348,14 @@ body,
 }
 
 
-.color-mode-switch {
+#color-mode-switch {
     grid-area: switch !important;
     justify-self: end !important;
+    width: 59.5px !important;
+    height: 59.5px !important;
+    transform: scale(1.4) !important;
 }
 
-.color-mode-switch .fa,
-.color-mode-switch .fa-moon,
-.color-mode-switch .fa-sun {
-    width: 42.5px !important;
-    height: 42.5px !important;
-    font-size: 42.5px !important;
-    display: inline-block;
-    text-align: center;
-}
 
 @media (max-width: 767px) {
     .nav-link {
@@ -382,6 +376,18 @@ body,
 
     #navbar a {
         margin: 10px !important;
+    }
+
+    .navbar-brand {
+        margin: 0 !important;
+    }
+
+    .navbar-toggler {
+        margin-left: 10px !important;
+    }
+
+    #color-mode-switch {
+        margin: 0 !important;
     }
 
     /* Light mode background */
@@ -425,10 +431,4 @@ body,
         padding-left: 10px;
     }
 
-    .color-mode-switch {
-        grid-area: switch !important;
-        justify-self: end !important;
-        padding-right: 1rem !important;
-        transform: scale(2, 2) !important;
-    }
 }

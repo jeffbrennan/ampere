@@ -90,18 +90,12 @@ def toggle_color_mode(n_clicks, _):
     if is_dark:
         return html.I(
             className="fas fa-sun",
-            style={
-                "color": AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT,
-                "transform": "scale(1.3)",
-            },
+            style={"color": AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT},
         ), True
 
     return html.I(
         className="fas fa-moon",
-        style={
-            "color": AmperePalette.PAGE_BACKGROUND_COLOR_DARK,
-            "transform": "scale(1.3)",
-        },
+        style={"color": AmperePalette.PAGE_BACKGROUND_COLOR_DARK},
     ), False
 
 
@@ -188,10 +182,8 @@ def layout():
                             className="fas fa-moon",
                             style={
                                 "color": AmperePalette.PAGE_BACKGROUND_COLOR_DARK,
-                                "transform": "scale(1.3)",
                             },
                         ),
-                        className="me-1",
                         color="link",
                     )
                 ),
