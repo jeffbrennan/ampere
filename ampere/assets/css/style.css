@@ -20,11 +20,6 @@
     background-color: rgb(33, 33, 33) !important;
 }
 
-
-#navbar a {
-    margin-right: 15px;
-}
-
 #ampere-page {
     padding-left: 5%;
     padding-right: 5%;
@@ -296,8 +291,8 @@ body,
 .navbar-container {
     display: grid !important;
     grid-template-areas:
-    "brand toggler switch"
-    "menu menu menu" !important;
+        "brand toggler switch"
+        "menu menu menu" !important;
     grid-template-columns: 1fr auto 1fr !important;
     align-items: center !important;
     width: 100% !important;
@@ -358,6 +353,16 @@ body,
     justify-self: end !important;
 }
 
+.color-mode-switch .fa,
+.color-mode-switch .fa-moon,
+.color-mode-switch .fa-sun {
+    width: 42.5px !important;
+    height: 42.5px !important;
+    font-size: 42.5px !important;
+    display: inline-block;
+    text-align: center;
+}
+
 @media (max-width: 767px) {
     .nav-link {
         padding-left: 1rem !important;
@@ -366,9 +371,42 @@ body,
     .dropdown-toggle {
         padding-left: 1rem !important;
     }
+
+    #navbar-collapse {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+    }
+
+    #navbar a {
+        margin: 10px !important;
+    }
+
+    /* Light mode background */
+    .light-mode #navbar-collapse {
+        background-color: rgba(242, 240, 227, 1) !important;
+        border: 2px solid rgba(33, 33, 33, 1) !important;
+        border-radius: 20px !important;
+    }
+
+    /* Dark mode background */
+    .dark-mode #navbar-collapse {
+        background-color: rgba(33, 33, 33, 1) !important;
+        border: 2px solid rgba(242, 240, 227, 1) !important;
+        border-radius: 20px !important;
+    }
+
 }
 
 @media (min-width: 768px) {
+
+
+    #navbar a {
+        margin-right: 15px;
+    }
+
     .navbar-container {
         display: grid !important;
         grid-template-areas: "brand menu switch" !important;
