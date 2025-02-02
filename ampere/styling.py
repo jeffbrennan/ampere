@@ -119,7 +119,7 @@ def style_dt_background_colors_by_rank(
 
 def get_ampere_dt_style(dark_mode: bool = False) -> dict:
     background, color = get_ampere_colors(dark_mode, contrast=False)
-
+    contrast_background, contrast_color = get_ampere_colors(dark_mode, contrast=True)
     dt_style = asdict(
         DTStyle(
             sort_action="native",
@@ -134,14 +134,16 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
             style_header={
                 "paddingRight": "12px",
                 "margin": "0",
-                "fontWeight": "bold",
+                "fontSize": "0.8em",
                 "borderLeft": f"2px solid {color}",
                 "borderRight": f"2px solid {color}",
                 "position": "relative",
                 "zIndex": 1,
+                "backgroundColor": contrast_background,
+                "color": contrast_color,
             },
             style_filter={
-                "backgroundColor": background,
+                "backgroundColor": contrast_background,
                 "borderTop": "0",
                 "borderBottom": f"2px solid {color}",
                 "borderLeft": "none",
@@ -151,10 +153,9 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
                 "textAlign": "center",
                 "minWidth": 100,
                 "maxWidth": 170,
-                "font_size": "1em",
+                "fontSize": "0.8em",
                 "whiteSpace": "normal",
                 "height": "auto",
-                "font-family": "sans-serif",
                 "borderTop": "0",
                 "paddingRight": "5px",
                 "paddingLeft": "5px",
