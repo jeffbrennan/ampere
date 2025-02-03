@@ -200,7 +200,6 @@ def layout():
         children=[
             navbar,
             html.Br(),
-            html.Br(),
             dash_breakpoints.WindowBreakpoints(
                 id="breakpoints",
                 widthBreakpointThresholdsPx=[

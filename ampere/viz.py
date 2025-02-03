@@ -141,7 +141,7 @@ def style_area_fig(fig: Figure, dark_mode: bool, screen_width: ScreenWidth) -> F
                 font=dict(size=legend_font_size, color=font_color),
             )
         )
-    fig.update_layout(plot_bgcolor=bg_color, paper_bgcolor=bg_color)
+    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
     fig.for_each_annotation(
         lambda a: a.update(
             text="<b>" + a.text.split("=")[-1].replace("_", " ") + "</b>",
@@ -188,8 +188,16 @@ def style_area_fig(fig: Figure, dark_mode: bool, screen_width: ScreenWidth) -> F
             "xanchor": "center",
             "yanchor": "top",
         },
-        margin=dict(t=50, l=0, r=0),
     )
+
+    if screen_width != ScreenWidth.xs:
+        fig.update_layout(
+            margin=dict(l=0, r=200, t=50, b=0),
+        )
+    else:
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0),
+        )
 
     return fig
 
@@ -327,13 +335,11 @@ def create_star_network_plot(
     screen_width: ScreenWidth,
 ) -> go.Figure:
     if dark_mode:
-        edge_color = "rgba(255, 255, 255, 0.3)"
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-        legend_text_color = "white"
+        edge_color = "rgba(242, 240, 227, 0.3)"
+        legend_text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
     else:
-        edge_color = "rgba(0, 0, 0, 0.3)"
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-        legend_text_color = "black"
+        edge_color = "rgba(33, 33, 33, 0.3)"
+        legend_text_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
 
     edge_x = []
     edge_y = []
@@ -411,10 +417,14 @@ def create_star_network_plot(
 
     fig = go.Figure(data=[edge_trace, *all_node_traces], layout=NETWORK_LAYOUT)
 
+    legend_y = 1.3 if screen_width == ScreenWidth.xs else 1.02
     fig.update_layout(
-        plot_bgcolor=background_color,
-        paper_bgcolor=background_color,
-        legend=dict(font=dict(color=legend_text_color)),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        legend=dict(
+            font=dict(color=legend_text_color, size=16),
+            y=legend_y,
+        ),
     )
 
     if screen_width == ScreenWidth.xs:
@@ -458,13 +468,11 @@ def create_follower_network_plot(
     screen_width: ScreenWidth,
 ) -> go.Figure:
     if dark_mode:
-        edge_color = "rgba(255, 255, 255, 0.3)"
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-        legend_text_color = "white"
+        edge_color = "rgba(242, 240, 227, 0.5)"
+        legend_text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
     else:
-        edge_color = "rgba(0, 0, 0, 0.3)"
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-        legend_text_color = "black"
+        edge_color = "rgba(33, 33, 33, 0.5)"
+        legend_text_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
 
     all_connections = [(i.user_id, i.follower_id) for i in follower_info]
     solo_edges = {"x": [], "y": []}
@@ -495,7 +503,7 @@ def create_follower_network_plot(
     mutual_edge_trace = go.Scatter(
         x=mutual_edges["x"],
         y=mutual_edges["y"],
-        line=dict(width=1, color="rgba(0, 117, 255, 0.8)"),
+        line=dict(width=1, color="rgb(247, 111, 83)"),
         hoverinfo="none",
         mode="lines",
         name="mutual connection",
@@ -571,9 +579,9 @@ def create_follower_network_plot(
     )
 
     fig.update_layout(
-        plot_bgcolor=background_color,
-        paper_bgcolor=background_color,
-        legend=dict(font=dict(color=legend_text_color)),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        legend=dict(font=dict(color=legend_text_color, size=16)),
     )
 
     if screen_width == ScreenWidth.xs:
@@ -629,10 +637,14 @@ def viz_follower_network(dark_mode: bool, screen_width: ScreenWidth) -> Figure:
 NETWORK_LAYOUT = go.Layout(
     showlegend=True,
     hovermode="closest",
-    margin=dict(b=20, l=0, r=0, t=55),
     xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+    yaxis=dict(
+        showgrid=False,
+        zeroline=False,
+        showticklabels=False,
+    ),
     template="none",
+    margin=dict(t=0, l=0, r=0, b=0),
     legend=dict(
         title=None,
         itemsizing="constant",

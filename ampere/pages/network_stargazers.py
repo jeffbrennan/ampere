@@ -112,7 +112,6 @@ def layout():
         dbc.Fade(
             id="network-stargazer-graph-fade",
             children=[
-                html.Br(),
                 dcc.Graph(
                     id="network-stargazer-graph",
                     style={"visibility": "hidden"},

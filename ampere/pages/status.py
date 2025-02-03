@@ -176,7 +176,6 @@ def layout():
         dbc.Fade(
             id="status-fade",
             children=[
-                html.Br(),
                 html.Div(id="status-summary-table", style={"visibility": "hidden"}),
                 html.Br(),
                 html.Div(id="status-details-table", style={"visibility": "hidden"}),

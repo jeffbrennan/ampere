@@ -162,7 +162,6 @@ def layout():
         id="feed-fade",
         children=[
             html.Br(),
-            html.Br(),
             html.Div(id="feed-table", style={"visibility": "hidden"}),
         ],
         style={"transition": "opacity 200ms ease-in", "minHeight": "100vh"},

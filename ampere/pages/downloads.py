@@ -240,7 +240,7 @@ def update_filter_for_mobile(breakpoint_name: str):
 
     if breakpoint_name == ScreenWidth.sm:
         return 3, 5, 4, filter_style
-    
+
     if breakpoint_name == ScreenWidth.md:
         return 2, 4, 6, filter_style
 
@@ -257,7 +257,7 @@ def update_dropdown_font_size(breakpoint_name: str):
 
     if breakpoint_name == ScreenWidth.sm:
         return {"fontSize": "14px"}
-    
+
     return {"fontSize": "20px"}
 
 
@@ -301,7 +301,6 @@ def layout():
                     ],
                     id="dl-filter-row",
                 ),
-                html.Br(),
                 html.Br(),
                 dcc.Graph(
                     "downloads-overall",

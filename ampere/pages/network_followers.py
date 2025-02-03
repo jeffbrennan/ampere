@@ -99,7 +99,6 @@ def show_summary_graph(dark_mode: bool, breakpoint_name: str):
     if env == "prod":
         fig = read_plotly_fig_pickle(f"follower_network_{mode}_{breakpoint_name}")
     else:
-        print("not using cache")
         fig = viz_follower_network(dark_mode, ScreenWidth(breakpoint_name))
 
     return (
@@ -119,7 +118,6 @@ def layout():
         dbc.Fade(
             id="network-followers-graph-fade",
             children=[
-                html.Br(),
                 dcc.Graph(
                     id="network-followers-graph",
                     style={
