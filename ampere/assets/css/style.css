@@ -305,6 +305,7 @@ body,
     font-weight: bold;
     padding-left: 1em;
     padding-right: 1em;
+    padding-bottom: 10px;
 }
 
 /* navbar toggler */
@@ -351,9 +352,11 @@ body,
 #color-mode-switch {
     grid-area: switch !important;
     justify-self: end !important;
-    width: 59.5px !important;
-    height: 59.5px !important;
+    width: 20px !important;
+    height: 20px !important;
     transform: scale(1.4) !important;
+    padding: 0 0 28px !important;
+    margin: 0;
 }
 
 
@@ -383,7 +386,7 @@ body,
     }
 
     .navbar-toggler {
-        margin-left: 10px !important;
+        margin-right: 15px !important;
     }
 
     #color-mode-switch {
