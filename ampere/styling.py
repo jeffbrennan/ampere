@@ -119,7 +119,6 @@ def style_dt_background_colors_by_rank(
 
 def get_ampere_dt_style(dark_mode: bool = False) -> dict:
     background, color = get_ampere_colors(dark_mode, contrast=False)
-    contrast_background, contrast_color = get_ampere_colors(dark_mode, contrast=True)
     dt_style = asdict(
         DTStyle(
             sort_action="native",
@@ -131,79 +130,27 @@ def get_ampere_dt_style(dark_mode: bool = False) -> dict:
             filter_action="native",
             filter_options={"case": "insensitive", "placeholder_text": ""},
             page_size=100,
-            style_header={
-                "paddingRight": "12px",
-                "margin": "0",
-                "fontSize": "0.8em",
-                "borderLeft": f"2px solid {color}",
-                "borderRight": f"2px solid {color}",
-                "position": "relative",
-                "zIndex": 1,
-                "backgroundColor": contrast_background,
-                "color": contrast_color,
-            },
-            style_filter={
-                "backgroundColor": contrast_background,
-                "borderTop": "0",
-                "borderBottom": f"2px solid {color}",
-                "borderLeft": "none",
-                "borderRight": f"2px solid {color}",
-            },
+            style_header={},
+            style_filter={},
             style_cell={
                 "textAlign": "center",
                 "minWidth": 100,
                 "maxWidth": 170,
-                "fontSize": "0.8em",
                 "whiteSpace": "normal",
-                "height": "auto",
-                "borderTop": "0",
-                "paddingRight": "5px",
-                "paddingLeft": "5px",
-                "borderLeft": f"2px solid {color}",
-                "borderRight": f"2px solid {color}",
-                "position": "relative",
-                "zIndex": 1,
+                "wordBreak": "break-word",
             },
             style_cell_conditional=[],
             style_data_conditional=[],
             style_data={
                 "color": color,
                 "backgroundColor": background,
-                "borderBottom": f"2px solid {color}",
             },
-            css=[
-                dict(
-                    selector="p",
-                    rule="""
-                        margin-bottom: 0;
-                        padding-bottom: 15px;
-                        padding-top: 15px;
-                        padding-left: 5px;
-                        padding-right: 5px;
-                        text-align: left;
-                    """,
-                ),
-                dict(
-                    selector=".first-page, .previous-page, .next-page, .current-page, .current-page, .page-number, .last-page",
-                    rule=f"background-color: {background}; color: {color} !important;",
-                ),
-                dict(
-                    selector="input.current-page",
-                    rule=f"background-color: {background}; border-bottom: 0 !important;",
-                ),
-                dict(
-                    selector='.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner .dash-header > div input[type="text"], .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner .dash-filter > div input[type="text"]',
-                    rule=f"color: {color} !important;",
-                ),
-            ],
+            css=[],
             style_table={
                 "height": "85vh",
                 "maxHeight": "85vh",
                 "overflowY": "scroll",
                 "overflowX": "scroll",
-                "margin": {"b": 100},
-                "border": "none",
-                "borderBottom": f"2px solid {color}",
             },
         )
     )

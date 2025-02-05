@@ -50,31 +50,6 @@ body,
     font-weight: 600 !important;
 }
 
-.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th {
-    font-family: "JetBrains Mono", serif !important;
-    font-weight: 600 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border-left: 0 !important;
-    position: relative;
-    z-index: 1000;
-}
-
-
-.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td,
-.dash-cell-value {
-    font-family: "JetBrains Mono", serif !important;
-    font-weight: 300 !important;
-}
-
-.dash-spreadsheet-container .column-header--sort,
-.dash-filter--case .dash-filter--case--sensitive,
-.dash-filter--case--insensitive {
-    opacity: 1 !important;
-    padding-left: 5px !important;
-    color: rgb(242, 240, 227) !important;
-}
-
 
 .gtitle,
 .g-gtitle,
@@ -434,4 +409,206 @@ body,
         padding-left: 10px;
     }
 
+}
+
+
+/* table styling */
+
+/* common  */
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner table {
+    border-collapse: collapse !important;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th {
+    font-family: "JetBrains Mono", serif !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    padding-left: 12px !important;
+    padding: 0 !important;
+    position: relative;
+    border: none !important;
+    padding-right: 12px !important;
+    margin: 0 !important;
+    font-size: 0.8em !important;
+}
+
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td,
+.dash-cell-value {
+    font-family: "JetBrains Mono", serif !important;
+    font-weight: 300 !important;
+    font-size: 0.9em !important;
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+    margin: 0 !important;
+    /* text-align: center !important; */
+    border-right: none !important;
+}
+
+td.dash-cell.cell--selected.focused {
+    background-color: transparent !important;
+}
+
+.dash-table-container .dash-cell-value p {
+    margin-bottom: 0 !important;
+    padding-bottom: 15px !important;
+    padding-top: 15px !important;
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+    text-align: left !important;
+}
+
+/* light mode  */
+
+.light-mode .dash-spreadsheet-container .column-header--sort,
+.light-mode .dash-filter--case .dash-filter--case--sensitive,
+.light-mode .dash-filter--case--insensitive {
+    opacity: 1 !important;
+    padding-left: 5px !important;
+    color: rgb(242, 240, 227) !important;
+}
+
+
+/* table border */
+.light-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner {
+    border: 2px solid rgb(33, 33, 33) !important;
+}
+
+
+/* headers */
+.light-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th {
+    border-bottom: 2px solid rgb(242, 240, 227) !important;
+    border-right: 2px solid rgb(242, 240, 227) !important;
+    background-color: rgb(33, 33, 33) !important;
+    color: rgb(242, 240, 227) !important;
+}
+
+.light-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th:last-child {
+    border-right: none !important;
+}
+
+
+/* Remove right border for the last header cell */
+/* filters */
+.light-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner .dash-filter {
+    border-right: 2px solid rgb(242, 240, 227) !important;
+}
+
+.light-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner .dash-filter>div input[type="text"] {
+    color: rgb(242, 240, 227) !important;
+}
+
+
+/* cells  */
+.light-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td {
+    border-bottom: 1px solid rgb(33, 33, 33) !important;
+    border-right: 2px solid rgb(33, 33, 33) !important;
+}
+
+.light-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner tr td:last-child {
+    border-right: none !important;
+}
+
+/* row change on hover */
+.light-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner tr:hover td {
+    background-color: rgba(255, 120, 23, 0.3) !important;
+}
+
+/* paginator */
+.light-mode .first-page,
+.light-mode .previous-page,
+.light-mode .next-page,
+.light-mode .current-page,
+.light-mode .page-number,
+.light-mode .input.current-page,
+.light-mode .last-page {
+    background-color: rgb(242, 240, 227) !important;
+    color: rgb(33, 33, 33) !important;
+    font-size: 0.95em;
+    font-weight: bold !important;
+}
+
+.light-mode .current-page {
+    font-size: 1em !important;
+}
+
+.light-mode .dash-table-container .previous-next-container .page-number .current-page-container input.current-page {
+    border-bottom: 1px solid rgb(33, 33, 33) !important;
+}
+
+/* dark mode  */
+
+.dark-mode .dash-spreadsheet-container .column-header--sort,
+.dark-mode .dash-filter--case .dash-filter--case--sensitive,
+.dark-mode .dash-filter--case--insensitive {
+    opacity: 1 !important;
+    padding-left: 5px !important;
+    color: rgb(33, 33, 33) !important;
+}
+
+
+/* table border */
+.dark-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner {
+    border: 2px solid rgb(242, 240, 227) !important;
+}
+
+
+/* headers */
+.dark-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th {
+    border-bottom: 2px solid rgb(33, 33, 33) !important;
+    border-right: 2px solid rgb(33, 33, 33) !important;
+    background-color: rgb(242, 240, 227) !important;
+    color: rgb(33, 33, 33) !important;
+}
+
+.dark-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th:last-child {
+    border-right: none !important;
+}
+
+
+/* Remove right border for the last header cell */
+/* filters */
+.dark-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner .dash-filter {
+    border-right: 2px solid rgb(33, 33, 33) !important;
+}
+
+.dark-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner .dash-filter>div input[type="text"] {
+    color: rgb(33, 33, 33) !important;
+}
+
+
+/* cells  */
+.dark-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td {
+    border-bottom: 1px solid rgb(242, 240, 227) !important;
+    border-right: 2px solid rgb(242, 240, 227) !important;
+}
+
+.dark-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner tr td:last-child {
+    border-right: none !important;
+}
+
+.dark-mode .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner tr:hover td {
+    background-color: rgb(147, 65, 54) !important;
+}
+
+/* paginator */
+.dark-mode .first-page,
+.dark-mode .previous-page,
+.dark-mode .next-page,
+.dark-mode .current-page,
+.dark-mode .page-number,
+.dark-mode .input.current-page,
+.dark-mode .last-page {
+    background-color: rgb(33, 33, 33) !important;
+    color: rgb(242, 240, 227) !important;
+    font-size: 0.95em;
+    font-weight: bold !important;
+}
+
+.dark-mode .current-page {
+    font-size: 1em !important;
+}
+
+.dark-mode .dash-table-container .previous-next-container .page-number .current-page-container input.current-page {
+    border-bottom: 1px solid rgb(242, 240, 227) !important;
 }
