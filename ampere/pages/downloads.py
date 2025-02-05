@@ -7,6 +7,7 @@ from dash import Input, Output, callback, dcc, html
 from plotly.graph_objects import Figure
 
 from ampere.app_shared import cache, update_tooltip
+from ampere.cli.common import CLIEnvironment
 from ampere.common import timeit
 from ampere.styling import ScreenWidth
 from ampere.viz import (
@@ -55,7 +56,7 @@ def get_viz_downloads(
 @cache.memoize()
 @timeit
 def dash_get_repos_with_downloads():
-    return get_repos_with_downloads()
+    return get_repos_with_downloads(CLIEnvironment.dev)
 
 
 @callback(

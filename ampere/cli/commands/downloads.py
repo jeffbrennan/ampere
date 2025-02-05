@@ -10,21 +10,22 @@ from rich import box
 from rich.console import Console
 from rich.table import Table
 
-from ampere.api.models import DownloadsPublic
-from ampere.api.routes.downloads import (
-    DownloadsGranularity,
-    DownloadsPublicGroup,
-    DownloadsSummaryGranularity,
-    GetDownloadsPublicConfig,
-    RepoEnum,
-)
 from ampere.cli.common import CLIEnvironment, get_api_url, get_flag_emoji, get_pct_change
 from ampere.cli.models import CLIOutputFormat
 from ampere.cli.state import State
+from ampere.models import (
+    DownloadsGranularity,
+    DownloadsPublic,
+    DownloadsPublicGroup,
+    DownloadsSummaryGranularity,
+    GetDownloadsPublicConfig,
+    create_repo_enum,
+)
 
 console = Console()
 
 downloads_app = typer.Typer()
+RepoEnum = create_repo_enum(State.env)
 
 
 class DownloadsSummary(BaseModel):

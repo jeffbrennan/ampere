@@ -1,8 +1,12 @@
 import datetime
 from dataclasses import dataclass
+from enum import StrEnum, auto
 from typing import Optional, TypeVar
 
 from sqlmodel import Field, SQLModel
+
+from ampere.cli.common import CLIEnvironment
+from ampere.viz import get_repos_with_downloads
 
 SQLModelType = TypeVar("SQLModelType", bound=SQLModel)
 
@@ -194,3 +198,64 @@ class FollowerDetails:
     internal_following_count: int
     internal_followers_pct: float
     internal_following_pct: float
+
+
+# cli models
+
+
+def create_repo_enum(env: CLIEnvironment = CLIEnvironment.prod) -> StrEnum:
+    repos = get_repos_with_downloads(env)
+    return StrEnum("RepoEnum", {repo: repo for repo in repos})
+
+
+
+
+class DownloadsPublicGroup(StrEnum):
+    overall = auto()
+    country_code = auto()
+    package_version = auto()
+    python_version = auto()
+    system_distro_name = auto()
+    system_distro_version = auto()
+    system_name = auto()
+    system_release = auto()
+
+
+class DownloadsGranularity(StrEnum):
+    hourly = auto()
+    daily = auto()
+    weekly = auto()
+    monthly = auto()
+
+
+class DownloadsSummaryGranularity(StrEnum):
+    weekly = auto()
+    monthly = auto()
+
+
+@dataclass
+class GetDownloadsPublicConfig:
+    granularity: DownloadsGranularity | DownloadsSummaryGranularity
+    repo: create_repo_enum(CLIEnvironment.dev)  # type: ignore
+    group: DownloadsPublicGroup
+    n_days: int
+    limit: int
+    descending: bool
+
+
+class DownloadPublic(SQLModel):
+    repo: str
+    download_timestamp: datetime.datetime
+    group_name: str
+    group_value: str
+    download_count: int
+
+
+class DownloadsPublic(SQLModel):
+    data: list[DownloadPublic]
+    count: int
+
+
+class ReposWithDownloads(SQLModel):
+    repos: list[str]
+    count: int

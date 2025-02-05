@@ -11,11 +11,18 @@ import plotly
 import plotly.express as px
 import plotly.graph_objects as go
 import pypalettes
+import requests
 from plotly.graph_objs import Figure
 
+from ampere.cli.common import CLIEnvironment, get_api_url
 from ampere.common import get_frontend_db_con, timeit
 from ampere.get_repo_metrics import read_repos
-from ampere.models import FollowerDetails, Followers, StargazerNetworkRecord
+from ampere.models import (
+    FollowerDetails,
+    Followers,
+    ReposWithDownloads,
+    StargazerNetworkRecord,
+)
 from ampere.styling import AmperePalette, ScreenWidth, get_ampere_colors
 
 
@@ -307,7 +314,7 @@ def viz_downloads(
     return fig
 
 
-def get_repos_with_downloads() -> list[str]:
+def get_repos_with_downloads_dev() -> list[str]:
     with get_frontend_db_con() as con:
         repos = (
             con.sql(
@@ -324,6 +331,20 @@ def get_repos_with_downloads() -> list[str]:
         )
 
     return repos
+
+
+def get_repos_with_downloads_prod() -> list[str]:
+    url = get_api_url(CLIEnvironment.prod)
+    response = requests.get(url)
+    assert response.status_code == 200, print(response.json())
+    model = ReposWithDownloads.model_validate(response.json())
+    return model.repos
+
+
+def get_repos_with_downloads(env: str) -> list[str]:
+    if env == "dev":
+        return get_repos_with_downloads_dev()
+    return get_repos_with_downloads_prod()
 
 
 @timeit
