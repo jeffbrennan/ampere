@@ -74,9 +74,9 @@ def get_styled_summary_table(dark_mode: bool, breakpoint_name: str):
     summary_style["sort_action"] = "none"
 
     lg_margins = {
-        "maxWidth": "65vw",
-        "width": "65vw",
-        "marginLeft": "12vw",
+        "maxWidth": "50vw",
+        "width": "50vw",
+        "marginLeft": "20vw",
     }
 
     sm_margins = {
@@ -129,9 +129,9 @@ def get_styled_details_table(dark_mode: bool, breakpoint_name: str):
 
     status_details_style = get_ampere_dt_style(dark_mode)
     lg_margins = {
-        "maxWidth": "65vw",
-        "width": "65vw",
-        "marginLeft": "12vw",
+        "maxWidth": "50vw",
+        "width": "50vw",
+        "marginLeft": "20vw",
     }
 
     sm_margins = {
