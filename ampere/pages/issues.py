@@ -216,7 +216,6 @@ def get_styled_issues_summary_table(dark_mode: bool, breakpoint_name: str):
         ColumnInfo(name="closed issues (this month)", ascending=True, palette="greens"),
     ]
 
-    # background, color = get_ampere_colors(dark_mode, False)
 
     col_value_heatmaps = style_dt_background_colors_by_rank(
         df=summary_df,
@@ -228,15 +227,6 @@ def get_styled_issues_summary_table(dark_mode: bool, breakpoint_name: str):
     summary_style["style_data_conditional"] = [
         i for i in summary_style["style_data_conditional"] if "odd" not in str(i)
     ]
-    #
-    # summary_style["style_data_conditional"].append(
-    #     {
-    #         "if": {"row_index": "odd"},
-    #         "backgroundColor": odd_row_color,
-    #         "borderBottom": f"1px {color} solid",
-    #         "borderTop": f"1px {color} solid",
-    #     }
-    # )
     summary_style["style_data_conditional"].extend(col_value_heatmaps)
 
     summary_style["style_cell_conditional"] = handle_summary_col_widths(
