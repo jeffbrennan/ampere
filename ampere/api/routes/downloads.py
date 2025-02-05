@@ -1,58 +1,21 @@
-from dataclasses import dataclass
-from enum import StrEnum, auto
-from functools import cache
-
 from fastapi import APIRouter, Query, Request
-from pydantic import TypeAdapter
+from pydantic import BaseModel, TypeAdapter
 
 from ampere.api.limiter import limiter
-from ampere.api.models import DownloadPublic, DownloadsPublic
+from ampere.cli.common import CLIEnvironment
 from ampere.common import get_frontend_db_con
-from ampere.viz import get_repos_with_downloads
+from ampere.models import (
+    DownloadPublic,
+    DownloadsGranularity,
+    DownloadsPublic,
+    DownloadsPublicGroup,
+    GetDownloadsPublicConfig,
+    ReposWithDownloads,
+    create_repo_enum,
+)
 
 router = APIRouter(prefix="/downloads", tags=["downloads"])
-
-
-@cache
-def create_repo_enum() -> StrEnum:
-    repos = get_repos_with_downloads()
-    return StrEnum("RepoEnum", {repo: repo for repo in repos})
-
-
-RepoEnum = create_repo_enum()
-
-
-class DownloadsPublicGroup(StrEnum):
-    overall = auto()
-    country_code = auto()
-    package_version = auto()
-    python_version = auto()
-    system_distro_name = auto()
-    system_distro_version = auto()
-    system_name = auto()
-    system_release = auto()
-
-
-class DownloadsGranularity(StrEnum):
-    hourly = auto()
-    daily = auto()
-    weekly = auto()
-    monthly = auto()
-
-
-class DownloadsSummaryGranularity(StrEnum):
-    weekly = auto()
-    monthly = auto()
-
-
-@dataclass
-class GetDownloadsPublicConfig:
-    granularity: DownloadsGranularity | DownloadsSummaryGranularity
-    repo: RepoEnum  # type: ignore
-    group: DownloadsPublicGroup
-    n_days: int
-    limit: int
-    descending: bool
+RepoEnum = create_repo_enum(CLIEnvironment.dev)
 
 
 def get_downloads_base(
@@ -167,3 +130,17 @@ def read_downloads_monthly(
             descending=descending,
         ),
     )
+
+
+@router.get("/repos", response_model=ReposWithDownloads)
+@limiter.limit("60/minute")
+def read_repos_with_downloads() -> ReposWithDownloads:
+    con = get_frontend_db_con()
+    query = """
+        select distinct a.repo 
+        from mart_downloads_summary a 
+        left join stg_repos b on a.repo = b.repo_name
+        order by b.stargazers_count desc, a.repo
+    """
+    repos = con.sql(query).to_df.to_dict(orient="records")["repo"]
+    return ReposWithDownloads(repos=repos, count=len(repos))
