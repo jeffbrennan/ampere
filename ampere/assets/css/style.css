@@ -465,6 +465,7 @@ td.dash-cell.cell--selected.focused {
 .light-mode .dash-filter--case--insensitive {
     opacity: 1 !important;
     padding-left: 5px !important;
+    padding-right: 6px !important;
     color: rgb(242, 240, 227) !important;
 }
 
