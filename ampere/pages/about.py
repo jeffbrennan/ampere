@@ -6,8 +6,8 @@ from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import (
     AmperePalette,
     ScreenWidth,
-    get_ampere_dt_style,
     get_ampere_colors,
+    get_ampere_dt_style,
 )
 
 
@@ -69,7 +69,7 @@ def get_styled_about_text(dark_mode: bool, breakpoint_name: str):
         font_size = "12px"
         margin_left = "0vw"
     else:
-        font_size = "16px"
+        font_size = "14px"
         margin_left = "12vw"
 
     return [
