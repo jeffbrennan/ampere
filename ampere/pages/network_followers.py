@@ -1,3 +1,5 @@
+import os
+
 import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, dcc, html
@@ -6,6 +8,7 @@ from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import ScreenWidth, get_ampere_dt_style
 from ampere.viz import (
     read_plotly_fig_pickle,
+    viz_follower_network,
 )
 
 
@@ -91,7 +94,13 @@ def get_styled_followers_table(dark_mode: bool, breakpoint_name: str):
 @timeit
 def show_summary_graph(dark_mode: bool, breakpoint_name: str):
     mode = "dark" if dark_mode else "light"
-    fig = read_plotly_fig_pickle(f"follower_network_{mode}_{breakpoint_name}")
+    env = os.environ.get("AMPERE_ENV")
+
+    if env == "prod":
+        fig = read_plotly_fig_pickle(f"follower_network_{mode}_{breakpoint_name}")
+    else:
+        fig = viz_follower_network(dark_mode, ScreenWidth(breakpoint_name))
+
     return (
         fig,
         {
@@ -109,7 +118,6 @@ def layout():
         dbc.Fade(
             id="network-followers-graph-fade",
             children=[
-                html.Br(),
                 dcc.Graph(
                     id="network-followers-graph",
                     style={

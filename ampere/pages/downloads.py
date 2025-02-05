@@ -1,4 +1,4 @@
-import datetime
+import os
 from typing import Any
 
 import dash_bootstrap_components as dbc
@@ -6,9 +6,9 @@ import pandas as pd
 from dash import Input, Output, callback, dcc, html
 from plotly.graph_objects import Figure
 
-from ampere.app_shared import cache
+from ampere.app_shared import cache, update_tooltip
 from ampere.common import timeit
-from ampere.styling import AmperePalette, ScreenWidth
+from ampere.styling import ScreenWidth
 from ampere.viz import (
     get_repos_with_downloads,
     read_dataframe_pickle,
@@ -27,7 +27,9 @@ def get_viz_downloads(
     repo: str,
     breakpoint_name: str,
 ) -> tuple[Figure, dict]:
-    if date_range == date_bounds:
+    env = os.environ.get("AMPERE_ENV")
+
+    if date_range == date_bounds and env == "prod":
         mode = "dark" if dark_mode else "light"
         f_name = f"downloads_{repo}_{group}_{mode}_{breakpoint_name}"
         try:
@@ -181,41 +183,11 @@ def get_downloads_records(repo_name: str) -> list[dict]:
 
 @callback(
     Output("date-slider", "tooltip"),
-    [
-        Input("date-slider", "min"),
-        Input("date-slider", "max"),
-        Input("date-slider", "value"),
-        Input("breakpoints", "widthBreakpoint"),
-    ],
+    Input("breakpoints", "widthBreakpoint"),
 )
 @timeit
-def toggle_slider_tooltip_visibility(
-    min_date_seconds: int,
-    max_date_seconds: int,
-    date_range: list[int],
-    breakpoint_name: str,
-) -> dict[Any, Any]:
-    always_visible = (
-        date_range[0] == min_date_seconds and date_range[1] == max_date_seconds
-    )
-    if breakpoint_name == ScreenWidth.xs:
-        font_size = "12px"
-    else:
-        font_size = "16px"
-
-    return {
-        "placement": "bottom",
-        "always_visible": always_visible,
-        "transform": "secondsToYMD",
-        "style": {
-            "background": AmperePalette.PAGE_ACCENT_COLOR2,
-            "color": AmperePalette.BRAND_TEXT_COLOR,
-            "fontSize": font_size,
-            "paddingLeft": "4px",
-            "paddingRight": "4px",
-            "borderRadius": "10px",
-        },
-    }
+def toggle_slider_tooltip_visibility(breakpoint_name: str) -> dict[Any, Any]:
+    return update_tooltip(breakpoint_name)
 
 
 @callback(
@@ -262,40 +234,31 @@ def get_downloads_records_date_ranges(df_data: list[dict]):
 )
 def update_filter_for_mobile(breakpoint_name: str):
     filter_style = {"top": "60px"}
-    if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
+    if breakpoint_name == ScreenWidth.xs:
         filter_style.update({"paddingTop": "20px"})
         return 4, 7, 1, filter_style
 
-    filter_style.update({"position": "sticky", "z-index": "100"})
-    return 2, 3, 8, filter_style
+    if breakpoint_name == ScreenWidth.sm:
+        return 3, 5, 4, filter_style
+
+    if breakpoint_name == ScreenWidth.md:
+        return 2, 4, 6, filter_style
+
+    return 1, 4, 7, filter_style
 
 
 @callback(
-    [
-        Output("repo-selection", "className"),
-        Output("repo-selection", "style"),
-    ],
-    [
-        Input("color-mode-switch", "value"),
-        Input("breakpoints", "widthBreakpoint"),
-    ],
+    Output("repo-selection", "style"),
+    Input("breakpoints", "widthBreakpoint"),
 )
-def update_dropdown_menu_color(dark_mode: bool, breakpoint_name: str):
-    class_name = "" if dark_mode else "light-mode"
-    if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
-        font_size = "12px"
-    else:
-        font_size = "20px"
+def update_dropdown_font_size(breakpoint_name: str):
+    if breakpoint_name == ScreenWidth.xs:
+        return {"fontSize": "12px"}
 
-    style = {
-        "borderRadius": "10px",
-        "fontSize": font_size,
-        "marginRight": "10%",
-        "marginTop": "2%",
-        "paddingBottom": "2px",
-        "paddingTop": "2px",
-    }
-    return class_name, style
+    if breakpoint_name == ScreenWidth.sm:
+        return {"fontSize": "14px"}
+
+    return {"fontSize": "20px"}
 
 
 def layout():
@@ -317,6 +280,7 @@ def layout():
                                 id="repo-selection",
                             ),
                             id="dl-repo-filter-width",
+                            style={"marginLeft": "5%"},
                         ),
                         dbc.Col(
                             html.Div(
@@ -337,7 +301,6 @@ def layout():
                     ],
                     id="dl-filter-row",
                 ),
-                html.Br(),
                 html.Br(),
                 dcc.Graph(
                     "downloads-overall",

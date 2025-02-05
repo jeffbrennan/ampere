@@ -1,4 +1,3 @@
-
 import datetime
 
 from sqlmodel import SQLModel
@@ -10,6 +9,7 @@ class DownloadPublic(SQLModel):
     group_name: str
     group_value: str
     download_count: int
+
 
 class DownloadsPublic(SQLModel):
     data: list[DownloadPublic]

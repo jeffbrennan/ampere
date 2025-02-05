@@ -6,12 +6,11 @@ from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import (
-    AmperePalette,
     ColumnInfo,
     ScreenWidth,
     get_ampere_dt_style,
+    get_table_title_style,
     style_dt_background_colors_by_rank,
-    table_title_style,
 )
 
 
@@ -178,9 +177,11 @@ def handle_title_margins(style_incoming: dict, breakpoint_name: str) -> dict:
     [
         Input("summary-table", "children"),
         Input("breakpoints", "widthBreakpoint"),
+        Input("color-mode-switch", "value"),
     ],
 )
-def display_summary_title(_, breakpoint_name):
+def display_summary_title(_, breakpoint_name, dark_mode: bool):
+    table_title_style = get_table_title_style(dark_mode)
     summary_title = html.Label(
         "summary", style=handle_title_margins(table_title_style, breakpoint_name)
     )
@@ -214,12 +215,7 @@ def get_styled_issues_summary_table(dark_mode: bool, breakpoint_name: str):
         ColumnInfo(name="new issues (this month)", ascending=True, palette="oranges"),
         ColumnInfo(name="closed issues (this month)", ascending=True, palette="greens"),
     ]
-    if dark_mode:
-        color = "white"
-        odd_row_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-    else:
-        color = "black"
-        odd_row_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+
 
     col_value_heatmaps = style_dt_background_colors_by_rank(
         df=summary_df,
@@ -231,15 +227,6 @@ def get_styled_issues_summary_table(dark_mode: bool, breakpoint_name: str):
     summary_style["style_data_conditional"] = [
         i for i in summary_style["style_data_conditional"] if "odd" not in str(i)
     ]
-
-    summary_style["style_data_conditional"].append(
-        {
-            "if": {"row_index": "odd"},
-            "backgroundColor": odd_row_color,
-            "borderBottom": f"1px {color} solid",
-            "borderTop": f"1px {color} solid",
-        }
-    )
     summary_style["style_data_conditional"].extend(col_value_heatmaps)
 
     summary_style["style_cell_conditional"] = handle_summary_col_widths(
@@ -276,9 +263,11 @@ def get_styled_issues_summary_table(dark_mode: bool, breakpoint_name: str):
     [
         Input("issues-table", "children"),
         Input("breakpoints", "widthBreakpoint"),
+        Input("color-mode-switch", "value"),
     ],
 )
-def display_issues_title(_, breakpoint_name):
+def display_issues_title(_, breakpoint_name, dark_mode: bool):
+    table_title_style = get_table_title_style(dark_mode)
     issues_title = html.Label(
         "issues",
         style=handle_title_margins(table_title_style, breakpoint_name),
@@ -332,7 +321,6 @@ def layout():
     return dbc.Fade(
         id="issues-fade",
         children=[
-            html.Br(),
             html.Div(id="summary-title", style={"visibility": "hidden"}),
             html.Div(id="summary-table", style={"visibility": "hidden"}),
             html.Br(),

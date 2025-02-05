@@ -80,7 +80,7 @@ def style_feed_table(dark_mode: bool, breakpoint_name: str):
             "commit": "#15524e",
             "fork": "#3b2133",
         }
-        event_color_border = AmperePalette.TABLE_EVEN_ROW_COLOR_DARK
+        event_color_border = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
     else:
         event_background_colors = {
             "pull request": "#d9e6b5",
@@ -88,7 +88,7 @@ def style_feed_table(dark_mode: bool, breakpoint_name: str):
             "star": "#e8d3a9",
             "fork": "#e1ccdb",
         }
-        event_color_border = AmperePalette.TABLE_EVEN_ROW_COLOR_LIGHT
+        event_color_border = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
 
     color_styles = [
         {
@@ -161,7 +161,6 @@ def layout():
     return dbc.Fade(
         id="feed-fade",
         children=[
-            html.Br(),
             html.Br(),
             html.Div(id="feed-table", style={"visibility": "hidden"}),
         ],

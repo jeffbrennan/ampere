@@ -1,10 +1,12 @@
+import os
+
 import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, dcc, html
 
 from ampere.common import get_frontend_db_con, timeit
 from ampere.styling import ScreenWidth, get_ampere_dt_style
-from ampere.viz import read_plotly_fig_pickle
+from ampere.viz import read_plotly_fig_pickle, viz_star_network
 
 
 def create_stargazers_table() -> pd.DataFrame:
@@ -35,8 +37,16 @@ def create_stargazers_table() -> pd.DataFrame:
 @timeit
 def get_stylized_network_graph(dark_mode: bool, breakpoint_name: str):
     mode = "dark" if dark_mode else "light"
-    fname = f"stargazer_network_{mode}_{breakpoint_name}"
-    fig = read_plotly_fig_pickle(fname)
+    env = os.environ.get("AMPERE_ENV")
+
+    if env == "prod":
+        fname = f"stargazer_network_{mode}_{breakpoint_name}"
+        fig = read_plotly_fig_pickle(fname)
+    else:
+        fig = viz_star_network(
+            dark_mode=dark_mode,
+            screen_width=ScreenWidth(breakpoint_name),
+        )
 
     return (
         fig,
@@ -102,7 +112,6 @@ def layout():
         dbc.Fade(
             id="network-stargazer-graph-fade",
             children=[
-                html.Br(),
                 dcc.Graph(
                     id="network-stargazer-graph",
                     style={"visibility": "hidden"},

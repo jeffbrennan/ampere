@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import dash
 import dash_bootstrap_components as dbc
@@ -16,11 +17,12 @@ from ampere.pages import (
     status,
     summary,
 )
-from ampere.styling import AmperePalette, ScreenWidth
+from ampere.styling import AmperePalette, ScreenWidth, get_ampere_colors
 
 
 @callback(
     [
+        Output("navbar-brand", "style"),
         Output("downloads-link", "style"),
         Output("feed-link", "style"),
         Output("issues-link", "style"),
@@ -34,69 +36,26 @@ from ampere.styling import AmperePalette, ScreenWidth
     ],
 )
 def update_downloads_link_color(pathname: str, dark_mode: bool):
-    output_styles = [
-        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-        {"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-    ]
+    _, color = get_ampere_colors(dark_mode, contrast=False)
+    highlighted_background_color, highlighted_text_color = get_ampere_colors(
+        dark_mode, contrast=True
+    )
 
-    if pathname in ["/", "network"]:
+    pages = ["", "downloads", "feed", "issues", "network", "status", "about"]
+    output_styles = [{"color": color} for _ in range(len(pages))]
+
+    if pathname in ["network"]:
         return output_styles
 
-    pages = ["downloads", "feed", "issues", "network", "status", "about"]
     current_page = pathname.removeprefix("/").split("-")[0]
-    if dark_mode:
-        text_color = AmperePalette.BRAND_TEXT_COLOR_MUTED
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-    else:
-        text_color = AmperePalette.PAGE_ACCENT_COLOR
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
 
     output_styles[pages.index(current_page)] = {
-        "color": text_color,
-        "backgroundColor": background_color,
-        "borderRadius": "10px",
+        "color": highlighted_text_color,
+        "backgroundColor": highlighted_background_color,
+        "borderRadius": "20px",
     }
 
     return output_styles
-
-
-@callback(
-    Output("ampere-page", "style"),
-    Input("color-mode-switch", "value"),
-)
-def update_page_color(dark_mode: bool):
-    base_style = {"paddingLeft": "5%", "paddingRight": "5%", "paddingBottom": "3%"}
-    if dark_mode:
-        base_style["backgroundColor"] = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-    else:
-        base_style["backgroundColor"] = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-
-    return base_style
-
-
-@callback(
-    [
-        Output("stargazers-dropdown", "style"),
-        Output("followers-dropdown", "style"),
-    ],
-    Input("color-mode-switch", "value"),
-)
-def update_network_dropdown_color(dark_mode: bool):
-    if dark_mode:
-        text_color = AmperePalette.BRAND_TEXT_COLOR_MUTED
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-    else:
-        text_color = AmperePalette.PAGE_ACCENT_COLOR
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-
-    return (
-        {"color": text_color, "backgroundColor": background_color},
-        {"color": text_color, "backgroundColor": background_color},
-    )
 
 
 @callback(
@@ -119,12 +78,48 @@ def close_navbar_on_navigate(_):
     return False
 
 
-def layout(initial_background_color: str):
+@callback(
+    [
+        Output("color-mode-switch", "children"),
+        Output("color-mode-switch", "value"),
+    ],
+    Input("color-mode-switch", "n_clicks"),
+    State("color-mode-switch", "children"),
+)
+def toggle_color_mode(n_clicks, _):
+    is_dark = n_clicks % 2 == 1
+    if is_dark:
+        return html.I(
+            className="fas fa-sun",
+            style={"color": AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT},
+        ), True
+
+    return html.I(
+        className="fas fa-moon",
+        style={"color": AmperePalette.PAGE_BACKGROUND_COLOR_DARK},
+    ), False
+
+
+@callback(
+    [
+        Output("ampere-page", "className"),
+        Output("navbar", "className"),
+    ],
+    Input("color-mode-switch", "value"),
+)
+def toggle_page_color(dark_mode: bool):
+    class_name = "dark-mode" if dark_mode else "light-mode"
+    return class_name, class_name
+
+
+def layout():
     navbar = dbc.Navbar(
         dbc.Container(
             [
-                dbc.NavbarBrand("ampere", href="/", class_name="navbar-brand"),
-                dbc.NavbarToggler(id="navbar-toggler", className="navbar-toggler"),
+                dbc.NavbarBrand(
+                    "ampere", href="/", class_name="navbar-brand", id="navbar-brand"
+                ),
+                dbc.NavbarToggler(id="navbar-toggler"),
                 dbc.Collapse(
                     dbc.Nav(
                         [
@@ -134,24 +129,15 @@ def layout(initial_background_color: str):
                                     id="downloads-link",
                                     children="downloads",
                                     href="downloads",
-                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
                                     class_name="downloads-link",
                                 )
                             ),
                             dbc.NavItem(
-                                dbc.NavLink(
-                                    id="feed-link",
-                                    children="feed",
-                                    href="feed",
-                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
-                                )
+                                dbc.NavLink(id="feed-link", children="feed", href="feed")
                             ),
                             dbc.NavItem(
                                 dbc.NavLink(
-                                    id="issues-link",
-                                    children="issues",
-                                    href="issues",
-                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                                    id="issues-link", children="issues", href="issues"
                                 )
                             ),
                             dbc.DropdownMenu(
@@ -160,40 +146,26 @@ def layout(initial_background_color: str):
                                         id="stargazers-dropdown",
                                         children="stargazers",
                                         href="network-stargazers",
-                                        style={
-                                            "color": AmperePalette.PAGE_ACCENT_COLOR,
-                                            "borderBottom": "1px solid white",
-                                        },
                                     ),
                                     dbc.DropdownMenuItem(
                                         id="followers-dropdown",
                                         children="followers",
                                         href="network-followers",
-                                        style={"color": AmperePalette.PAGE_ACCENT_COLOR},
                                     ),
                                 ],
                                 id="network-link",
                                 nav=True,
                                 in_navbar=True,
                                 label="networks",
-                                toggle_style={
-                                    "color": AmperePalette.BRAND_TEXT_COLOR_MUTED
-                                },
                             ),
                             dbc.NavItem(
                                 dbc.NavLink(
-                                    id="status-link",
-                                    children="status",
-                                    href="status",
-                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                                    id="status-link", children="status", href="status"
                                 )
                             ),
                             dbc.NavItem(
                                 dbc.NavLink(
-                                    id="about-link",
-                                    children="about",
-                                    href="about",
-                                    style={"color": AmperePalette.BRAND_TEXT_COLOR_MUTED},
+                                    id="about-link", children="about", href="about"
                                 )
                             ),
                         ],
@@ -204,28 +176,23 @@ def layout(initial_background_color: str):
                     navbar=True,
                 ),
                 dbc.NavItem(
-                    dbc.Switch(
+                    dbc.Button(
                         id="color-mode-switch",
-                        value=False,
-                        persistence=True,
-                        label="🌛",
-                        input_style={"marginTop": "14px", "marginBottom": "0px"},
-                        label_style={
-                            "fontSize": "1.5em",
-                            "marginTop": "4px",
-                            "marginBottom": "0px",
-                        },
-                        class_name="color-mode-switch",
+                        n_clicks=0,
+                        children=html.I(
+                            className="fas fa-moon",
+                            style={
+                                "color": AmperePalette.PAGE_BACKGROUND_COLOR_DARK,
+                            },
+                        ),
+                        color="link",
                     )
                 ),
             ],
             fluid=True,
-            class_name="navbar-container",
+            id="navbar-container",
         ),
-        color=AmperePalette.PAGE_ACCENT_COLOR,
-        dark=True,
-        fixed="top",
-        style={"width": "100%"},
+        id="navbar",
     )
 
     return dbc.Container(
@@ -233,11 +200,10 @@ def layout(initial_background_color: str):
         children=[
             navbar,
             html.Br(),
-            html.Br(),
             dash_breakpoints.WindowBreakpoints(
                 id="breakpoints",
                 widthBreakpointThresholdsPx=[
-                    500,
+                    768,
                     1200,
                     1920,
                     2560,
@@ -247,12 +213,6 @@ def layout(initial_background_color: str):
             dash.page_container,
         ],
         fluid=True,
-        style={
-            "paddingLeft": "5%",
-            "paddingRight": "5%",
-            "paddingBottom": "3%",
-            "backgroundColor": initial_background_color,
-        },
     )
 
 
@@ -261,13 +221,12 @@ def init_app(env: str = "prod"):
 
     app = dash.Dash(
         use_pages=True,
-        external_stylesheets=["assets/css/bootstrap.min.css"],
+        external_stylesheets=["assets/css/bootstrap.min.css", dbc.icons.FONT_AWESOME],
         suppress_callback_exceptions=True,
         compress=True,
         serve_locally=serve_locally,
     )
 
-    initial_background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
     app.index_string = f"""
     <!DOCTYPE html>
     <html>
@@ -277,10 +236,11 @@ def init_app(env: str = "prod"):
             {{%favicon%}}
             {{%css%}}
             <style>
-                body {{
-                    background-color: {initial_background_color};
-                    margin: 0; /* Remove default margin */
+                body, #navbar {{
+                    background-color: {AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT} !important;
+                    margin: 0;
                 }}
+                
             </style>
         </head>
         <body>
@@ -296,7 +256,7 @@ def init_app(env: str = "prod"):
     server = app.server
     cache.init_app(server)
 
-    app.layout = layout(initial_background_color)
+    app.layout = layout()
 
     dash.register_page(summary.__name__, name="summary", path="/", layout=summary.layout)
     dash.register_page(downloads.__name__, name="downloads", layout=downloads.layout)
@@ -326,6 +286,8 @@ def run_app(app):
     }
 
     env = parser.parse_args().env
+    os.environ["AMPERE_ENV"] = env
+
     app.run(host=envs[env]["host"], debug=envs[env]["debug"])
 
 

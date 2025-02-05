@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import datetime
-import json
 import pickle
 from pathlib import Path
 from typing import Any, Optional
@@ -10,13 +11,12 @@ import plotly
 import plotly.express as px
 import plotly.graph_objects as go
 import pypalettes
-import pytz
 from plotly.graph_objs import Figure
 
 from ampere.common import get_frontend_db_con, timeit
 from ampere.get_repo_metrics import read_repos
 from ampere.models import FollowerDetails, Followers, StargazerNetworkRecord
-from ampere.styling import AmperePalette, ScreenWidth
+from ampere.styling import AmperePalette, ScreenWidth, get_ampere_colors
 
 
 @timeit
@@ -95,36 +95,125 @@ def read_plotly_fig_json(f_name: str) -> Figure:
     return go.Figure(plotly.io.from_json(fig_data))
 
 
+def filter_df_by_date_range(
+    df: pd.DataFrame, col_name: str, date_range: Optional[list[int]] = None
+) -> pd.DataFrame:
+    if date_range is None:
+        return df
+
+    filter_date_min = datetime.datetime.fromtimestamp(date_range[0])
+    filter_date_max = datetime.datetime.fromtimestamp(date_range[1])
+
+    return df.query(f"{col_name} >= '{filter_date_min}'").query(
+        f"{col_name} <= '{filter_date_max}'"
+    )
+
+
+def style_area_fig(fig: Figure, dark_mode: bool, screen_width: ScreenWidth) -> Figure:
+    bg_color, font_color = get_ampere_colors(dark_mode, contrast=False)
+
+    if screen_width == ScreenWidth.xs:
+        legend_font_size = 12
+        annotation_font_size = 14
+        tick_font_size = 10
+
+        fig.update_layout(
+            legend=dict(
+                title=None,
+                itemsizing="constant",
+                orientation="h",
+                yanchor="top",
+                y=1.475,
+                xanchor="center",
+                x=0.5,
+                font=dict(size=legend_font_size, color=font_color),
+            ),
+            dragmode=False,
+        )
+    else:
+        legend_font_size = 16
+        annotation_font_size = 20
+        tick_font_size = 16
+        fig.update_layout(
+            legend=dict(
+                title=None,
+                itemsizing="constant",
+                font=dict(size=legend_font_size, color=font_color),
+            )
+        )
+    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig.for_each_annotation(
+        lambda a: a.update(
+            text="<b>" + a.text.split("=")[-1].replace("_", " ") + "</b>",
+            font_size=annotation_font_size,
+            font_color=font_color,
+            borderpad=5,
+            y=1.002,
+        )
+    )
+
+    fig.for_each_yaxis(
+        lambda y: y.update(
+            title="",
+            showline=True,
+            linewidth=2,
+            linecolor=font_color,
+            color=font_color,
+            mirror=True,
+            tickfont_size=tick_font_size,
+        )
+    )
+    fig.for_each_xaxis(
+        lambda x: x.update(
+            title="",
+            showline=True,
+            linewidth=2,
+            linecolor=font_color,
+            color=font_color,
+            mirror=True,
+            showticklabels=True,
+            tickfont_size=tick_font_size,
+        )
+    )
+    fixed_axes = screen_width == ScreenWidth.xs
+    fig.update_yaxes(
+        matches=None, showticklabels=True, showgrid=False, fixedrange=fixed_axes
+    )
+    fig.update_xaxes(showgrid=False, fixedrange=fixed_axes)
+
+    fig.update_layout(
+        title={
+            "y": 0.95,
+            "x": 0.5,
+            "xanchor": "center",
+            "yanchor": "top",
+        },
+    )
+
+    if screen_width != ScreenWidth.xs:
+        fig.update_layout(
+            margin=dict(l=0, r=200, t=50, b=0),
+        )
+    else:
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0),
+        )
+
+    return fig
+
+
 def viz_summary(
     df: pd.DataFrame,
     metric_type: str,
     date_range: Optional[list[int]] = None,
-    show_fig: bool = False,
     screen_width: ScreenWidth = ScreenWidth.lg,
     dark_mode: bool = False,
 ) -> Figure:
-    df_filtered = df.query(f"metric_type == '{metric_type}'").sort_values("metric_date")
-    if date_range is not None:
-        filter_date_min = datetime.datetime.fromtimestamp(
-            date_range[0], tz=pytz.timezone("America/New_York")
-        )
-        filter_date_max = datetime.datetime.fromtimestamp(
-            date_range[1], tz=pytz.timezone("America/New_York")
-        )
+    df_filtered = df.query(f"metric_type == '{metric_type}'")
 
-        df_filtered = df_filtered.query(f"metric_date >= '{filter_date_min}'").query(
-            f"metric_date <= '{filter_date_max}'"
-        )
+    df_filtered = filter_df_by_date_range(df_filtered, "metric_date", date_range)
 
-    if dark_mode:
-        font_color = "white"
-        bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-        template = "plotly_dark"
-    else:
-        font_color = "black"
-        bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-        template = "plotly_white"
-
+    template = "plotly_dark" if dark_mode else "plotly_white"
     repo_palette = generate_repo_palette()
     fig = px.area(
         df_filtered,
@@ -138,80 +227,8 @@ def viz_summary(
         category_orders={"repo_name": repo_palette.keys()},
         facet_col="metric_type",  # single var facet col for plot title
     )
-    fig.update_layout(plot_bgcolor=bg_color, paper_bgcolor=bg_color)
 
-    fixed_axes = screen_width == ScreenWidth.xs
-    fig.update_yaxes(
-        matches=None, showticklabels=True, showgrid=False, fixedrange=fixed_axes
-    )
-    fig.update_xaxes(showgrid=False, fixedrange=fixed_axes)
-    fig.update_traces(hovertemplate="<b>%{x}</b><br>n=%{y}")
-
-    if screen_width == ScreenWidth.xs:
-        legend_font_size = 10
-        annotation_font_size = 14
-        tick_font_size = 10
-
-        fig.update_layout(
-            legend=dict(
-                title=None,
-                itemsizing="constant",
-                orientation="h",
-                yanchor="top",
-                y=1.45,
-                xanchor="center",
-                x=0.5,
-                font=dict(size=legend_font_size, weight="bold"),
-            ),
-            dragmode=False,
-        )
-    else:
-        legend_font_size = 14
-        annotation_font_size = 18
-        tick_font_size = 14
-        fig.update_layout(
-            legend=dict(
-                title=None, itemsizing="constant", font=dict(size=legend_font_size)
-            )
-        )
-
-    fig.for_each_annotation(
-        lambda a: a.update(
-            text="<b>" + a.text.split("=")[-1] + "</b>",
-            font_size=annotation_font_size,
-            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
-            font_color="white",
-            borderpad=5,
-            y=1.001,
-        )
-    )
-
-    fig.for_each_yaxis(
-        lambda y: y.update(
-            title="",
-            showline=True,
-            linewidth=1,
-            linecolor=font_color,
-            mirror=True,
-            tickfont_size=tick_font_size,
-        )
-    )
-    fig.for_each_xaxis(
-        lambda x: x.update(
-            title="",
-            showline=True,
-            linewidth=1,
-            linecolor=font_color,
-            mirror=True,
-            showticklabels=True,
-            tickfont_size=tick_font_size,
-        )
-    )
-
-    fig.update_layout(margin=dict(l=0, r=0))
-    if show_fig:
-        fig.show()
-
+    fig = style_area_fig(fig, dark_mode, screen_width)
     return fig
 
 
@@ -261,17 +278,7 @@ def viz_downloads(
     screen_width: ScreenWidth = ScreenWidth.lg,
 ) -> Figure:
     df_filtered = df.query(f"group_name=='{group_name}'")
-    if date_range is not None:
-        filter_date_min = datetime.datetime.fromtimestamp(
-            date_range[0], tz=pytz.timezone("America/New_York")
-        )
-        filter_date_max = datetime.datetime.fromtimestamp(
-            date_range[1], tz=pytz.timezone("America/New_York")
-        )
-
-        df_filtered = df_filtered.query(f"download_date >= '{filter_date_min}'").query(
-            f"download_date <= '{filter_date_max}'"
-        )
+    df_filtered = filter_df_by_date_range(df_filtered, "download_date", date_range)
 
     max_date = df_filtered["download_date"].max()
     categories = (
@@ -280,15 +287,7 @@ def viz_downloads(
         .tolist()
     )
 
-    if dark_mode:
-        font_color = "white"
-        bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-        template = "plotly_dark"
-    else:
-        font_color = "black"
-        bg_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-        template = "plotly_white"
-
+    template = "plotly_dark" if dark_mode else "plotly_white"
     fig = px.area(
         df_filtered,
         x="download_date",
@@ -300,83 +299,7 @@ def viz_downloads(
         category_orders={"group_value": categories},
     )
 
-    if screen_width == ScreenWidth.xs:
-        legend_font_size = 12
-        annotation_font_size = 14
-        tick_font_size = 10
-
-        fig.update_layout(
-            legend=dict(
-                title=None,
-                itemsizing="constant",
-                orientation="h",
-                yanchor="top",
-                y=1.475,
-                xanchor="center",
-                x=0.5,
-                font=dict(size=legend_font_size),
-            ),
-            dragmode=False,
-        )
-    else:
-        legend_font_size = 14
-        annotation_font_size = 18
-        tick_font_size = 14
-        fig.update_layout(
-            legend=dict(
-                title=None,
-                itemsizing="constant",
-                font=dict(size=legend_font_size),
-            )
-        )
-    fig.update_layout(plot_bgcolor=bg_color, paper_bgcolor=bg_color)
-    fig.for_each_annotation(
-        lambda a: a.update(
-            text="<b>" + a.text.split("=")[-1].replace("_", " ") + "</b>",
-            font_size=annotation_font_size,
-            bgcolor=AmperePalette.PAGE_ACCENT_COLOR2,
-            font_color="white",
-            borderpad=5,
-            y=1.001,
-        )
-    )
-
-    fig.for_each_yaxis(
-        lambda y: y.update(
-            title="",
-            showline=True,
-            linewidth=1,
-            linecolor=font_color,
-            mirror=True,
-            tickfont_size=tick_font_size,
-        )
-    )
-    fig.for_each_xaxis(
-        lambda x: x.update(
-            title="",
-            showline=True,
-            linewidth=1,
-            linecolor=font_color,
-            mirror=True,
-            showticklabels=True,
-            tickfont_size=tick_font_size,
-        )
-    )
-    fixed_axes = screen_width == ScreenWidth.xs
-    fig.update_yaxes(
-        matches=None, showticklabels=True, showgrid=False, fixedrange=fixed_axes
-    )
-    fig.update_xaxes(showgrid=False, fixedrange=fixed_axes)
-
-    fig.update_layout(
-        title={
-            "y": 0.95,
-            "x": 0.5,
-            "xanchor": "center",
-            "yanchor": "top",
-        },
-        margin=dict(t=50, l=0, r=0),
-    )
+    fig = style_area_fig(fig, dark_mode, screen_width)
 
     if group_name == "overall":
         fig.update_layout(showlegend=False)
@@ -412,13 +335,11 @@ def create_star_network_plot(
     screen_width: ScreenWidth,
 ) -> go.Figure:
     if dark_mode:
-        edge_color = "rgba(255, 255, 255, 0.3)"
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-        legend_text_color = "white"
+        edge_color = "rgba(242, 240, 227, 0.3)"
+        legend_text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
     else:
-        edge_color = "rgba(0, 0, 0, 0.3)"
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-        legend_text_color = "black"
+        edge_color = "rgba(33, 33, 33, 0.3)"
+        legend_text_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
 
     edge_x = []
     edge_y = []
@@ -496,10 +417,14 @@ def create_star_network_plot(
 
     fig = go.Figure(data=[edge_trace, *all_node_traces], layout=NETWORK_LAYOUT)
 
+    legend_y = 1.3 if screen_width == ScreenWidth.xs else 1.02
     fig.update_layout(
-        plot_bgcolor=background_color,
-        paper_bgcolor=background_color,
-        legend=dict(font=dict(color=legend_text_color)),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        legend=dict(
+            font=dict(color=legend_text_color, size=16),
+            y=legend_y,
+        ),
     )
 
     if screen_width == ScreenWidth.xs:
@@ -543,13 +468,11 @@ def create_follower_network_plot(
     screen_width: ScreenWidth,
 ) -> go.Figure:
     if dark_mode:
-        edge_color = "rgba(255, 255, 255, 0.3)"
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
-        legend_text_color = "white"
+        edge_color = "rgba(242, 240, 227, 0.5)"
+        legend_text_color = AmperePalette.BRAND_TEXT_COLOR_DARK
     else:
-        edge_color = "rgba(0, 0, 0, 0.3)"
-        background_color = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
-        legend_text_color = "black"
+        edge_color = "rgba(33, 33, 33, 0.5)"
+        legend_text_color = AmperePalette.BRAND_TEXT_COLOR_LIGHT
 
     all_connections = [(i.user_id, i.follower_id) for i in follower_info]
     solo_edges = {"x": [], "y": []}
@@ -580,7 +503,7 @@ def create_follower_network_plot(
     mutual_edge_trace = go.Scatter(
         x=mutual_edges["x"],
         y=mutual_edges["y"],
-        line=dict(width=1, color="rgba(0, 117, 255, 0.8)"),
+        line=dict(width=1, color="rgb(247, 111, 83)"),
         hoverinfo="none",
         mode="lines",
         name="mutual connection",
@@ -656,9 +579,9 @@ def create_follower_network_plot(
     )
 
     fig.update_layout(
-        plot_bgcolor=background_color,
-        paper_bgcolor=background_color,
-        legend=dict(font=dict(color=legend_text_color)),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        legend=dict(font=dict(color=legend_text_color, size=16)),
     )
 
     if screen_width == ScreenWidth.xs:
@@ -714,10 +637,14 @@ def viz_follower_network(dark_mode: bool, screen_width: ScreenWidth) -> Figure:
 NETWORK_LAYOUT = go.Layout(
     showlegend=True,
     hovermode="closest",
-    margin=dict(b=20, l=0, r=0, t=55),
     xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+    yaxis=dict(
+        showgrid=False,
+        zeroline=False,
+        showticklabels=False,
+    ),
     template="none",
+    margin=dict(t=0, l=0, r=0, b=0),
     legend=dict(
         title=None,
         itemsizing="constant",

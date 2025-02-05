@@ -3,7 +3,11 @@ import pandas as pd
 from dash import Input, Output, callback, dash_table, html
 
 from ampere.common import get_frontend_db_con, timeit
-from ampere.styling import ScreenWidth, get_ampere_dt_style
+from ampere.styling import (
+    ScreenWidth,
+    get_ampere_colors,
+    get_ampere_dt_style,
+)
 
 
 @timeit
@@ -58,13 +62,14 @@ def create_repo_table() -> pd.DataFrame:
     ],
 )
 def get_styled_about_text(dark_mode: bool, breakpoint_name: str):
-    color = "white" if dark_mode else "black"
+    _, color = get_ampere_colors(dark_mode, False)
+
     if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
         font_size = "12px"
         margin_left = "0vw"
     else:
-        font_size = "16px"
-        margin_left = "12vw"
+        font_size = "14px"
+        margin_left = "20vw"
 
     return [
         html.Div(
@@ -117,7 +122,7 @@ def get_styled_about_table(dark_mode: bool, breakpoint_name: str):
     about_style["style_table"]["height"] = "auto"
 
     sm_margins = {"maxWidth": "90vw", "width": "90vw"}
-    lg_margins = {"maxWidth": "65vw", "width": "65vw", "marginLeft": "12vw"}
+    lg_margins = {"maxWidth": "50vw", "width": "50vw", "marginLeft": "20vw"}
 
     if breakpoint_name in [ScreenWidth.xs, ScreenWidth.sm]:
         about_style["style_cell"]["font_size"] = "12px"
@@ -153,7 +158,6 @@ def layout():
         dbc.Fade(
             id="about-fade",
             children=[
-                html.Br(),
                 html.Div(id="about-table", style={"visibility": "hidden"}),
                 html.Br(),
                 html.Div(id="about-text", style={"visibility": "hidden"}),
