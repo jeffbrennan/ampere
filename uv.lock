@@ -59,7 +59,6 @@ backend = [
     { name = "dagster-webserver" },
     { name = "db-dtypes" },
     { name = "google-cloud-bigquery" },
-    { name = "python-dotenv" },
 ]
 common = [
     { name = "dbt-duckdb" },
@@ -67,6 +66,7 @@ common = [
     { name = "duckdb" },
     { name = "pandas" },
     { name = "polars" },
+    { name = "python-dotenv" },
     { name = "requests" },
     { name = "sqlmodel" },
 ]
@@ -113,7 +113,7 @@ requires-dist = [
     { name = "polars", marker = "extra == 'common'", specifier = ">=1.7.1,<2" },
     { name = "pypalettes", marker = "extra == 'viz'", specifier = ">=0.1.4,<0.2" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1.380,<2" },
-    { name = "python-dotenv", marker = "extra == 'backend'", specifier = ">=1.0.1,<2" },
+    { name = "python-dotenv", marker = "extra == 'common'", specifier = ">=1.0.1,<2" },
     { name = "requests", marker = "extra == 'common'", specifier = ">=2.32.3,<3" },
     { name = "ruff-lsp", marker = "extra == 'dev'", specifier = ">=0.0.56,<0.0.57" },
     { name = "shandy-sqlfmt", extras = ["jinjafmt"], marker = "extra == 'dev'", specifier = ">=0.24.0,<0.25" },
