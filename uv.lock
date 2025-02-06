@@ -44,25 +44,31 @@ name = "ampere"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "fastapi", extra = ["standard"] },
-    { name = "pandas" },
-    { name = "requests" },
-    { name = "slowapi" },
-    { name = "sqlmodel" },
     { name = "typer" },
 ]
 
 [package.optional-dependencies]
+api = [
+    { name = "fastapi", extra = ["standard"] },
+    { name = "slowapi" },
+    { name = "uvicorn" },
+]
 backend = [
     { name = "dagster" },
     { name = "dagster-dbt" },
     { name = "dagster-webserver" },
     { name = "db-dtypes" },
+    { name = "google-cloud-bigquery" },
+    { name = "python-dotenv" },
+]
+common = [
     { name = "dbt-duckdb" },
     { name = "deltalake" },
-    { name = "google-cloud-bigquery" },
+    { name = "duckdb" },
+    { name = "pandas" },
     { name = "polars" },
-    { name = "python-dotenv" },
+    { name = "requests" },
+    { name = "sqlmodel" },
 ]
 dev = [
     { name = "pyright" },
@@ -92,28 +98,30 @@ requires-dist = [
     { name = "dash-bootstrap-components", marker = "extra == 'viz'", specifier = ">=1.6.0,<2" },
     { name = "dash-breakpoints", marker = "extra == 'viz'", specifier = ">=0.1.0,<0.2" },
     { name = "db-dtypes", marker = "extra == 'backend'", specifier = ">=1.3.0,<2" },
-    { name = "dbt-duckdb", marker = "extra == 'backend'", specifier = ">=1.9.0,<2" },
-    { name = "deltalake", marker = "extra == 'backend'", specifier = ">=0.22.3,<0.23" },
-    { name = "fastapi", extras = ["standard"], specifier = ">=0.115.6,<0.116" },
+    { name = "dbt-duckdb", marker = "extra == 'common'", specifier = ">=1.9.0,<2" },
+    { name = "deltalake", marker = "extra == 'common'", specifier = ">=0.22.3,<0.23" },
+    { name = "duckdb", marker = "extra == 'common'", specifier = ">=1.1.3" },
+    { name = "fastapi", extras = ["standard"], marker = "extra == 'api'", specifier = ">=0.115.6,<0.116" },
     { name = "flask-caching", marker = "extra == 'viz'", specifier = ">=2.3.0,<3" },
     { name = "flask-compress", marker = "extra == 'viz'", specifier = "~=1.17" },
     { name = "google-cloud-bigquery", marker = "extra == 'backend'", specifier = ">=3.26.0,<4" },
     { name = "gunicorn", marker = "extra == 'viz'", specifier = ">=23.0.0,<24" },
     { name = "kaleido", marker = "extra == 'viz'", specifier = "==0.2.1" },
     { name = "matplotlib", marker = "extra == 'viz'", specifier = ">=3.9.2,<4" },
-    { name = "pandas", specifier = ">=2.2.2,<3" },
+    { name = "pandas", marker = "extra == 'common'", specifier = ">=2.2.2,<3" },
     { name = "plotly", marker = "extra == 'viz'", specifier = ">=5.24.1,<6" },
-    { name = "polars", marker = "extra == 'backend'", specifier = ">=1.7.1,<2" },
+    { name = "polars", marker = "extra == 'common'", specifier = ">=1.7.1,<2" },
     { name = "pypalettes", marker = "extra == 'viz'", specifier = ">=0.1.4,<0.2" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1.380,<2" },
     { name = "python-dotenv", marker = "extra == 'backend'", specifier = ">=1.0.1,<2" },
-    { name = "requests", specifier = ">=2.32.3,<3" },
+    { name = "requests", marker = "extra == 'common'", specifier = ">=2.32.3,<3" },
     { name = "ruff-lsp", marker = "extra == 'dev'", specifier = ">=0.0.56,<0.0.57" },
     { name = "shandy-sqlfmt", extras = ["jinjafmt"], marker = "extra == 'dev'", specifier = ">=0.24.0,<0.25" },
-    { name = "slowapi", specifier = ">=0.1.9,<0.2" },
+    { name = "slowapi", marker = "extra == 'api'", specifier = ">=0.1.9,<0.2" },
     { name = "sqlfluff", marker = "extra == 'dev'", specifier = ">=3.2.5,<4" },
-    { name = "sqlmodel", specifier = ">=0.0.22,<0.0.23" },
+    { name = "sqlmodel", marker = "extra == 'common'", specifier = ">=0.0.22,<0.0.23" },
     { name = "typer", specifier = ">=0.15.1,<0.16" },
+    { name = "uvicorn", marker = "extra == 'api'", specifier = ">=0.32.1" },
 ]
 
 [[package]]
