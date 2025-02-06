@@ -200,6 +200,7 @@ class FollowerDetails:
 
 # cli models
 
+
 class DownloadsPublicGroup(StrEnum):
     overall = auto()
     country_code = auto()
@@ -241,9 +242,41 @@ class ReposWithDownloads(SQLModel):
     count: int
 
 
+class FeedPublicType(StrEnum):
+    commit = auto()
+    fork = auto()
+    issue = auto()
+    pull_request = "pull request"
+    star = auto()
+
+
+class FeedPublicAction(StrEnum):
+    created = auto()
+    updated = auto()
+    closed = auto()
+    merged = auto()
+
+
+class FeedPublicRecord(SQLModel):
+    repo_name: str
+    user_name: str
+    full_name: str | None = None
+    event_id: str
+    event_type: FeedPublicType
+    event_action: FeedPublicAction
+    event_data: str | None = None
+    event_timestamp: datetime.datetime
+    event_link: str | None = None
+
+
+class FeedPublic(SQLModel):
+    data: list[FeedPublicRecord]
+    count: int
+
 
 def get_repos_with_downloads_dev() -> list[str]:
     from ampere.common import get_frontend_db_con
+
     with get_frontend_db_con() as con:
         repos = (
             con.sql(
@@ -279,5 +312,3 @@ def get_repos_with_downloads(env: str) -> list[str]:
 def create_repo_enum(env: CLIEnvironment = CLIEnvironment.prod) -> StrEnum:
     repos = get_repos_with_downloads(env)
     return StrEnum("RepoEnum", {repo: repo for repo in repos})
-
-
