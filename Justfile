@@ -31,3 +31,6 @@ set dotenv-load
 
 @sync:
     sh utils/sync_local.sh
+
+@apidev:
+    uv run uvicorn ampere.api.main:app --reload
