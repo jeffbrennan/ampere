@@ -44,6 +44,8 @@ name = "ampere"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "requests" },
+    { name = "sqlmodel" },
     { name = "typer" },
 ]
 
@@ -67,8 +69,6 @@ common = [
     { name = "pandas" },
     { name = "polars" },
     { name = "python-dotenv" },
-    { name = "requests" },
-    { name = "sqlmodel" },
 ]
 dev = [
     { name = "pyright" },
@@ -114,12 +114,12 @@ requires-dist = [
     { name = "pypalettes", marker = "extra == 'viz'", specifier = ">=0.1.4,<0.2" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1.380,<2" },
     { name = "python-dotenv", marker = "extra == 'common'", specifier = ">=1.0.1,<2" },
-    { name = "requests", marker = "extra == 'common'", specifier = ">=2.32.3,<3" },
+    { name = "requests", specifier = ">=2.32.3,<3" },
     { name = "ruff-lsp", marker = "extra == 'dev'", specifier = ">=0.0.56,<0.0.57" },
     { name = "shandy-sqlfmt", extras = ["jinjafmt"], marker = "extra == 'dev'", specifier = ">=0.24.0,<0.25" },
     { name = "slowapi", marker = "extra == 'api'", specifier = ">=0.1.9,<0.2" },
     { name = "sqlfluff", marker = "extra == 'dev'", specifier = ">=3.2.5,<4" },
-    { name = "sqlmodel", marker = "extra == 'common'", specifier = ">=0.0.22,<0.0.23" },
+    { name = "sqlmodel", specifier = ">=0.0.22,<0.0.23" },
     { name = "typer", specifier = ">=0.15.1,<0.16" },
     { name = "uvicorn", marker = "extra == 'api'", specifier = ">=0.32.1" },
 ]
