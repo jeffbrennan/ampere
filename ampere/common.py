@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum, auto
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, TypeVar
 
 import dotenv
 import duckdb
@@ -14,9 +14,10 @@ import pandas as pd
 import polars as pl
 from deltalake import DeltaTable, write_deltalake
 from duckdb import DuckDBPyConnection
+from sqlmodel import SQLModel
 from sqlmodel.main import SQLModelMetaclass
 
-from ampere.models import SQLModelType
+SQLModelType = TypeVar("SQLModelType", bound=SQLModel)
 
 
 @dataclass

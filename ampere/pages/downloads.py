@@ -9,9 +9,9 @@ from plotly.graph_objects import Figure
 from ampere.app_shared import cache, update_tooltip
 from ampere.cli.common import CLIEnvironment
 from ampere.common import timeit
+from ampere.models import get_repos_with_downloads
 from ampere.styling import ScreenWidth
 from ampere.viz import (
-    get_repos_with_downloads,
     read_dataframe_pickle,
     read_plotly_fig_pickle,
     viz_downloads,

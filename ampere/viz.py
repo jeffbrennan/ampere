@@ -314,39 +314,6 @@ def viz_downloads(
     return fig
 
 
-def get_repos_with_downloads_dev() -> list[str]:
-    with get_frontend_db_con() as con:
-        repos = (
-            con.sql(
-                """
-                select distinct a.repo 
-                from mart_downloads_summary a 
-                left join stg_repos b on a.repo = b.repo_name
-                order by b.stargazers_count desc, a.repo
-                """
-            )
-            .to_df()
-            .squeeze()
-            .tolist()
-        )
-
-    return repos
-
-
-def get_repos_with_downloads_prod() -> list[str]:
-    url = get_api_url(CLIEnvironment.prod)
-    response = requests.get(url)
-    assert response.status_code == 200, print(response.json())
-    model = ReposWithDownloads.model_validate(response.json())
-    return model.repos
-
-
-def get_repos_with_downloads(env: str) -> list[str]:
-    if env == "dev":
-        return get_repos_with_downloads_dev()
-    return get_repos_with_downloads_prod()
-
-
 @timeit
 def create_star_network_plot(
     graph: nx.Graph,

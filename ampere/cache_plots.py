@@ -9,8 +9,7 @@ from plotly.graph_objs import Figure
 
 from ampere.cli.common import CLIEnvironment
 from ampere.common import get_backend_db_con, timeit
-from ampere.models import Followers, StargazerNetworkRecord
-from ampere.pages.downloads import get_repos_with_downloads
+from ampere.models import Followers, StargazerNetworkRecord, get_repos_with_downloads
 from ampere.styling import ScreenWidth
 from ampere.viz import (
     get_downloads_data,
