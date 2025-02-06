@@ -71,3 +71,6 @@ module_name = "ampere.dagster.definitions"
 [tool.sqlfmt]
 exclude = ["target/**/*", "dbt_packages/**/*"]
 line_length = 90
+
+[tool.hatch.build.targets.wheel]
+packages = ["ampere"]
