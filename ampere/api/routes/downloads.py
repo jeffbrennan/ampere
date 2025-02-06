@@ -49,7 +49,7 @@ def read_downloads_hourly(
     n_days: int = Query(default=7, le=24 * 365 * 5),
     limit: int = Query(default=7 * 24, le=100_000),
     descending: bool = Query(default=True),
-):
+) -> DownloadsPublic:
     return get_downloads_base(
         table_name="int_downloads_melted",
         config=GetDownloadsPublicConfig(
@@ -72,7 +72,7 @@ def read_downloads_daily(
     n_days: int = Query(default=30, le=365 * 5),
     limit: int = Query(default=100, le=100_000),
     descending: bool = Query(default=True),
-):
+) -> DownloadsPublic:
     return get_downloads_base(
         table_name="int_downloads_melted_daily",
         config=GetDownloadsPublicConfig(
@@ -95,7 +95,7 @@ def read_downloads_weekly(
     n_days: int = Query(default=30, le=365 * 5),
     limit: int = Query(default=100, le=10_000),
     descending: bool = Query(default=True),
-):
+) -> DownloadsPublic:
     return get_downloads_base(
         table_name="int_downloads_melted_weekly",
         config=GetDownloadsPublicConfig(
@@ -118,7 +118,7 @@ def read_downloads_monthly(
     n_days: int = Query(default=60, le=365 * 5),
     limit: int = Query(default=100, le=10_000),
     descending: bool = Query(default=True),
-):
+) -> DownloadsPublic:
     return get_downloads_base(
         table_name="int_downloads_melted_monthly",
         config=GetDownloadsPublicConfig(
@@ -134,7 +134,7 @@ def read_downloads_monthly(
 
 @router.get("/repos", response_model=ReposWithDownloads)
 @limiter.limit("60/minute")
-def read_repos_with_downloads() -> ReposWithDownloads:
+def read_repos_with_downloads(request: Request) -> ReposWithDownloads:
     con = get_frontend_db_con()
     query = """
         select distinct a.repo 
@@ -142,5 +142,5 @@ def read_repos_with_downloads() -> ReposWithDownloads:
         left join stg_repos b on a.repo = b.repo_name
         order by b.stargazers_count desc, a.repo
     """
-    repos = con.sql(query).to_df.to_dict(orient="records")["repo"]
+    repos = con.sql(query).to_df().squeeze().tolist()
     return ReposWithDownloads(repos=repos, count=len(repos))
