@@ -7,9 +7,9 @@ import networkx as nx
 import pandas as pd
 from plotly.graph_objs import Figure
 
+from ampere.cli.common import CLIEnvironment
 from ampere.common import get_backend_db_con, timeit
-from ampere.models import Followers, StargazerNetworkRecord
-from ampere.pages.downloads import get_repos_with_downloads
+from ampere.models import Followers, StargazerNetworkRecord, get_repos_with_downloads
 from ampere.styling import ScreenWidth
 from ampere.viz import (
     get_downloads_data,
@@ -104,7 +104,7 @@ def cache_summary_plots() -> None:
 
 @timeit
 def cache_downloads_plots() -> None:
-    repos = get_repos_with_downloads()
+    repos = get_repos_with_downloads(CLIEnvironment.dev)
     groups = ["overall", "package_version", "python_version"]
     for repo in repos:
         df = get_downloads_data(repo)

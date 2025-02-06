@@ -1,10 +1,12 @@
 import datetime
 from dataclasses import dataclass
-from typing import Optional, TypeVar
+from enum import StrEnum, auto
+from typing import Optional
 
+import requests
 from sqlmodel import Field, SQLModel
 
-SQLModelType = TypeVar("SQLModelType", bound=SQLModel)
+from ampere.cli.common import CLIEnvironment, get_api_url
 
 
 class Stargazer(SQLModel):
@@ -194,3 +196,96 @@ class FollowerDetails:
     internal_following_count: int
     internal_followers_pct: float
     internal_following_pct: float
+
+
+# cli models
+
+class DownloadsPublicGroup(StrEnum):
+    overall = auto()
+    country_code = auto()
+    package_version = auto()
+    python_version = auto()
+    system_distro_name = auto()
+    system_distro_version = auto()
+    system_name = auto()
+    system_release = auto()
+
+
+class DownloadsGranularity(StrEnum):
+    hourly = auto()
+    daily = auto()
+    weekly = auto()
+    monthly = auto()
+
+
+class DownloadsSummaryGranularity(StrEnum):
+    weekly = auto()
+    monthly = auto()
+
+
+class DownloadPublic(SQLModel):
+    repo: str
+    download_timestamp: datetime.datetime
+    group_name: str
+    group_value: str
+    download_count: int
+
+
+class DownloadsPublic(SQLModel):
+    data: list[DownloadPublic]
+    count: int
+
+
+class ReposWithDownloads(SQLModel):
+    repos: list[str]
+    count: int
+
+
+
+def get_repos_with_downloads_dev() -> list[str]:
+    from ampere.common import get_frontend_db_con
+    with get_frontend_db_con() as con:
+        repos = (
+            con.sql(
+                """
+                select distinct a.repo 
+                from mart_downloads_summary a 
+                left join stg_repos b on a.repo = b.repo_name
+                order by b.stargazers_count desc, a.repo
+                """
+            )
+            .to_df()
+            .squeeze()
+            .tolist()
+        )
+
+    return repos
+
+
+def get_repos_with_downloads_prod() -> list[str]:
+    url = get_api_url(CLIEnvironment.prod)
+    response = requests.get(f"{url}/downloads/repos")
+    assert response.status_code == 200, print(response.json())
+    model = ReposWithDownloads.model_validate(response.json())
+    return model.repos
+
+
+def get_repos_with_downloads(env: str) -> list[str]:
+    if env == "dev":
+        return get_repos_with_downloads_dev()
+    return get_repos_with_downloads_prod()
+
+
+def create_repo_enum(env: CLIEnvironment = CLIEnvironment.prod) -> StrEnum:
+    repos = get_repos_with_downloads(env)
+    return StrEnum("RepoEnum", {repo: repo for repo in repos})
+
+
+@dataclass
+class GetDownloadsPublicConfig:
+    granularity: DownloadsGranularity | DownloadsSummaryGranularity
+    repo: create_repo_enum()  # type: ignore
+    group: DownloadsPublicGroup
+    n_days: int
+    limit: int
+    descending: bool

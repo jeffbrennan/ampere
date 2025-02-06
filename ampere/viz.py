@@ -11,11 +11,18 @@ import plotly
 import plotly.express as px
 import plotly.graph_objects as go
 import pypalettes
+import requests
 from plotly.graph_objs import Figure
 
+from ampere.cli.common import CLIEnvironment, get_api_url
 from ampere.common import get_frontend_db_con, timeit
 from ampere.get_repo_metrics import read_repos
-from ampere.models import FollowerDetails, Followers, StargazerNetworkRecord
+from ampere.models import (
+    FollowerDetails,
+    Followers,
+    ReposWithDownloads,
+    StargazerNetworkRecord,
+)
 from ampere.styling import AmperePalette, ScreenWidth, get_ampere_colors
 
 
@@ -305,25 +312,6 @@ def viz_downloads(
         fig.update_layout(showlegend=False)
 
     return fig
-
-
-def get_repos_with_downloads() -> list[str]:
-    with get_frontend_db_con() as con:
-        repos = (
-            con.sql(
-                """
-                select distinct a.repo 
-                from mart_downloads_summary a 
-                left join stg_repos b on a.repo = b.repo_name
-                order by b.stargazers_count desc, a.repo
-                """
-            )
-            .to_df()
-            .squeeze()
-            .tolist()
-        )
-
-    return repos
 
 
 @timeit

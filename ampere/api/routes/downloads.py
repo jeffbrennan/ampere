@@ -1,58 +1,21 @@
-from dataclasses import dataclass
-from enum import StrEnum, auto
-from functools import cache
-
 from fastapi import APIRouter, Query, Request
-from pydantic import TypeAdapter
+from pydantic import BaseModel, TypeAdapter
 
 from ampere.api.limiter import limiter
-from ampere.api.models import DownloadPublic, DownloadsPublic
+from ampere.cli.common import CLIEnvironment
 from ampere.common import get_frontend_db_con
-from ampere.viz import get_repos_with_downloads
+from ampere.models import (
+    DownloadPublic,
+    DownloadsGranularity,
+    DownloadsPublic,
+    DownloadsPublicGroup,
+    GetDownloadsPublicConfig,
+    ReposWithDownloads,
+    create_repo_enum,
+)
 
 router = APIRouter(prefix="/downloads", tags=["downloads"])
-
-
-@cache
-def create_repo_enum() -> StrEnum:
-    repos = get_repos_with_downloads()
-    return StrEnum("RepoEnum", {repo: repo for repo in repos})
-
-
-RepoEnum = create_repo_enum()
-
-
-class DownloadsPublicGroup(StrEnum):
-    overall = auto()
-    country_code = auto()
-    package_version = auto()
-    python_version = auto()
-    system_distro_name = auto()
-    system_distro_version = auto()
-    system_name = auto()
-    system_release = auto()
-
-
-class DownloadsGranularity(StrEnum):
-    hourly = auto()
-    daily = auto()
-    weekly = auto()
-    monthly = auto()
-
-
-class DownloadsSummaryGranularity(StrEnum):
-    weekly = auto()
-    monthly = auto()
-
-
-@dataclass
-class GetDownloadsPublicConfig:
-    granularity: DownloadsGranularity | DownloadsSummaryGranularity
-    repo: RepoEnum  # type: ignore
-    group: DownloadsPublicGroup
-    n_days: int
-    limit: int
-    descending: bool
+RepoEnum = create_repo_enum(CLIEnvironment.dev)
 
 
 def get_downloads_base(
@@ -86,7 +49,7 @@ def read_downloads_hourly(
     n_days: int = Query(default=7, le=24 * 365 * 5),
     limit: int = Query(default=7 * 24, le=100_000),
     descending: bool = Query(default=True),
-):
+) -> DownloadsPublic:
     return get_downloads_base(
         table_name="int_downloads_melted",
         config=GetDownloadsPublicConfig(
@@ -109,7 +72,7 @@ def read_downloads_daily(
     n_days: int = Query(default=30, le=365 * 5),
     limit: int = Query(default=100, le=100_000),
     descending: bool = Query(default=True),
-):
+) -> DownloadsPublic:
     return get_downloads_base(
         table_name="int_downloads_melted_daily",
         config=GetDownloadsPublicConfig(
@@ -132,7 +95,7 @@ def read_downloads_weekly(
     n_days: int = Query(default=30, le=365 * 5),
     limit: int = Query(default=100, le=10_000),
     descending: bool = Query(default=True),
-):
+) -> DownloadsPublic:
     return get_downloads_base(
         table_name="int_downloads_melted_weekly",
         config=GetDownloadsPublicConfig(
@@ -155,7 +118,7 @@ def read_downloads_monthly(
     n_days: int = Query(default=60, le=365 * 5),
     limit: int = Query(default=100, le=10_000),
     descending: bool = Query(default=True),
-):
+) -> DownloadsPublic:
     return get_downloads_base(
         table_name="int_downloads_melted_monthly",
         config=GetDownloadsPublicConfig(
@@ -167,3 +130,17 @@ def read_downloads_monthly(
             descending=descending,
         ),
     )
+
+
+@router.get("/repos", response_model=ReposWithDownloads)
+@limiter.limit("60/minute")
+def read_repos_with_downloads(request: Request) -> ReposWithDownloads:
+    con = get_frontend_db_con()
+    query = """
+        select distinct a.repo 
+        from mart_downloads_summary a 
+        left join stg_repos b on a.repo = b.repo_name
+        order by b.stargazers_count desc, a.repo
+    """
+    repos = con.sql(query).to_df().squeeze().tolist()
+    return ReposWithDownloads(repos=repos, count=len(repos))
