@@ -1,52 +1,20 @@
 FROM python:3.11-slim AS python-base
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# POETRY -------
-#https://github.com/orgs/python-poetry/discussions/1879#discussioncomment-216865
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    \
-    # pip
-    PIP_NO_CACHE_DIR=off \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PIP_DEFAULT_TIMEOUT=100 \
-    \
-    # poetry
-    POETRY_HOME="/opt/poetry" \
-    POETRY_VIRTUALENVS_IN_PROJECT=true \
-    POETRY_NO_INTERACTION=1 \
-    PYSETUP_PATH="/ampere" \
-    VENV_PATH="/ampere/.venv"
+ENV PYSETUP_PATH="/ampere" \ 
+    DAGSTER_HOME=/ampere/data/dagster
 
-
-# prepend poetry and venv to path
-ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
-
-# `builder-base` stage is used to build deps + create our virtual environment
-FROM python-base AS builder-base
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y \
-    # deps for installing poetry
-    curl \
-    # deps for building python deps
-    build-essential
+    && apt-get install --no-install-recommends -y 
 
-# install poetry - respects $POETRY_VERSION & $POETRY_HOME
-RUN curl -sSL https://install.python-poetry.org | python3 -
 
-# copy project requirement files here to ensure they will be cached.
 WORKDIR $PYSETUP_PATH
-COPY poetry.lock pyproject.toml ./
+# uv install dependencies
+# viz - required for caching plots
+COPY pyproject.toml uv.lock README.md ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --extra common --extra backend --extra viz --frozen --no-install-project --no-editable
 
-# install runtime deps - uses $POETRY_VIRTUALENVS_IN_PROJECT internally
-RUN poetry install --no-root
-
-# `development` image is used during development / testing
-FROM python-base AS development
-WORKDIR $PYSETUP_PATH
-
-# copy in our built poetry + venv
-COPY --from=builder-base $POETRY_HOME $POETRY_HOME
-COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 
 # DBT ---------
 COPY dbt_project.yml .
@@ -61,15 +29,11 @@ COPY data-tests ./data-tests
 COPY .config/ ./.config
 COPY .env .
 
-RUN dbt deps --profiles-dir .
-#https://github.com/python-poetry/poetry/issues/3353#issuecomment-804042557
-RUN poetry config virtualenvs.path --unset
-
-# quicker install as runtime deps are already installed
-RUN poetry install --no-root
+RUN uv run dbt deps --profiles-dir .
 
 # APP CODE -------
 COPY ampere/ ./ampere
 
-# DAGSTER ------
-ENV DAGSTER_HOME=/ampere/data/dagster
+# sync the project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --extra common --extra backend --extra viz --frozen --no-editable

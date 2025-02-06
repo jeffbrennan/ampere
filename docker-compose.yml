@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: ./Dockerfile-backend
     entrypoint:
+      - uv
+      - run 
       - dagster-webserver
       - -h
       - "0.0.0.0"
@@ -32,6 +34,8 @@ services:
       context: .
       dockerfile: ./Dockerfile-backend
     entrypoint:
+      - uv
+      - run
       - dagster-daemon
       - run
     restart: on-failure
