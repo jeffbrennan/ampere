@@ -281,11 +281,3 @@ def create_repo_enum(env: CLIEnvironment = CLIEnvironment.prod) -> StrEnum:
     return StrEnum("RepoEnum", {repo: repo for repo in repos})
 
 
-@dataclass
-class GetDownloadsPublicConfig:
-    granularity: DownloadsGranularity | DownloadsSummaryGranularity
-    repo: create_repo_enum()  # type: ignore
-    group: DownloadsPublicGroup
-    n_days: int
-    limit: int
-    descending: bool

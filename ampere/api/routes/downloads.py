@@ -1,5 +1,7 @@
+from dataclasses import dataclass
+
 from fastapi import APIRouter, Query, Request
-from pydantic import BaseModel, TypeAdapter
+from pydantic import TypeAdapter
 
 from ampere.api.limiter import limiter
 from ampere.cli.common import CLIEnvironment
@@ -9,13 +11,23 @@ from ampere.models import (
     DownloadsGranularity,
     DownloadsPublic,
     DownloadsPublicGroup,
-    GetDownloadsPublicConfig,
+    DownloadsSummaryGranularity,
     ReposWithDownloads,
     create_repo_enum,
 )
 
 router = APIRouter(prefix="/downloads", tags=["downloads"])
 RepoEnum = create_repo_enum(CLIEnvironment.dev)
+
+
+@dataclass
+class GetDownloadsPublicConfig:
+    granularity: DownloadsGranularity | DownloadsSummaryGranularity
+    repo: RepoEnum  # type: ignore
+    group: DownloadsPublicGroup
+    n_days: int
+    limit: int
+    descending: bool
 
 
 def get_downloads_base(
