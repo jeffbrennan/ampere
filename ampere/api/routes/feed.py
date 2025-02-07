@@ -13,14 +13,13 @@ from ampere.models import (
 )
 
 router = APIRouter(prefix="/feed", tags=["feed"])
-RepoEnum = create_repo_enum(CLIEnvironment.dev)
 
 
 @router.get("/list", response_model=FeedPublic)
 @limiter.limit("60/minute")
 def read_feed(
     request: Request,
-    repo: RepoEnum | None = None,  # type: ignore
+    repo: str | None = None,
     event: FeedPublicEvent | None = None,
     action: FeedPublicAction | None = None,
     username: str | None = None,
@@ -38,8 +37,11 @@ def read_feed(
     """
 
     if repo is not None:
-        base_query += " and repo = ?"
-        params.append(repo.value)
+        valid_repos = create_repo_enum(CLIEnvironment.dev)
+        if repo not in valid_repos:
+            raise ValueError(f"Invalid repo: {repo}")
+        base_query += " and repo_name = ?"
+        params.append(repo)
 
     if event is not None:
         base_query += " and event_type = ?"

@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 from fastapi import APIRouter, Query, Request
 from pydantic import TypeAdapter
 
@@ -11,30 +9,23 @@ from ampere.models import (
     DownloadsGranularity,
     DownloadsPublic,
     DownloadsPublicGroup,
-    DownloadsSummaryGranularity,
+    GetDownloadsPublicConfig,
     ReposWithDownloads,
     create_repo_enum,
 )
 
 router = APIRouter(prefix="/downloads", tags=["downloads"])
-RepoEnum = create_repo_enum(CLIEnvironment.dev)
-
-
-@dataclass
-class GetDownloadsPublicConfig:
-    granularity: DownloadsGranularity | DownloadsSummaryGranularity
-    repo: RepoEnum  # type: ignore
-    group: DownloadsPublicGroup
-    n_days: int
-    limit: int
-    descending: bool
 
 
 def get_downloads_base(
     table_name: str, config: GetDownloadsPublicConfig
 ) -> DownloadsPublic:
     con = get_frontend_db_con()
-    params = [config.repo.value, config.group]
+    valid_repos = create_repo_enum(CLIEnvironment.dev)
+    if config.repo not in valid_repos:
+        raise ValueError(f"Invalid repo: {config.repo}")
+
+    params = [config.repo, config.group]
     sort_order = "desc" if config.descending else "asc"
 
     query = f"""
@@ -56,7 +47,7 @@ def get_downloads_base(
 @limiter.limit("60/minute")
 def read_downloads_hourly(
     request: Request,
-    repo: RepoEnum,  # type: ignore
+    repo: str,
     group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
     n_days: int = Query(default=7, le=24 * 365 * 5),
     limit: int = Query(default=7 * 24, le=100_000),
@@ -79,7 +70,7 @@ def read_downloads_hourly(
 @limiter.limit("60/minute")
 def read_downloads_daily(
     request: Request,
-    repo: RepoEnum,  # type: ignore
+    repo: str,
     group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
     n_days: int = Query(default=30, le=365 * 5),
     limit: int = Query(default=100, le=100_000),
@@ -102,7 +93,7 @@ def read_downloads_daily(
 @limiter.limit("60/minute")
 def read_downloads_weekly(
     request: Request,
-    repo: RepoEnum,  # type: ignore
+    repo: str,
     group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
     n_days: int = Query(default=30, le=365 * 5),
     limit: int = Query(default=100, le=10_000),
@@ -125,7 +116,7 @@ def read_downloads_weekly(
 @limiter.limit("60/minute")
 def read_downloads_monthly(
     request: Request,
-    repo: RepoEnum,  # type: ignore
+    repo: str,
     group: DownloadsPublicGroup = DownloadsPublicGroup.overall,
     n_days: int = Query(default=60, le=365 * 5),
     limit: int = Query(default=100, le=10_000),

@@ -11,15 +11,12 @@ from rich.console import Console
 from rich.table import Table
 
 from ampere.cli.common import get_api_url
-from ampere.cli.models import CLIOutputFormat
-from ampere.cli.state import State
+from ampere.cli.models import CLIOutputFormat, repo_callback_without_downloads
 from ampere.common import timeit
-from ampere.models import FeedPublic, FeedPublicAction, FeedPublicEvent, create_repo_enum
+from ampere.models import FeedPublic, FeedPublicAction, FeedPublicEvent
 
 console = Console()
 feed_app = typer.Typer()
-
-RepoEnum = create_repo_enum(State.env)
 
 
 class FeedSummary(BaseModel):
@@ -58,15 +55,18 @@ def date_trunc(dt: datetime.datetime, granularity: FeedGranularity) -> datetime.
 
 @timeit
 def get_feed_list_response(
-    repo: RepoEnum | None,
-    event: FeedPublicEvent,
-    action: FeedPublicAction,
+    repo: str | None,  # type: ignore
+    event: FeedPublicEvent | None,
+    action: FeedPublicAction | None,
     username: str | None,
     n_days: int,
     limit: int,
     descending: bool,
+    ctx: typer.Context,
 ) -> FeedPublic:
-    base_url = get_api_url(State.env)
+    env = ctx.obj["env"]
+    base_url = get_api_url(env)
+
     url = f"{base_url}/feed/list"
     params = {
         "repo": repo,
@@ -306,6 +306,7 @@ def create_feed_summary(
 @feed_app.command("summary")
 @timeit
 def summarize_feed(
+    ctx: typer.Context,
     granularity: Annotated[
         FeedGranularity,
         typer.Option(
@@ -314,7 +315,9 @@ def summarize_feed(
             prompt=True,
         ),
     ] = FeedGranularity.daily,
-    repo: Annotated[RepoEnum | None, typer.Option("--repo", "-r")] = None,
+    repo: Annotated[
+        str | None, typer.Option("--repo", "-r", callback=repo_callback_without_downloads)
+    ] = None,
     event: Annotated[FeedPublicEvent | None, typer.Option("--event", "-e")] = None,
     action: Annotated[FeedPublicAction | None, typer.Option("--action", "-a")] = None,
     username: Annotated[str | None, typer.Option("--user", "-u")] = None,
@@ -332,6 +335,7 @@ def summarize_feed(
         365,
         10_000,
         descending,
+        ctx,
     )
     if len(model.data) == 0:
         console.print("No feed events found.")
@@ -349,7 +353,10 @@ def summarize_feed(
 
 @feed_app.command("list")
 def list_feed(
-    repo: Annotated[RepoEnum | None, typer.Option("--repo", "-r")] = None,
+    ctx: typer.Context,
+    repo: Annotated[
+        str | None, typer.Option("--repo", "-r", callback=repo_callback_without_downloads)
+    ] = None,
     event: Annotated[FeedPublicEvent | None, typer.Option("--event", "-e")] = None,
     action: Annotated[FeedPublicAction | None, typer.Option("--action", "-a")] = None,
     username: Annotated[str | None, typer.Option("--user", "-u")] = None,
@@ -368,6 +375,7 @@ def list_feed(
         n_days,
         limit,
         descending,
+        ctx,
     )
     if len(model.data) == 0:
         console.print("No feed events found.")

@@ -1,6 +1,7 @@
 import datetime
 import time
 from concurrent.futures import ThreadPoolExecutor
+from itertools import repeat
 from typing import Annotated, Optional
 
 import requests
@@ -10,28 +11,26 @@ from rich import box
 from rich.console import Console
 from rich.table import Table
 
-from ampere.api.routes.downloads import GetDownloadsPublicConfig
 from ampere.cli.common import CLIEnvironment, get_api_url, get_flag_emoji, get_pct_change
-from ampere.cli.models import CLIOutputFormat
-from ampere.cli.state import State
+from ampere.cli.models import CLIOutputFormat, repo_callback_with_downloads
 from ampere.models import (
     DownloadsGranularity,
     DownloadsPublic,
     DownloadsPublicGroup,
     DownloadsSummaryGranularity,
+    GetDownloadsPublicConfig,
     create_repo_enum,
 )
 
 console = Console()
 
 downloads_app = typer.Typer()
-RepoEnum = create_repo_enum(State.env)
 
 
 class DownloadsSummary(BaseModel):
     granularity: DownloadsSummaryGranularity
     group: DownloadsPublicGroup
-    repo: RepoEnum  # type: ignore
+    repo: str
     group_value: str
     min_date: datetime.datetime
     max_date: datetime.datetime
@@ -42,7 +41,7 @@ class DownloadsSummary(BaseModel):
 
 
 class DownloadsSummaryOutput(BaseModel):
-    records: dict[RepoEnum, list[DownloadsSummary]]  # type: ignore
+    records: dict[str, list[DownloadsSummary]]
     group: DownloadsPublicGroup
     min_date: datetime.datetime
     max_date: datetime.datetime
@@ -167,11 +166,14 @@ def format_downloads_list_output(response: DownloadsPublic) -> Table:
     return table
 
 
-def get_downloads_response(config: GetDownloadsPublicConfig) -> DownloadsPublic:
-    if State.env == CLIEnvironment.dev:
+def get_downloads_response(
+    config: GetDownloadsPublicConfig, ctx: typer.Context
+) -> DownloadsPublic:
+    env = ctx.obj["env"]
+    if env == CLIEnvironment.dev:
         time.sleep(0.4)
 
-    base_url = get_api_url(State.env)
+    base_url = get_api_url(env)
     url = f"{base_url}/downloads/{config.granularity}"
     response = requests.get(
         url,
@@ -189,6 +191,7 @@ def get_downloads_response(config: GetDownloadsPublicConfig) -> DownloadsPublic:
 
 @downloads_app.command("list")
 def list_downloads(
+    ctx: typer.Context,
     granularity: Annotated[
         DownloadsGranularity,
         typer.Option(
@@ -198,8 +201,8 @@ def list_downloads(
         ),
     ],
     repo: Annotated[
-        Optional[RepoEnum],  # type: ignore
-        typer.Option("--repo", "-r", prompt=True),
+        str,
+        typer.Option("--repo", "-r", prompt=True, callback=repo_callback_with_downloads),
     ],
     group: Annotated[
         DownloadsPublicGroup, typer.Option("--group", "-gr")
@@ -219,7 +222,8 @@ def list_downloads(
             n_days=n_days,
             limit=limit,
             descending=descending,
-        )
+        ),
+        ctx=ctx,
     )
     if output == CLIOutputFormat.json:
         console.print_json(response.model_dump_json())
@@ -236,9 +240,11 @@ def create_downloads_summary(
     descending: bool,
     min_pct_of_total: float,
     show_subtotal: bool,
+    ctx: typer.Context,
 ) -> DownloadsSummaryOutput:
-    others: dict[RepoEnum, DownloadsSummary] = {}  # type: ignore
-    repo_summaries: dict[RepoEnum, list[DownloadsSummary]] = {}  # type: ignore
+    env = ctx.obj["env"]
+    others: dict[create_repo_enum(env), DownloadsSummary] = {}
+    repo_summaries: dict[create_repo_enum(env), list[DownloadsSummary]] = {}
 
     grand_total_this_period = 0
     grand_total_last_period = 0
@@ -373,6 +379,7 @@ def create_downloads_summary(
 
 @downloads_app.command("summary")
 def summarize_downloads(
+    ctx: typer.Context,
     granularity: Annotated[
         DownloadsSummaryGranularity,
         typer.Option(
@@ -382,8 +389,8 @@ def summarize_downloads(
         ),
     ],
     repo: Annotated[
-        Optional[RepoEnum],  # type: ignore
-        typer.Option("--repo", "-r"),
+        str | None,
+        typer.Option("--repo", "-r", callback=repo_callback_with_downloads),
     ] = None,
     group: Annotated[
         DownloadsPublicGroup, typer.Option("--group", "-gr")
@@ -411,8 +418,9 @@ def summarize_downloads(
         granularity.weekly: {"limit": 10000, "n_days": 7 * 3},
     }
 
+    env = ctx.obj["env"]
     if repo is None:
-        repos = [i for i in RepoEnum]
+        repos = [i for i in create_repo_enum(env)]
     else:
         repos = [repo]
 
@@ -430,19 +438,21 @@ def summarize_downloads(
         )
 
     with ThreadPoolExecutor(max_workers=len(repos)) as executor:
-        all_records = list(executor.map(get_downloads_response, configs))
+        all_records = list(executor.map(get_downloads_response, configs, repeat(ctx)))
 
-    summary = create_downloads_summary(
+    summary: DownloadsSummaryOutput = create_downloads_summary(
         records=all_records,
         group=group,
         granularity=granularity,
         descending=descending,
         min_pct_of_total=min_group_pct_of_total,
         show_subtotal=show_subtotal,
+        ctx=ctx,
     )
     if output == CLIOutputFormat.json:
-        for model in summary.records:
-            console.print_json(model.model_dump_json())
+        for _, record_list in summary.records.items():
+            for record in record_list:
+                console.print_json(record.model_dump_json())
         return
 
     table = format_downloads_summary_output(

@@ -1,12 +1,14 @@
 import datetime
 from dataclasses import dataclass
 from enum import StrEnum, auto
+from functools import lru_cache
 from typing import Optional
 
 import requests
 from sqlmodel import Field, SQLModel
 
 from ampere.cli.common import CLIEnvironment, get_api_url
+from ampere.common import timeit
 
 
 class Stargazer(SQLModel):
@@ -309,6 +311,54 @@ def get_repos_with_downloads(env: str) -> list[str]:
     return get_repos_with_downloads_prod()
 
 
-def create_repo_enum(env: CLIEnvironment = CLIEnvironment.prod) -> StrEnum:
-    repos = get_repos_with_downloads(env)
+def get_repo_names_dev() -> list[str]:
+    from ampere.common import get_frontend_db_con
+
+    with get_frontend_db_con() as con:
+        repo_names = con.sql(
+            "select repo_name from stg_repos order by stargazers_count desc"
+        ).fetchall()
+
+    return [repo_name[0] for repo_name in repo_names]
+
+
+def get_repo_names_prod() -> list[str]:
+    url = get_api_url(CLIEnvironment.prod)
+    response = requests.get(f"{url}/repos/list")
+    assert response.status_code == 200, print(response.json())
+    model = ReposWithDownloads.model_validate(response.json())
+    return model.repos
+
+
+def get_repo_names(env: str) -> list[str]:
+    if env == "dev":
+        return get_repo_names_dev()
+    return get_repo_names_prod()
+
+
+@timeit
+@lru_cache()
+def create_repo_enum(env: CLIEnvironment, with_downloads: bool) -> StrEnum:
+    print(env, with_downloads)
+
+    if with_downloads:
+        repos = get_repos_with_downloads(env)
+    else:
+        repos = get_repo_names(env)
+
     return StrEnum("RepoEnum", {repo: repo for repo in repos})
+
+
+class ReposPublic(SQLModel):
+    repos: list[str]
+    count: int
+
+
+@dataclass
+class GetDownloadsPublicConfig:
+    granularity: DownloadsGranularity | DownloadsSummaryGranularity
+    repo: str 
+    group: DownloadsPublicGroup
+    n_days: int
+    limit: int
+    descending: bool
