@@ -31,17 +31,18 @@ class FeedSummary(BaseModel):
     commits: str
 
 
+class FeedGranularity(StrEnum):
+    daily = auto()
+    weekly = auto()
+    monthly = auto()
+
+
 class FeedSummaryOutput(BaseModel):
     records: list[FeedSummary]
     min_date: datetime.datetime
     max_date: datetime.datetime
     grand_total: FeedSummary
-
-
-class FeedGranularity(StrEnum):
-    daily = auto()
-    weekly = auto()
-    monthly = auto()
+    granularity: FeedGranularity
 
 
 def date_trunc(dt: datetime.datetime, granularity: FeedGranularity) -> datetime.datetime:
@@ -123,11 +124,32 @@ def format_feed_summary(model: FeedSummaryOutput) -> Table:
         title_style="bold",
         box=box.ROUNDED,
     )
-    cols = ["date", "stars", "forks", "issues", "prs", "commits"]
+
+    date_col_lookup = {
+        FeedGranularity.daily: "date",
+        FeedGranularity.weekly: "week",
+        FeedGranularity.monthly: "month",
+    }
+
+    cols = [
+        date_col_lookup[model.granularity],
+        "stars",
+        "forks",
+        "issues",
+        "prs",
+        "commits",
+    ]
+
     for col in cols:
         table.add_column(col)
 
-    for record in model.records:
+    prev_date_divider = model.records[0].date.split("-")[-2]
+    for i, record in enumerate(model.records):
+        date_divider = record.date.split("-")[-2]
+        if prev_date_divider != date_divider:
+            table.add_section()
+        prev_date_divider = date_divider
+
         table.add_row(
             record.date,
             record.stars,
@@ -165,6 +187,7 @@ def create_feed_summary(
         FeedGranularity.weekly: 7,
         FeedGranularity.monthly: 30,
     }
+    date_format = "%Y-%m" if granularity == FeedGranularity.monthly else "%Y-%m-%d"
 
     expected_min_date = max_date - datetime.timedelta(
         days=n_days_lookup[granularity] * n_periods
@@ -192,7 +215,7 @@ def create_feed_summary(
     ), f"specified max date {max(trunc_dates)} newer than latest record {max_date}"
 
     trunc_dates = sorted(trunc_dates, reverse=descending)
-    formatted_dates = [i.strftime("%Y-%m-%d") for i in trunc_dates]
+    formatted_dates = [i.strftime(date_format) for i in trunc_dates]
 
     counts = {
         "star": 0,
@@ -213,7 +236,7 @@ def create_feed_summary(
     counts_by_date = {date: copy.deepcopy(counts) for date in formatted_dates}
     counts_by_date["grand_total"] = counts.copy()
     for record in model.data:
-        record_date = date_trunc(record.event_timestamp, granularity).strftime("%Y-%m-%d")
+        record_date = date_trunc(record.event_timestamp, granularity).strftime(date_format)
         if record_date not in counts_by_date:
             continue
 
@@ -259,6 +282,7 @@ def create_feed_summary(
         min_date=min(dates),
         max_date=max(dates),
         grand_total=grand_total_records[0],
+        granularity=granularity,
     )
 
 
