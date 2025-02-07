@@ -9,7 +9,7 @@ from rich.table import Table
 from ampere.cli.common import get_api_url
 from ampere.cli.models import CLIOutputFormat
 from ampere.cli.state import State
-from ampere.models import FeedPublic, FeedPublicAction, FeedPublicType, create_repo_enum
+from ampere.models import FeedPublic, FeedPublicAction, FeedPublicEvent, create_repo_enum
 
 console = Console()
 feed_app = typer.Typer()
@@ -56,7 +56,7 @@ def format_feed_output(model: FeedPublic) -> Table:
 @feed_app.command("list")
 def list_feed(
     repo: Annotated[RepoEnum | None, typer.Option("--repo", "-r")] = None,
-    event: Annotated[FeedPublicType | None, typer.Option("--event", "-e")] = None,
+    event: Annotated[FeedPublicEvent | None, typer.Option("--event", "-e")] = None,
     action: Annotated[FeedPublicAction | None, typer.Option("--action", "-a")] = None,
     n_days: Annotated[int, typer.Option("--n-days", "-n")] = 60,
     limit: Annotated[int, typer.Option("--limit", "-l")] = 10_000,

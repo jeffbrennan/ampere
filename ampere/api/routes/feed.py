@@ -8,7 +8,7 @@ from ampere.models import (
     FeedPublic,
     FeedPublicAction,
     FeedPublicRecord,
-    FeedPublicType,
+    FeedPublicEvent,
     create_repo_enum,
 )
 
@@ -21,7 +21,7 @@ RepoEnum = create_repo_enum(CLIEnvironment.dev)
 def read_feed(
     request: Request,
     repo: RepoEnum | None = None,  # type: ignore
-    event: FeedPublicType | None = None,
+    event: FeedPublicEvent | None = None,
     action: FeedPublicAction | None = None,
     n_days: int = Query(default=60, le=24 * 365 * 5),
     limit: int = Query(default=1_000, le=10_000),

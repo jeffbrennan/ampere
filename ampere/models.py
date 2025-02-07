@@ -242,7 +242,7 @@ class ReposWithDownloads(SQLModel):
     count: int
 
 
-class FeedPublicType(StrEnum):
+class FeedPublicEvent(StrEnum):
     commit = auto()
     fork = auto()
     issue = auto()
@@ -262,7 +262,7 @@ class FeedPublicRecord(SQLModel):
     user_name: str
     full_name: str | None = None
     event_id: str
-    event_type: FeedPublicType
+    event_type: FeedPublicEvent
     event_action: FeedPublicAction
     event_data: str | None = None
     event_timestamp: datetime.datetime
