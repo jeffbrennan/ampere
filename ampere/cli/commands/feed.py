@@ -13,6 +13,7 @@ from rich.table import Table
 from ampere.cli.common import get_api_url
 from ampere.cli.models import CLIOutputFormat
 from ampere.cli.state import State
+from ampere.common import timeit
 from ampere.models import FeedPublic, FeedPublicAction, FeedPublicEvent, create_repo_enum
 
 console = Console()
@@ -53,6 +54,7 @@ def date_trunc(dt: datetime.datetime, granularity: FeedGranularity) -> datetime.
         return dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
 
+@timeit
 def get_feed_list_response(
     repo: RepoEnum | None,
     event: FeedPublicEvent,
@@ -108,6 +110,7 @@ def format_feed_output(model: FeedPublic) -> Table:
     return table
 
 
+@timeit
 def format_feed_summary(model: FeedSummaryOutput) -> Table:
     title = "Feed Summary"
     subtitle = (
@@ -147,11 +150,48 @@ def format_feed_summary(model: FeedSummaryOutput) -> Table:
     return table
 
 
+@timeit
 def create_feed_summary(
-    model: FeedPublic, granularity: FeedGranularity, descending: bool = True
+    model: FeedPublic,
+    granularity: FeedGranularity,
+    descending: bool,
+    n_periods: int,
 ) -> FeedSummaryOutput:
     dates = set(i.event_timestamp for i in model.data)
-    trunc_dates = sorted([date_trunc(i, granularity) for i in dates], reverse=descending)
+    max_date = max(dates)
+    min_date = min(dates)
+    n_days_lookup = {
+        FeedGranularity.daily: 1,
+        FeedGranularity.weekly: 7,
+        FeedGranularity.monthly: 30,
+    }
+
+    expected_min_date = max_date - datetime.timedelta(
+        days=n_days_lookup[granularity] * n_periods
+    )
+
+    trunc_dates = []
+    for i in range(n_periods):
+        expected_date = max_date - datetime.timedelta(days=n_days_lookup[granularity] * i)
+        if expected_date < min_date:
+            print(f"""
+            expected min date: {expected_min_date.strftime('%Y-%m-%d')}
+            stopping at: {min_date.strftime('%Y-%m-%d')}
+            increase `n_days` or decrease `n_periods`.
+            """)
+            break
+
+        trunc_dates.append(date_trunc(expected_date, granularity))
+
+    assert min(trunc_dates) >= date_trunc(
+        min_date, granularity
+    ), f"specified min date {min(trunc_dates)} older than earliest record {min_date}"
+
+    assert max(trunc_dates) <= date_trunc(
+        max_date, granularity
+    ), f"specified max date {max(trunc_dates)} newer than latest record {max_date}"
+
+    trunc_dates = sorted(trunc_dates, reverse=descending)
     formatted_dates = [i.strftime("%Y-%m-%d") for i in trunc_dates]
 
     counts = {
@@ -174,6 +214,9 @@ def create_feed_summary(
     counts_by_date["grand_total"] = counts.copy()
     for record in model.data:
         record_date = date_trunc(record.event_timestamp, granularity).strftime("%Y-%m-%d")
+        if record_date not in counts_by_date:
+            continue
+
         if record.event_type in ["star", "fork", "commit"]:
             counts_by_date[record_date][record.event_type] += 1
             counts_by_date["grand_total"][record.event_type] += 1
@@ -213,13 +256,14 @@ def create_feed_summary(
 
     return FeedSummaryOutput(
         records=summary_records,
-        min_date=min(trunc_dates),
-        max_date=max(trunc_dates),
+        min_date=min(dates),
+        max_date=max(dates),
         grand_total=grand_total_records[0],
     )
 
 
 @feed_app.command("summary")
+@timeit
 def summarize_feed(
     granularity: Annotated[
         FeedGranularity,
@@ -232,15 +276,14 @@ def summarize_feed(
     repo: Annotated[RepoEnum | None, typer.Option("--repo", "-r")] = None,
     event: Annotated[FeedPublicEvent | None, typer.Option("--event", "-e")] = None,
     action: Annotated[FeedPublicAction | None, typer.Option("--action", "-a")] = None,
-    n_days: Annotated[int, typer.Option("--n-days", "-n")] = 60,
-    limit: Annotated[int, typer.Option("--limit", "-l")] = 10_000,
+    n_periods: Annotated[int, typer.Option("--n-periods", "-n")] = 30,
     descending: Annotated[bool, typer.Option("--desc/--asc", "-d/-a")] = True,
     output: Annotated[
         CLIOutputFormat, typer.Option("--output", "-o")
     ] = CLIOutputFormat.table,
 ) -> None:
-    model = get_feed_list_response(repo, event, action, n_days, limit, descending)
-    summary = create_feed_summary(model, granularity)
+    model = get_feed_list_response(repo, event, action, 365, 10_000, descending)
+    summary = create_feed_summary(model, granularity, descending, n_periods)
 
     if output == CLIOutputFormat.json:
         console.print_json(summary.model_dump_json())
