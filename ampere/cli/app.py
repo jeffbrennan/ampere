@@ -5,7 +5,7 @@ from ampere.cli.commands.feed import feed_app
 from ampere.cli.common import CLIEnvironment
 from ampere.cli.state import State
 
-app = typer.Typer()
+app = typer.Typer(pretty_exceptions_enable=False)
 app.add_typer(downloads_app, name="downloads")
 app.add_typer(feed_app, name="feed")
 
