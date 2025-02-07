@@ -29,6 +29,7 @@ class FeedSummary(BaseModel):
     issues: str
     prs: str
     commits: str
+    total: str
 
 
 class FeedGranularity(StrEnum):
@@ -143,6 +144,8 @@ def format_feed_summary(model: FeedSummaryOutput) -> Table:
     for col in cols:
         table.add_column(col)
 
+    table.add_column("total", justify="right")
+
     prev_date_divider = model.records[0].date.split("-")[-2]
     for i, record in enumerate(model.records):
         date_divider = record.date.split("-")[-2]
@@ -157,6 +160,7 @@ def format_feed_summary(model: FeedSummaryOutput) -> Table:
             record.issues,
             record.prs,
             record.commits,
+            record.total,
         )
 
     table.add_section()
@@ -167,6 +171,7 @@ def format_feed_summary(model: FeedSummaryOutput) -> Table:
         model.grand_total.issues,
         model.grand_total.prs,
         model.grand_total.commits,
+        model.grand_total.total,
     )
 
     return table
@@ -232,21 +237,30 @@ def create_feed_summary(
             "closed": 0,
         },
         "commit": 0,
+        "total": 0,
     }
     counts_by_date = {date: copy.deepcopy(counts) for date in formatted_dates}
     counts_by_date["grand_total"] = counts.copy()
     for record in model.data:
-        record_date = date_trunc(record.event_timestamp, granularity).strftime(date_format)
+        record_date = date_trunc(record.event_timestamp, granularity).strftime(
+            date_format
+        )
         if record_date not in counts_by_date:
             continue
 
         if record.event_type in ["star", "fork", "commit"]:
             counts_by_date[record_date][record.event_type] += 1
+            counts_by_date[record_date]["total"] += 1
+
             counts_by_date["grand_total"][record.event_type] += 1
+            counts_by_date["grand_total"]["total"] += 1
             continue
 
         counts_by_date[record_date][record.event_type][record.event_action] += 1
+        counts_by_date[record_date]["total"] += 1
+
         counts_by_date["grand_total"][record.event_type][record.event_action] += 1
+        counts_by_date["grand_total"]["total"] += 1
 
     summary_records = []
     grand_total_records = []
@@ -270,6 +284,7 @@ def create_feed_summary(
             issues=issues,
             prs=prs,
             commits=f'+{v["commit"]}',
+            total=f"{v['total']:,}",
         )
 
         if k == "grand_total":
