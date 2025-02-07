@@ -23,7 +23,7 @@ def read_feed(
     event: FeedPublicEvent | None = None,
     action: FeedPublicAction | None = None,
     username: str | None = None,
-    n_days: int = Query(default=60, le=24 * 365 * 5),
+    n_days: int | None = Query(default=None, le=365 * 5),
     limit: int = Query(default=1_000, le=10_000),
     descending: bool = Query(default=True),
 ) -> FeedPublic:
@@ -31,17 +31,23 @@ def read_feed(
     sort_order = "desc" if descending else "asc"
     params = []
 
+    if n_days is None:
+        n_days = 9_999
+
     base_query = f"""
     select * from mart_feed_events
     where event_timestamp >= now() - interval {n_days} days
     """
 
     if repo is not None:
-        valid_repos = create_repo_enum(CLIEnvironment.dev)
-        if repo not in valid_repos:
+        valid_repos = create_repo_enum(CLIEnvironment.dev, False)
+        try:
+            repo_validated = valid_repos(repo)  # type: ignore
+        except ValueError:
             raise ValueError(f"Invalid repo: {repo}")
+
         base_query += " and repo_name = ?"
-        params.append(repo)
+        params.append(repo_validated.value)
 
     if event is not None:
         base_query += " and event_type = ?"

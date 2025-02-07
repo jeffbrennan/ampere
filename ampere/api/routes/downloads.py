@@ -22,10 +22,12 @@ def get_downloads_base(
 ) -> DownloadsPublic:
     con = get_frontend_db_con()
     valid_repos = create_repo_enum(CLIEnvironment.dev)
-    if config.repo not in valid_repos:
+    try:
+        repo = valid_repos(config.repo)  # type: ignore
+    except ValueError:
         raise ValueError(f"Invalid repo: {config.repo}")
 
-    params = [config.repo, config.group]
+    params = [repo.value, config.group]
     sort_order = "desc" if config.descending else "asc"
 
     query = f"""

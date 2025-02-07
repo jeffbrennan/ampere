@@ -21,9 +21,18 @@ def repo_option_callback(
     RepoEnum = create_repo_enum(env, with_downloads)
 
     try:
-        return RepoEnum(value)  # type: ignore
+        return RepoEnum(value.lower())  # type: ignore
     except ValueError:
-        raise typer.BadParameter(f"Invalid repo: {value}")
+        valid_repos = [repo.name for repo in RepoEnum]
+        valid_repos_str = ""
+        for i, repo in enumerate(valid_repos, 1):
+            valid_repos_str += "\n" + f"{i}. {repo}"
+
+        title = "Valid Repos"
+        if with_downloads:
+            title += " with Downloads"
+
+        raise typer.BadParameter(f"\n{'='*20} {title} {'='*20}{valid_repos_str}")
 
 
 def repo_callback_without_downloads(value: str | None, ctx: typer.Context) -> str | None:

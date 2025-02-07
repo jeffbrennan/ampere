@@ -1,5 +1,6 @@
 import copy
 import datetime
+from dataclasses import dataclass
 from enum import StrEnum, auto
 from typing import Annotated
 
@@ -17,6 +18,14 @@ from ampere.models import FeedPublic, FeedPublicAction, FeedPublicEvent
 
 console = Console()
 feed_app = typer.Typer()
+
+
+@dataclass
+class ParsedDates:
+    date_format: str
+    dates: set[datetime.datetime]
+    trunc_dates: list[datetime.datetime]
+    formatted_dates: list[str]
 
 
 class FeedSummary(BaseModel):
@@ -55,11 +64,11 @@ def date_trunc(dt: datetime.datetime, granularity: FeedGranularity) -> datetime.
 
 @timeit
 def get_feed_list_response(
-    repo: str | None,  # type: ignore
+    repo: str | None,
     event: FeedPublicEvent | None,
     action: FeedPublicAction | None,
     username: str | None,
-    n_days: int,
+    n_days: int | None,
     limit: int,
     descending: bool,
     ctx: typer.Context,
@@ -68,6 +77,7 @@ def get_feed_list_response(
     base_url = get_api_url(env)
 
     url = f"{base_url}/feed/list"
+    username = username.lower() if username is not None else None
     params = {
         "repo": repo,
         "event": event,
@@ -179,13 +189,12 @@ def format_feed_summary(model: FeedSummaryOutput) -> Table:
     return table
 
 
-@timeit
-def create_feed_summary(
+def parse_summary_dates(
     model: FeedPublic,
     granularity: FeedGranularity,
     descending: bool,
-    n_periods: int,
-) -> FeedSummaryOutput:
+    n_periods: int | None,
+) -> ParsedDates:
     dates = set(i.event_timestamp for i in model.data)
     max_date = max(dates)
     min_date = min(dates)
@@ -195,6 +204,21 @@ def create_feed_summary(
         FeedGranularity.monthly: 30,
     }
     date_format = "%Y-%m" if granularity == FeedGranularity.monthly else "%Y-%m-%d"
+
+    if n_periods is None:
+        min_date = date_trunc(min_date, granularity)
+        max_date = date_trunc(max_date, granularity)
+        trunc_dates = [
+            max_date - datetime.timedelta(days=n_days_lookup[granularity] * i)
+            for i in range(1, 1 + (max_date - min_date).days)
+        ]
+
+        return ParsedDates(
+            date_format=date_format,
+            dates=dates,
+            trunc_dates=trunc_dates,
+            formatted_dates=[i.strftime(date_format) for i in trunc_dates],
+        )
 
     expected_min_date = max_date - datetime.timedelta(
         days=n_days_lookup[granularity] * n_periods
@@ -223,7 +247,21 @@ def create_feed_summary(
 
     trunc_dates = sorted(trunc_dates, reverse=descending)
     formatted_dates = [i.strftime(date_format) for i in trunc_dates]
+    return ParsedDates(
+        date_format=date_format,
+        dates=dates,
+        trunc_dates=trunc_dates,
+        formatted_dates=formatted_dates,
+    )
 
+
+@timeit
+def create_feed_summary(
+    model: FeedPublic,
+    granularity: FeedGranularity,
+    descending: bool,
+    n_periods: int | None,
+) -> FeedSummaryOutput:
     counts = {
         "star": 0,
         "fork": 0,
@@ -241,11 +279,16 @@ def create_feed_summary(
         "commit": 0,
         "total": 0,
     }
-    counts_by_date = {date: copy.deepcopy(counts) for date in formatted_dates}
+
+    parsed_dates = parse_summary_dates(model, granularity, descending, n_periods)
+
+    counts_by_date = {
+        date: copy.deepcopy(counts) for date in parsed_dates.formatted_dates
+    }
     counts_by_date["grand_total"] = counts.copy()
     for record in model.data:
         record_date = date_trunc(record.event_timestamp, granularity).strftime(
-            date_format
+            parsed_dates.date_format
         )
         if record_date not in counts_by_date:
             continue
@@ -296,8 +339,8 @@ def create_feed_summary(
 
     return FeedSummaryOutput(
         records=summary_records,
-        min_date=min(dates),
-        max_date=max(dates),
+        min_date=min(parsed_dates.dates),
+        max_date=max(parsed_dates.dates),
         grand_total=grand_total_records[0],
         granularity=granularity,
     )
@@ -321,7 +364,7 @@ def summarize_feed(
     event: Annotated[FeedPublicEvent | None, typer.Option("--event", "-e")] = None,
     action: Annotated[FeedPublicAction | None, typer.Option("--action", "-a")] = None,
     username: Annotated[str | None, typer.Option("--user", "-u")] = None,
-    n_periods: Annotated[int, typer.Option("--n-periods", "-n")] = 30,
+    n_periods: Annotated[int | None, typer.Option("--n-periods", "-n")] = 30,
     descending: Annotated[bool, typer.Option("--desc/--asc", "-d/-a")] = True,
     output: Annotated[
         CLIOutputFormat, typer.Option("--output", "-o")
@@ -332,7 +375,7 @@ def summarize_feed(
         event,
         action,
         username,
-        365,
+        None,
         10_000,
         descending,
         ctx,
@@ -360,7 +403,7 @@ def list_feed(
     event: Annotated[FeedPublicEvent | None, typer.Option("--event", "-e")] = None,
     action: Annotated[FeedPublicAction | None, typer.Option("--action", "-a")] = None,
     username: Annotated[str | None, typer.Option("--user", "-u")] = None,
-    n_days: Annotated[int, typer.Option("--n-days", "-n")] = 60,
+    n_days: Annotated[int | None, typer.Option("--n-days", "-n")] = None,
     limit: Annotated[int, typer.Option("--limit", "-l")] = 10_000,
     descending: Annotated[bool, typer.Option("--desc/--asc", "-d/-a")] = True,
     output: Annotated[
