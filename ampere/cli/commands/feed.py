@@ -61,6 +61,7 @@ def get_feed_list_response(
     repo: RepoEnum | None,
     event: FeedPublicEvent,
     action: FeedPublicAction,
+    username: str | None,
     n_days: int,
     limit: int,
     descending: bool,
@@ -71,6 +72,7 @@ def get_feed_list_response(
         "repo": repo,
         "event": event,
         "action": action,
+        "username": username,
         "n_days": n_days,
         "limit": limit,
         "descending": descending,
@@ -315,13 +317,26 @@ def summarize_feed(
     repo: Annotated[RepoEnum | None, typer.Option("--repo", "-r")] = None,
     event: Annotated[FeedPublicEvent | None, typer.Option("--event", "-e")] = None,
     action: Annotated[FeedPublicAction | None, typer.Option("--action", "-a")] = None,
+    username: Annotated[str | None, typer.Option("--user", "-u")] = None,
     n_periods: Annotated[int, typer.Option("--n-periods", "-n")] = 30,
     descending: Annotated[bool, typer.Option("--desc/--asc", "-d/-a")] = True,
     output: Annotated[
         CLIOutputFormat, typer.Option("--output", "-o")
     ] = CLIOutputFormat.table,
 ) -> None:
-    model = get_feed_list_response(repo, event, action, 365, 10_000, descending)
+    model = get_feed_list_response(
+        repo,
+        event,
+        action,
+        username,
+        365,
+        10_000,
+        descending,
+    )
+    if len(model.data) == 0:
+        console.print("No feed events found.")
+        return
+
     summary = create_feed_summary(model, granularity, descending, n_periods)
 
     if output == CLIOutputFormat.json:
@@ -337,6 +352,7 @@ def list_feed(
     repo: Annotated[RepoEnum | None, typer.Option("--repo", "-r")] = None,
     event: Annotated[FeedPublicEvent | None, typer.Option("--event", "-e")] = None,
     action: Annotated[FeedPublicAction | None, typer.Option("--action", "-a")] = None,
+    username: Annotated[str | None, typer.Option("--user", "-u")] = None,
     n_days: Annotated[int, typer.Option("--n-days", "-n")] = 60,
     limit: Annotated[int, typer.Option("--limit", "-l")] = 10_000,
     descending: Annotated[bool, typer.Option("--desc/--asc", "-d/-a")] = True,
@@ -344,7 +360,19 @@ def list_feed(
         CLIOutputFormat, typer.Option("--output", "-o")
     ] = CLIOutputFormat.table,
 ) -> None:
-    model = get_feed_list_response(repo, event, action, n_days, limit, descending)
+    model = get_feed_list_response(
+        repo,
+        event,
+        action,
+        username,
+        n_days,
+        limit,
+        descending,
+    )
+    if len(model.data) == 0:
+        console.print("No feed events found.")
+        return
+
     if output == CLIOutputFormat.json:
         console.print_json(model.model_dump_json())
         return

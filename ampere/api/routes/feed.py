@@ -7,8 +7,8 @@ from ampere.common import get_frontend_db_con
 from ampere.models import (
     FeedPublic,
     FeedPublicAction,
-    FeedPublicRecord,
     FeedPublicEvent,
+    FeedPublicRecord,
     create_repo_enum,
 )
 
@@ -23,6 +23,7 @@ def read_feed(
     repo: RepoEnum | None = None,  # type: ignore
     event: FeedPublicEvent | None = None,
     action: FeedPublicAction | None = None,
+    username: str | None = None,
     n_days: int = Query(default=60, le=24 * 365 * 5),
     limit: int = Query(default=1_000, le=10_000),
     descending: bool = Query(default=True),
@@ -47,6 +48,10 @@ def read_feed(
     if action is not None:
         base_query += " and event_action = ?"
         params.append(action)
+
+    if username is not None:
+        base_query += " and lower(user_name) = ?"
+        params.append(username)
 
     base_query += f"""
     order by event_timestamp {sort_order}
