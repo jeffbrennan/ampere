@@ -24,7 +24,7 @@ def read_feed(
     action: FeedPublicAction | None = None,
     username: str | None = None,
     n_days: int | None = Query(default=None, le=365 * 5),
-    limit: int = Query(default=1_000, le=10_000),
+    limit: int = Query(default=50, le=10_000),
     descending: bool = Query(default=True),
 ) -> FeedPublic:
     con = get_frontend_db_con()
