@@ -8,9 +8,39 @@ Tooling to track and visualize engagement with the [mrpowers-io](https://github.
 
 ---
 
-## Metrics
+## Installation
+
+ampere is available as a CLI tool and a self-hosted web application (dagster scheduled jobs, fastapi api, and plotly dash frontend)
+
+to use the CLI:
+
+1. clone the repository
+2. `uv run ampere --help` to see available cli commands
+
+[WIP] to use the web application:
+
+disclaimer: this is a work in progress and init scripts are not yet available
+
+1. clone the repository
+2. configure required environment variables in `.env` - refer to `.env.example`
+3. run `uv sync --all-extras` to build the full .venv
+4. `docker compose up --build` to start the api, backend, and frontend services
 
 ---
+
+## API
+
+documentation available at [https://api-ampere.jeffbrennan.dev/docs](https://api-ampere.jeffbrennan.dev/docs)
+
+currently supports three endpoints:
+
+1. `/repos` - list of current repos
+2. `/feed` - recent github activity (stars, issues, prs, etc.)
+3. `/downloads` - download statistics (hourly, daily, weekly, monthly)
+
+---
+
+## Metrics
 
 ## Data
 
@@ -129,6 +159,10 @@ This project is build with an open source (d)ata stack:
 
 - [x] dark mode
 - [x] page load speed
-- [ ] mobile improvements
-- [ ] create API
+- [x] mobile improvements
+- [x] create API
+- [ ] create init scripts for first time setup
+- [ ] add tests for API, CLI, and web application
+- [ ] and github actions to run tests, linting checks
+- [ ] publish to pypi
 - [ ] add `ampere` to `mrpowers-io` organization
