@@ -105,11 +105,6 @@ def read_repos(con: duckdb.DuckDBPyConnection) -> list[Repo]:
     return repos
 
 
-def get_repo_names(con: duckdb.DuckDBPyConnection) -> list[str]:
-    repo_names = con.sql("select distinct repo_name from stg_repos").fetchall()
-    return [repo_name[0] for repo_name in repo_names]
-
-
 def get_latest_commit_timestamp(repo: Repo) -> datetime.datetime | None:
     con = get_backend_db_con()
     query = f"""
