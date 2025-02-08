@@ -243,8 +243,8 @@ def create_downloads_summary(
     ctx: typer.Context,
 ) -> DownloadsSummaryOutput:
     env = ctx.obj["env"]
-    others: dict[create_repo_enum(env), DownloadsSummary] = {}
-    repo_summaries: dict[create_repo_enum(env), list[DownloadsSummary]] = {}
+    others: dict[create_repo_enum(env, True), DownloadsSummary] = {}  # type: ignore
+    repo_summaries: dict[create_repo_enum(env, True), list[DownloadsSummary]] = {}  # type: ignore
 
     grand_total_this_period = 0
     grand_total_last_period = 0
@@ -420,7 +420,7 @@ def summarize_downloads(
 
     env = ctx.obj["env"]
     if repo is None:
-        repos = [i for i in create_repo_enum(env)]
+        repos = [i for i in create_repo_enum(env, True)]
     else:
         repos = [repo]
 

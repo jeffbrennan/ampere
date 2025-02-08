@@ -23,7 +23,7 @@ def repo_option_callback(
     try:
         return RepoEnum(value.lower())  # type: ignore
     except ValueError:
-        valid_repos = [repo.name for repo in RepoEnum]
+        valid_repos = [repo.name for repo in RepoEnum]  # type: ignore
         valid_repos_str = ""
         for i, repo in enumerate(valid_repos, 1):
             valid_repos_str += "\n" + f"{i}. {repo}"

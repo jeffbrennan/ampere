@@ -21,7 +21,7 @@ def get_downloads_base(
     table_name: str, config: GetDownloadsPublicConfig
 ) -> DownloadsPublic:
     con = get_frontend_db_con()
-    valid_repos = create_repo_enum(CLIEnvironment.dev)
+    valid_repos = create_repo_enum(CLIEnvironment.dev, True)
     try:
         repo = valid_repos(config.repo)  # type: ignore
     except ValueError:
