@@ -18,7 +18,6 @@ def set_env(
     ctx: typer.Context,
     env: Annotated[CLIEnvironment, typer.Option("--env", "-e")] = CLIEnvironment.prod,
 ) -> None:
-    print("Setting environment to:", env)
     ctx.obj = {"env": env}
 
 

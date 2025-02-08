@@ -8,7 +8,6 @@ import requests
 from sqlmodel import Field, SQLModel
 
 from ampere.cli.common import CLIEnvironment, get_api_url
-from ampere.common import timeit
 
 
 class Stargazer(SQLModel):
@@ -161,7 +160,6 @@ class PyPIDownload(SQLModel):
 
 
 # used to track which repos have been queried to prevent repeated date range queries on repos with no downloads
-@dataclass
 class PyPIQueryConfig(SQLModel):
     __tablename__ = "pypi_download_queries"  # pyright: ignore [reportAssignmentType]
     repo: str = Field(primary_key=True, foreign_key="repo.repo_name")
@@ -200,9 +198,7 @@ class FollowerDetails:
     internal_following_pct: float
 
 
-# cli models
-
-
+# cli/api models
 class DownloadsPublicGroup(StrEnum):
     overall = auto()
     country_code = auto()
@@ -226,6 +222,21 @@ class DownloadsSummaryGranularity(StrEnum):
     monthly = auto()
 
 
+class FeedPublicEvent(StrEnum):
+    commit = auto()
+    fork = auto()
+    issue = auto()
+    pull_request = "pull request"
+    star = auto()
+
+
+class FeedPublicAction(StrEnum):
+    created = auto()
+    updated = auto()
+    closed = auto()
+    merged = auto()
+
+
 class DownloadPublic(SQLModel):
     repo: str
     download_timestamp: datetime.datetime
@@ -244,19 +255,13 @@ class ReposWithDownloads(SQLModel):
     count: int
 
 
-class FeedPublicEvent(StrEnum):
-    commit = auto()
-    fork = auto()
-    issue = auto()
-    pull_request = "pull request"
-    star = auto()
-
-
-class FeedPublicAction(StrEnum):
-    created = auto()
-    updated = auto()
-    closed = auto()
-    merged = auto()
+class GetDownloadsPublicConfig(SQLModel):
+    granularity: DownloadsGranularity | DownloadsSummaryGranularity
+    repo: str
+    group: DownloadsPublicGroup
+    n_days: int
+    limit: int
+    descending: bool
 
 
 class FeedPublicRecord(SQLModel):
@@ -273,6 +278,11 @@ class FeedPublicRecord(SQLModel):
 
 class FeedPublic(SQLModel):
     data: list[FeedPublicRecord]
+    count: int
+
+
+class ReposPublic(SQLModel):
+    repos: list[str]
     count: int
 
 
@@ -336,7 +346,6 @@ def get_repo_names(env: str) -> list[str]:
     return get_repo_names_prod()
 
 
-@timeit
 @lru_cache()
 def create_repo_enum(env: CLIEnvironment, with_downloads: bool) -> StrEnum:
     print(env, with_downloads)
@@ -347,18 +356,3 @@ def create_repo_enum(env: CLIEnvironment, with_downloads: bool) -> StrEnum:
         repos = get_repo_names(env)
 
     return StrEnum("RepoEnum", {repo: repo for repo in repos})
-
-
-class ReposPublic(SQLModel):
-    repos: list[str]
-    count: int
-
-
-@dataclass
-class GetDownloadsPublicConfig:
-    granularity: DownloadsGranularity | DownloadsSummaryGranularity
-    repo: str 
-    group: DownloadsPublicGroup
-    n_days: int
-    limit: int
-    descending: bool

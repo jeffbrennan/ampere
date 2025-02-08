@@ -13,7 +13,6 @@ from rich.table import Table
 
 from ampere.cli.common import get_api_url
 from ampere.cli.models import CLIOutputFormat, repo_callback_without_downloads
-from ampere.common import timeit
 from ampere.models import FeedPublic, FeedPublicAction, FeedPublicEvent
 
 console = Console()
@@ -77,7 +76,6 @@ def date_trunc(dt: datetime.datetime, granularity: FeedGranularity) -> datetime.
         return dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
 
-@timeit
 def get_feed_list_response(
     repo: str | None,
     event: FeedPublicEvent | None,
@@ -139,7 +137,6 @@ def format_feed_output(model: FeedPublic) -> Table:
     return table
 
 
-@timeit
 def format_feed_summary(model: FeedSummaryOutput) -> Table:
     title = "Feed Summary"
     subtitle = (
@@ -270,7 +267,6 @@ def parse_summary_dates(
     )
 
 
-@timeit
 def create_feed_summary(
     model: FeedPublic,
     config: FeedSummaryConfig,
@@ -369,8 +365,45 @@ def create_feed_summary(
     )
 
 
+@feed_app.command("list")
+def list_feed(
+    ctx: typer.Context,
+    repo: Annotated[
+        str | None, typer.Option("--repo", "-r", callback=repo_callback_without_downloads)
+    ] = None,
+    event: Annotated[FeedPublicEvent | None, typer.Option("--event", "-e")] = None,
+    action: Annotated[FeedPublicAction | None, typer.Option("--action", "-a")] = None,
+    username: Annotated[str | None, typer.Option("--user", "-u")] = None,
+    n_days: Annotated[int | None, typer.Option("--n-days", "-n")] = None,
+    limit: Annotated[int, typer.Option("--limit", "-l")] = 50,
+    descending: Annotated[bool, typer.Option("--desc/--asc", "-d/-a")] = True,
+    output: Annotated[
+        CLIOutputFormat, typer.Option("--output", "-o")
+    ] = CLIOutputFormat.table,
+) -> None:
+    model = get_feed_list_response(
+        repo,
+        event,
+        action,
+        username,
+        n_days,
+        limit,
+        descending,
+        ctx,
+    )
+    if len(model.data) == 0:
+        console.print("No feed events found.")
+        return
+
+    if output == CLIOutputFormat.json:
+        console.print_json(model.model_dump_json())
+        return
+
+    table = format_feed_output(model)
+    console.print(table)
+
+
 @feed_app.command("summary")
-@timeit
 def summarize_feed(
     ctx: typer.Context,
     granularity: Annotated[
@@ -414,42 +447,4 @@ def summarize_feed(
         return
 
     table = format_feed_summary(summary)
-    console.print(table)
-
-
-@feed_app.command("list")
-def list_feed(
-    ctx: typer.Context,
-    repo: Annotated[
-        str | None, typer.Option("--repo", "-r", callback=repo_callback_without_downloads)
-    ] = None,
-    event: Annotated[FeedPublicEvent | None, typer.Option("--event", "-e")] = None,
-    action: Annotated[FeedPublicAction | None, typer.Option("--action", "-a")] = None,
-    username: Annotated[str | None, typer.Option("--user", "-u")] = None,
-    n_days: Annotated[int | None, typer.Option("--n-days", "-n")] = None,
-    limit: Annotated[int, typer.Option("--limit", "-l")] = 10_000,
-    descending: Annotated[bool, typer.Option("--desc/--asc", "-d/-a")] = True,
-    output: Annotated[
-        CLIOutputFormat, typer.Option("--output", "-o")
-    ] = CLIOutputFormat.table,
-) -> None:
-    model = get_feed_list_response(
-        repo,
-        event,
-        action,
-        username,
-        n_days,
-        limit,
-        descending,
-        ctx,
-    )
-    if len(model.data) == 0:
-        console.print("No feed events found.")
-        return
-
-    if output == CLIOutputFormat.json:
-        console.print_json(model.model_dump_json())
-        return
-
-    table = format_feed_output(model)
     console.print(table)
