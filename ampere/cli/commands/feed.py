@@ -50,6 +50,21 @@ class FeedSummaryOutput(BaseModel):
     max_date: datetime.datetime
     grand_total: FeedSummary
     granularity: FeedGranularity
+    repo: str | None
+    event: FeedPublicEvent | None
+    action: FeedPublicAction | None
+    username: str | None
+    n_periods: int | None
+
+
+class FeedSummaryConfig(BaseModel):
+    granularity: FeedGranularity
+    repo: str | None
+    event: FeedPublicEvent | None
+    action: FeedPublicAction | None
+    username: str | None
+    n_periods: int | None
+    descending: bool
 
 
 def date_trunc(dt: datetime.datetime, granularity: FeedGranularity) -> datetime.datetime:
@@ -258,9 +273,7 @@ def parse_summary_dates(
 @timeit
 def create_feed_summary(
     model: FeedPublic,
-    granularity: FeedGranularity,
-    descending: bool,
-    n_periods: int | None,
+    config: FeedSummaryConfig,
 ) -> FeedSummaryOutput:
     counts = {
         "star": 0,
@@ -280,14 +293,19 @@ def create_feed_summary(
         "total": 0,
     }
 
-    parsed_dates = parse_summary_dates(model, granularity, descending, n_periods)
+    parsed_dates = parse_summary_dates(
+        model,
+        config.granularity,
+        config.descending,
+        config.n_periods,
+    )
 
     counts_by_date = {
         date: copy.deepcopy(counts) for date in parsed_dates.formatted_dates
     }
     counts_by_date["grand_total"] = counts.copy()
     for record in model.data:
-        record_date = date_trunc(record.event_timestamp, granularity).strftime(
+        record_date = date_trunc(record.event_timestamp, config.granularity).strftime(
             parsed_dates.date_format
         )
         if record_date not in counts_by_date:
@@ -342,7 +360,12 @@ def create_feed_summary(
         min_date=min(parsed_dates.dates),
         max_date=max(parsed_dates.dates),
         grand_total=grand_total_records[0],
-        granularity=granularity,
+        repo=config.repo,
+        event=config.event,
+        action=config.action,
+        username=config.username,
+        n_periods=config.n_periods,
+        granularity=config.granularity,
     )
 
 
@@ -384,7 +407,7 @@ def summarize_feed(
         console.print("No feed events found.")
         return
 
-    summary = create_feed_summary(model, granularity, descending, n_periods)
+    summary = create_feed_summary(model, FeedSummaryConfig(**locals()))
 
     if output == CLIOutputFormat.json:
         console.print_json(summary.model_dump_json())
