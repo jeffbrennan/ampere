@@ -8,6 +8,6 @@ ampere:
         - delta
       threads: 8
       settings:
-        memory_limit: "6GB"
+        memory_limit: "4GB"
         max_temp_directory_size: "125GB"
         TimeZone: UTC

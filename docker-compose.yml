@@ -1,5 +1,9 @@
 services:
   backend_dagster_webserver:
+    deploy:
+      resources:
+        limits:
+          memory: 4096M
     build:
       context: .
       dockerfile: ./Dockerfile-backend
@@ -30,6 +34,10 @@ services:
     networks:
       - jb-proxy
   backend_dagster_daemon:
+    deploy:
+      resources:
+        limits:
+          memory: 4096M
     build:
       context: .
       dockerfile: ./Dockerfile-backend
