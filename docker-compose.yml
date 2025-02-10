@@ -3,7 +3,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4096M
+          memory: 6144M
     build:
       context: .
       dockerfile: ./Dockerfile-backend
@@ -37,7 +37,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4096M
+          memory: 6144M
     build:
       context: .
       dockerfile: ./Dockerfile-backend
