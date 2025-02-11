@@ -78,8 +78,6 @@ packages = ["ampere"]
 [tool.ruff]
 line-length = 90
 
-[tool.ruff.lint]
-select = ["I"]
 
 [tool.sqlfmt]
 exclude = ["target/**/*", "dbt_packages/**/*"]
