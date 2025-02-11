@@ -76,23 +76,21 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: install uv
+        uses: astral-sh/setup-uv@v5
 
-      - name: Set project version with Poetry
+      - name: Set project version
         run: |
-          poetry version ${{ needs.details.outputs.new_version }}
+          uv version ${{ needs.details.outputs.new_version }}
 
       - name: Install dependencies
-        run: poetry install --sync --no-interaction
+        run: uv sync 
 
       - name: Build source and wheel distribution
         run: |
-          poetry build
+          uv build
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
