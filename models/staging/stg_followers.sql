@@ -1,4 +1,4 @@
- -- depends_on: {{ source('dagster', 'following') }}
+-- depends_on: {{ source('dagster', 'following') }}
 
 {{ config(materialized='table') }}
 with base as (
@@ -6,9 +6,16 @@ with base as (
         user_id,
         follower_id,
         retrieved_at,
-        row_number() over (partition by user_id, follower_id order by retrieved_at desc) as rn
-    from  {{source('main', 'followers')}}
-    where retrieved_at >= (select max(retrieved_at) - interval 24 hours from {{source('main', 'followers')}})
+        row_number()
+            over (partition by user_id, follower_id order by retrieved_at desc)
+            as rn
+    from  {{ source('main', 'followers') }}
+    where
+        retrieved_at
+        >= (
+            select max(retrieved_at) - interval 24 as hours
+            from {{ source('main', 'followers') }}
+        )
 )
 select
     user_id,

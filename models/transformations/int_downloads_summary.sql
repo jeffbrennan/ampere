@@ -37,7 +37,9 @@ recent_python_major_minor_counts as (
         group_value,
         sum(download_count) as download_count
     from python_major_minor_raw
-    where download_timestamp >= (select max(download_timestamp) - interval 60 day from python_major_minor_raw)
+    where
+        download_timestamp
+        >= (select max(download_timestamp) - interval 60 day from python_major_minor_raw)
     group by all
 ),
 
@@ -56,7 +58,8 @@ python_major_minor as (
         a.repo,
         a.download_timestamp,
         a.group_name,
-        case when b.group_value is null then 'other' else a.group_value end as group_value,
+        case when b.group_value is null then 'other' else a.group_value end
+            as group_value,
         sum(a.download_count) as download_count
     from python_major_minor_raw as a
     left join python_major_minor_ranked as b
@@ -90,7 +93,12 @@ select
     group_value,
     sum(download_count) as download_count
     from package_versions_major_minor_raw
-    where download_timestamp >= (select max(download_timestamp) - interval 60 day from package_versions_major_minor_raw)
+    where
+        download_timestamp
+        >= (
+            select max(download_timestamp) - interval 60 day
+            from package_versions_major_minor_raw
+        )
     group by all
 ),
 
@@ -109,7 +117,8 @@ package_versions as  (
         a.repo,
         a.download_timestamp,
         a.group_name,
-        case when b.group_value is null then 'other' else a.group_value end as group_value,
+        case when b.group_value is null then 'other' else a.group_value end
+            as group_value,
         sum(a.download_count) as download_count
     from package_versions_major_minor_raw as a
     left join recent_package_versions_ranked as b

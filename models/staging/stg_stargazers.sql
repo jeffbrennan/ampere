@@ -5,7 +5,12 @@ with base as (
         *,
         row_number() over (partition by repo_id, user_id order by retrieved_at desc) as rn
     from {{ source('main', 'stargazers') }}
-    where retrieved_at >= (select max(retrieved_at) - interval 24 hours from {{source('main', 'stargazers')}})
+    where
+        retrieved_at
+        >= (
+            select max(retrieved_at) - interval 24 as hours
+            from {{ source('main', 'stargazers') }}
+        )
 )
 select
     repo_id,

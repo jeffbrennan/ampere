@@ -4,7 +4,12 @@ with base as (
         *,
         row_number() over (partition by user_id order by retrieved_at desc) as rn
     from {{ source('main', 'users') }}
-    where retrieved_at >= (select max(retrieved_at) - interval 24 hours from {{source('main', 'users')}})
+    where
+        retrieved_at
+        >= (
+            select max(retrieved_at) - interval 24 as hours
+            from {{ source('main', 'users') }}
+        )
 )
 select
     user_id,

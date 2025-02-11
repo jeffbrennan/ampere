@@ -65,4 +65,3 @@ from diff
 where
     (week_downloads_diff_pct >= 1 and previous_week_downloads > 10000)
     or (week_downloads_diff_pct <= -0.4 and previous_week_downloads > 10000)
-
