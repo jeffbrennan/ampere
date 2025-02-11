@@ -115,7 +115,7 @@ with
             max(user_id) as user_id,
             max(metric_count) as metric_count
         from metrics_filled_down
-        where metric_date = (select max(metric_date) from metrics_filled_down)
+        where metric_date = (select max(b.metric_date) from metrics_filled_down as b)
         group by all
     ),
 

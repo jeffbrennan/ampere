@@ -9,8 +9,8 @@ with base as (
     where
         retrieved_at
         >= (
-            select max(retrieved_at) - interval 24 as hours
-            from {{ source('main', 'forks') }}
+            select max(b.retrieved_at) - interval 24 as hours
+            from {{ source('main', 'forks') }} as b
         )
 )
 select

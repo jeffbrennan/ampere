@@ -6,19 +6,19 @@ with melted_dates as (
 daily_dates as (
     select group_name, max(download_timestamp) as max_date
     from {{ ref('int_downloads_melted_daily') }}
-    where group_name in (select distinct group_name from melted_dates)
+    where group_name in (select distinct b.group_name from melted_dates as b)
     group by all
 ),
 weekly_dates as (
     select group_name, max(download_timestamp) as max_date
     from {{ ref('int_downloads_melted_weekly') }}
-    where group_name in (select distinct group_name from melted_dates)
+    where group_name in (select distinct b.group_name from melted_dates as b)
     group by all
 ),
 monthly_dates as (
     select group_name, max(download_timestamp) as max_date
     from {{ ref('int_downloads_melted_monthly') }}
-    where group_name in (select distinct group_name from melted_dates)
+    where group_name in (select distinct b.group_name from melted_dates as b)
     group by all
 )
 

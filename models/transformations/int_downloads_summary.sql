@@ -39,7 +39,10 @@ recent_python_major_minor_counts as (
     from python_major_minor_raw
     where
         download_timestamp
-        >= (select max(download_timestamp) - interval 60 day from python_major_minor_raw)
+        >= (
+            select max(b.download_timestamp) - interval 60 day
+            from python_major_minor_raw as b
+        )
     group by all
 ),
 
@@ -96,8 +99,8 @@ select
     where
         download_timestamp
         >= (
-            select max(download_timestamp) - interval 60 day
-            from package_versions_major_minor_raw
+            select max(b.download_timestamp) - interval 60 day
+            from package_versions_major_minor_raw as b
         )
     group by all
 ),
