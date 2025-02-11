@@ -13,6 +13,9 @@ dependencies = [
     "requests>=2.32.3,<3",
 ]
 
+[dependency-groups]
+lint = ["ruff==0.7.4", "sqlfluff==3.2.5"]
+
 [project.optional-dependencies]
 common = [
     "pandas>=2.2.2,<3",
@@ -20,7 +23,7 @@ common = [
     "duckdb>=1.1.3",
     "polars>=1.7.1,<2",
     "deltalake>=0.22.3,<0.23",
-"python-dotenv>=1.0.1,<2",
+    "python-dotenv>=1.0.1,<2",
 ]
 
 dev = [
@@ -28,7 +31,6 @@ dev = [
     "pyright>=1.1.380,<2",
     "sqlfluff>=3.2.5,<4",
     "shandy-sqlfmt[jinjafmt]>=0.24.0,<0.25",
-    "sqlfluff-templater-dbt>=3.2.5",
 ]
 
 # visualization - used in frontend and also backend plot caching

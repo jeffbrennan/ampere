@@ -15,9 +15,10 @@ jobs:
       - name: install uv
         uses: astral-sh/setup-uv@v5
       - uses: actions/checkout@v4
+
       - name: install packages
         run: |
-         uv venv && uv pip install ruff sqlfluff
+          uv sync --only-group lint
 
       - name: ruff
         run: |
@@ -27,4 +28,4 @@ jobs:
       - name: sqlfluff
         run: |
           source .venv/bin/activate
-          sqlfluff lint models/
+          sqlfluff lint models/ --disable-progress-bar

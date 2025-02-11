@@ -75,7 +75,6 @@ dev = [
     { name = "ruff-lsp" },
     { name = "shandy-sqlfmt", extra = ["jinjafmt"] },
     { name = "sqlfluff" },
-    { name = "sqlfluff-templater-dbt" },
 ]
 viz = [
     { name = "dash" },
@@ -89,6 +88,12 @@ viz = [
     { name = "plotly" },
     { name = "pypalettes" },
     { name = "scipy" },
+]
+
+[package.dev-dependencies]
+lint = [
+    { name = "ruff" },
+    { name = "sqlfluff" },
 ]
 
 [package.metadata]
@@ -122,10 +127,15 @@ requires-dist = [
     { name = "shandy-sqlfmt", extras = ["jinjafmt"], marker = "extra == 'dev'", specifier = ">=0.24.0,<0.25" },
     { name = "slowapi", marker = "extra == 'api'", specifier = ">=0.1.9,<0.2" },
     { name = "sqlfluff", marker = "extra == 'dev'", specifier = ">=3.2.5,<4" },
-    { name = "sqlfluff-templater-dbt", marker = "extra == 'dev'", specifier = ">=3.2.5" },
     { name = "sqlmodel", specifier = ">=0.0.22,<0.0.23" },
     { name = "typer", specifier = ">=0.15.1,<0.16" },
     { name = "uvicorn", marker = "extra == 'api'", specifier = ">=0.32.1" },
+]
+
+[package.metadata.requires-dev]
+lint = [
+    { name = "ruff", specifier = "==0.7.4" },
+    { name = "sqlfluff", specifier = "==3.2.5" },
 ]
 
 [[package]]
@@ -1454,18 +1464,6 @@ wheels = [
 ]
 
 [[package]]
-name = "jinja2-simple-tags"
-version = "0.6.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "jinja2" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/d8/b7/a2c8a0c60e6f2cb0dbc5020b43df7b0dc9a8fae0767c2f72665a1c7b76c9/jinja2-simple-tags-0.6.1.tar.gz", hash = "sha256:54abf83883dcd13f8fd2ea2c42feeea8418df3640907bd5251dec5e25a6af0e3", size = 9849 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/78/05/8fd074379bdfeb5ce1bccf4a8e23e004e1f238938724f743267759da94e3/jinja2_simple_tags-0.6.1-py2.py3-none-any.whl", hash = "sha256:7b7cfa92f6813a1e0f0b61b9efcab60e6793674753e1f784ff270542e80ae20f", size = 5817 },
-]
-
-[[package]]
 name = "jsonschema"
 version = "4.23.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2726,20 +2724,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/33/31/9ad9e98fc8d7bfd739204b0ee20f81840332754abe6f80ed53bb40875764/sqlfluff-3.2.5.tar.gz", hash = "sha256:39822db2c6ad7dac9f6e43d36a3d086c503c051b09665d14a5bdf644770f6ef6", size = 831305 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b1/46/c748afebe5978abc90e8af20c17fb70fca237e8cbc5da1ed448208e51881/sqlfluff-3.2.5-py3-none-any.whl", hash = "sha256:ae9ff821986b5b0dd1ea858392db7f0eb80343c2cdeee7900fa031f581e04643", size = 836737 },
-]
-
-[[package]]
-name = "sqlfluff-templater-dbt"
-version = "3.2.5"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "dbt-core" },
-    { name = "jinja2-simple-tags" },
-    { name = "sqlfluff" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/61/31/44f77144c97024a97880c7bfcc258c9b4372ea1ef569022d2ff52497498c/sqlfluff_templater_dbt-3.2.5.tar.gz", hash = "sha256:5b5bc4612d707e514c6892367c61ae45f61dac4818de7e2dd037089e6b131dab", size = 15005 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/cd/79/0132f0ef0c6ed49a9c74b17112084a80b867161476b5e68e2c4c5cbd0b00/sqlfluff_templater_dbt-3.2.5-py3-none-any.whl", hash = "sha256:512d9f5b73d3d362c1983baf8c716c12a469604420c6dcc135e570a647490378", size = 14673 },
 ]
 
 [[package]]
