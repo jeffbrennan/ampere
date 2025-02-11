@@ -82,8 +82,9 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Set project version
+        # https://github.com/astral-sh/uv/issues/6298#issuecomment-2335034247
         run: |
-          uv version ${{ needs.details.outputs.new_version }}
+          uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version  ${{ needs.details.outputs.new_version }}
 
       - name: Install dependencies
         run: uv sync 
