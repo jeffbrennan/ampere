@@ -65,7 +65,7 @@ class TaskSleepConfig:
 def get_rate_limit_reset_sleep_seconds() -> int:
     result = handle_api_response(
         APIRequest(
-            url=f"https://api.github.com/rate_limit",
+            url="https://api.github.com/rate_limit",
             max_requests=1,
             max_errors=0,
         )

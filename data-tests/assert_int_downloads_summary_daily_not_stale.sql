@@ -11,6 +11,5 @@
     )
 }}
 select * from 
-{{ref('test_downloads_summary_not_stale')}} 
+{{ ref('test_downloads_summary_not_stale') }} 
 where daily_days_diff >= 1
-

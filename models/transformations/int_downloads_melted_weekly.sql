@@ -1,6 +1,7 @@
 with
     date_spine_daily as (
-        select distinct download_timestamp, from {{ ref("int_downloads_melted_daily") }}
+        select distinct download_timestamp
+        from {{ ref("int_downloads_melted_daily") }}
     ),
     date_spine_daily_numbered as (
         select
@@ -21,7 +22,7 @@ with
                 partition by repo, group_name, group_value
                 order by
                     download_timestamp
-                    range between interval '6' day preceding and current row
+                    range between interval '6' day preceding and current row -- noqa: PRS
             ) as download_count
         from {{ ref("int_downloads_melted_daily") }}
     )

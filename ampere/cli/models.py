@@ -1,5 +1,4 @@
 from enum import StrEnum, auto
-from functools import partial
 
 import typer
 

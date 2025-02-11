@@ -61,6 +61,7 @@ def create_header(header_length: int, title: str, center: bool, spacer: str):
 
 def get_secret(secret_name: str) -> str:
     import dotenv
+
     dotenv.load_dotenv()
     secret = os.environ.get(secret_name)
     if secret is None:
@@ -218,6 +219,7 @@ def cleanup_delta_tables():
         vacuum_delta_table(delta_table_path)
 
 
-def divide_chunks(l: list[Any], n: int):
-    for i in range(0, len(l), n):
-        yield l[i : i + n]
+def divide_chunks(list_to_chunk: list[Any], n: int):
+    # https://stackoverflow.com/a/48135727
+    for i in range(0, len(list_to_chunk), n):
+        yield list_to_chunk[i : i + n]

@@ -13,6 +13,9 @@ dependencies = [
     "requests>=2.32.3,<3",
 ]
 
+[dependency-groups]
+lint = ["ruff==0.7.4", "sqlfluff==3.2.5"]
+
 [project.optional-dependencies]
 common = [
     "pandas>=2.2.2,<3",
@@ -75,8 +78,6 @@ packages = ["ampere"]
 [tool.ruff]
 line-length = 90
 
-[tool.ruff.lint]
-select = ["I"]
 
 [tool.sqlfmt]
 exclude = ["target/**/*", "dbt_packages/**/*"]

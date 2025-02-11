@@ -11,16 +11,13 @@ import plotly
 import plotly.express as px
 import plotly.graph_objects as go
 import pypalettes
-import requests
 from plotly.graph_objs import Figure
 
-from ampere.cli.common import CLIEnvironment, get_api_url
 from ampere.common import get_frontend_db_con, timeit
 from ampere.get_repo_metrics import read_repos
 from ampere.models import (
     FollowerDetails,
     Followers,
-    ReposWithDownloads,
     StargazerNetworkRecord,
 )
 from ampere.styling import AmperePalette, ScreenWidth, get_ampere_colors

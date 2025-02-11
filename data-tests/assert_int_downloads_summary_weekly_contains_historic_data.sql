@@ -7,6 +7,6 @@ with dates as (
 )
 select
     group_name,
-    min_timestamp,
+    min_timestamp
 from dates
 where min_timestamp >= now() - interval 365 days

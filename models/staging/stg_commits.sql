@@ -2,7 +2,9 @@
 with base as (
     select 
         *,
-        row_number() over (partition by repo_id, commit_id order by retrieved_at desc) as rn
+        row_number()
+            over (partition by repo_id, commit_id order by retrieved_at desc)
+            as rn
     from {{ source('main', 'commits') }}
 )
 select

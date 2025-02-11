@@ -11,7 +11,7 @@ star_metrics as (
             order by a.starred_at
             rows between unbounded preceding and current row
         ) as metric_count
-    from {{ref('stg_stargazers')}} as a
+    from {{ ref('stg_stargazers') }} as a
 ),
 
 issue_metrics_open as (
@@ -21,7 +21,7 @@ issue_metrics_open as (
         created_at as metric_timestamp,
         author_id as user_id,
         1 as metric_count
-    from {{ref('stg_issues')}}
+    from {{ ref('stg_issues') }}
     where created_at is not null
 ),
 
@@ -32,7 +32,7 @@ issue_metrics_closed as (
         closed_at as metric_timestamp,
         author_id as user_id,
         -1 as metric_count
-    from {{ref('stg_issues')}}
+    from {{ ref('stg_issues') }}
     where closed_at is not null
 ),
 
@@ -82,7 +82,7 @@ pr_metrics_open as (
         created_at as metric_timestamp,
         author_id as user_id,
         1 as metric_count
-    from {{ref('stg_pull_requests')}}
+    from {{ ref('stg_pull_requests') }}
     where created_at is not null
 ),
 
@@ -93,7 +93,7 @@ pr_metrics_closed as (
         closed_at as metric_timestamp,
         author_id as user_id,
         -1 as metric_count
-    from {{ref('stg_pull_requests')}}
+    from {{ ref('stg_pull_requests') }}
     where closed_at is not null
 ),
 
@@ -131,44 +131,47 @@ fork_metrics as (
             order by created_at
             rows between unbounded preceding and current row
         ) as metric_count
-    from {{ref('stg_forks')}}
+    from {{ ref('stg_forks') }}
 ),
 commit_metrics_unnested as (
     select
         commit_id,
         unnest(stats) as stats_unnested
-    from {{ref('stg_commits')}}
+    from {{ ref('stg_commits') }}
 ),
 commit_metrics_summed as (
     select
-        commit_id,
-        sum(stats_unnested.additions) as additions_count,
-        sum(stats_unnested.deletions) as deletions_count
+        commit_metrics_unnested.commit_id,
+        sum(stats_unnested.additions) as additions_count, --noqa: RF01
+        sum(stats_unnested.deletions) as deletions_count --noqa: RF01
     from commit_metrics_unnested
-    where ends_with(stats_unnested.filename, '.py') or ends_with(stats_unnested.filename, '.scala') or ends_with(stats_unnested.filename, '.rs')
-    group by commit_id
+    where
+        ends_with(stats_unnested.filename, '.py') --noqa: RF01
+        or ends_with(stats_unnested.filename, '.scala') --noqa: RF01
+        or ends_with(stats_unnested.filename, '.rs') --noqa: RF01
+    group by commit_metrics_unnested.commit_id
 ),
 commit_metrics_added as (
     select
-        repo_id,
+        a.repo_id,
         a.commit_id as metric_id,
-        committed_at as metric_timestamp,
-        author_id as user_id,
+        a.committed_at as metric_timestamp,
+        a.author_id as user_id,
         b.additions_count as metric_count
-    from {{ref('stg_commits')}} a
-    join commit_metrics_summed b
+    from {{ ref('stg_commits') }} as a
+    inner join commit_metrics_summed as b
     on a.commit_id = b.commit_id
 ),
 
 commit_metrics_deleted as (
     select
-        repo_id,
+        a.repo_id,
         a.commit_id as metric_id,
-        committed_at as metric_timestamp,
-        author_id as user_id,
+        a.committed_at as metric_timestamp,
+        a.author_id as user_id,
         b.deletions_count * -1 as metric_count
-    from {{ref('stg_commits')}} a
-    join commit_metrics_summed b
+    from {{ ref('stg_commits') }} as a
+    inner join commit_metrics_summed as b
     on a.commit_id = b.commit_id
 ),
 

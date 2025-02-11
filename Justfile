@@ -34,3 +34,12 @@ set dotenv-load
 
 @apidev:
     uv run uvicorn ampere.api.main:app --reload
+
+@lint:
+    source .venv/bin/activate
+    echo '=======linting======='
+    echo '\nruff ----------------'
+    time ruff check ampere/
+    echo '\nsqlfluff ------------'
+    time sqlfluff lint models/ --disable-progress-bar
+    echo '====================='

@@ -1,0 +1,31 @@
+name: lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: install uv
+        uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v4
+
+      - name: install packages
+        run: |
+          uv sync --only-group lint
+
+      - name: ruff
+        run: |
+          source .venv/bin/activate
+          ruff check ampere/
+
+      - name: sqlfluff
+        run: |
+          source .venv/bin/activate
+          sqlfluff lint models/ --disable-progress-bar

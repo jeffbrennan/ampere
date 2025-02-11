@@ -7,7 +7,7 @@ with base as (
 )
 
 select
-    user_id,
+    user_id,  --noqa: CV03
   {{ dbt_utils.pivot(
       'repo_name',
       dbt_utils.get_column_values(ref('int_network_stargazers'), 'repo_name'),

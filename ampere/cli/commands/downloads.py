@@ -2,7 +2,7 @@ import datetime
 import time
 from concurrent.futures import ThreadPoolExecutor
 from itertools import repeat
-from typing import Annotated, Optional
+from typing import Annotated
 
 import requests
 import typer
