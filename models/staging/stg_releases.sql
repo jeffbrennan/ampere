@@ -9,7 +9,7 @@ with base as (
     where
         retrieved_at
         >= (
-            select max(b.retrieved_at) - interval 24 as hours
+            select max(b.retrieved_at) - interval 24 hours --noqa: AL02
             from {{ source('main', 'releases') }} as b
         )
 )
