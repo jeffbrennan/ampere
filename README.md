@@ -14,8 +14,16 @@ ampere is available as a CLI tool and a self-hosted web application (dagster sch
 
 to use the CLI:
 
-1. clone the repository
-2. `uv run ampere --help` to see available cli commands
+uv steps:
+
+1. create a virtual env via `uv venv`
+2. add the package to the virtual env via `uv add ampere-meter`
+3. see available cli commands via `uv run ampere --help` or `source .venv/bin/activate && ampere --help`
+
+pip steps:
+
+1. install the package via `pip install ampere-meter`
+2. see available cli commands via `ampere --help`
 
 [WIP] to use the web application:
 
