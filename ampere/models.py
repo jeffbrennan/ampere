@@ -348,8 +348,6 @@ def get_repo_names(env: str) -> list[str]:
 
 @lru_cache()
 def create_repo_enum(env: CLIEnvironment, with_downloads: bool) -> StrEnum:
-    print(env, with_downloads)
-
     if with_downloads:
         repos = get_repos_with_downloads(env)
     else:
