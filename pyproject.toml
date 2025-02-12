@@ -1,5 +1,5 @@
 [project]
-name = "ampere"
+name = "ampere-meter"
 version = "0.1.0"
 description = ""
 authors = [{ name = "Jeff Brennan", email = "jeffbrennan10@gmail.com" }]
