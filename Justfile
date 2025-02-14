@@ -1,5 +1,6 @@
 
 set dotenv-load
+set shell := ["bash", "-c"]
 
 @up *FLAGS:
     docker compose up --build {{FLAGS}}
