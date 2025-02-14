@@ -65,5 +65,6 @@ set shell := ["bash", "-c"]
     echo $NEW_VERSION; \
     uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version $NEW_VERSION; \
     git commit -am "Bump version to $NEW_VERSION"; \
+    git push; \
     git tag $NEW_VERSION; \
     git push origin --tags;
