@@ -59,3 +59,11 @@ set shell := ["bash", "-c"]
     echo '\nsqlfluff ------------'
     time sqlfluff lint models/ --disable-progress-bar
     echo '====================='
+
+@tagbump:
+    NEW_VERSION=`git describe --tags --abbrev=0 | awk -F. '{OFS="."; $NF+=1; print $0}'`; \
+    echo $NEW_VERSION; \
+    uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version $NEW_VERSION; \
+    git commit -am "Bump version to $NEW_VERSION"; \
+    git tag $NEW_VERSION; \
+    git push origin --tags;
