@@ -131,6 +131,7 @@ models:
         data_type: usmallint
   - name: mart_status_details
     config:
+      materialized: view
       contract:
         enforced: true
       on_schema_change: append_new_columns
@@ -161,6 +162,8 @@ models:
   - name: mart_status_summary
     config:
       materialized: view
+      contract:
+        enforced: true
     meta:
       dagster:
         group: github_metrics_daily_4

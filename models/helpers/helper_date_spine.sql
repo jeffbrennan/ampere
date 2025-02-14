@@ -1,6 +1,6 @@
 with
 date_spine as (
-        {{ --noqa: PRS
+        {{
             dbt_utils.date_spine(
                 datepart="day",
                 start_date="(select min(metric_timestamp) from "
