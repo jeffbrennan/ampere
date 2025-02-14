@@ -338,6 +338,7 @@ models:
 
   - name: int_status_details
     config:
+      materialized: view
       contract:
         enforced: true
       on_schema_change: append_new_columns
@@ -363,6 +364,8 @@ models:
 
   - name: int_status_summary
     config:
+      contract:
+        enforced: true
       materialized: view
     meta:
       dagster:
@@ -373,7 +376,7 @@ models:
       - name: min_timestamp
         data_type: timestamp with time zone
       - name: hours_stale
-        data_type: float
+        data_type: double 
       - name: hours_stale_threshold
         data_type: integer
       - name: stale
