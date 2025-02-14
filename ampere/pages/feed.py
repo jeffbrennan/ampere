@@ -80,15 +80,16 @@ def style_feed_table(dark_mode: bool, breakpoint_name: str):
             "commit": "#15524e",
             "fork": "#3b2133",
         }
-        event_color_border = AmperePalette.PAGE_BACKGROUND_COLOR_LIGHT
+        event_color_border = AmperePalette.BRAND_TEXT_COLOR_DARK
     else:
         event_background_colors = {
             "pull request": "#d9e6b5",
             "issue": "#edb4bd",
             "star": "#e8d3a9",
+            "commit": "#b6dedc",
             "fork": "#e1ccdb",
         }
-        event_color_border = AmperePalette.PAGE_BACKGROUND_COLOR_DARK
+        event_color_border = AmperePalette.BRAND_TEXT_COLOR_LIGHT
 
     color_styles = [
         {
