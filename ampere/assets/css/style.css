@@ -3,11 +3,17 @@
     src: url("/assets/fonts/jetbrainsmonoregular.woff2") format("woff2");
     font-weight: 100 900;
     font-style: normal;
+    font-sidsplay: block;
 }
 
 #ampere-page,
 #navbar {
     transition: background-color 0.2s ease;
+}
+
+/* set default colors for first page load */
+.navbar .nav-link {
+    color: rgb(33, 33, 33);
 }
 
 #ampere-page.light-mode,
