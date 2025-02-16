@@ -146,6 +146,8 @@ jobs:
 
   build_homebrew_bottles:
     needs: [setup_and_build, details]
+    environment:
+      name: release
     strategy:
       matrix:
         os: [macos-latest, macos-14, ubuntu-latest]
@@ -177,6 +179,8 @@ jobs:
 
   update_homebrew_tap:
     needs: [build_homebrew_bottles, details]
+    environment:
+      name: release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Homebrew Tap
