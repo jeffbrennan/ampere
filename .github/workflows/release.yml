@@ -23,6 +23,8 @@ env:
   OWNER: "jeffbrennan"
   REPO_NAME: "ampere"
   NEW_VERSION: "0.1.4"
+  NEW_URL: "https://github.com/jeffbrennan/ampere/releases/download/0.1.4/ampere_meter-0.1.4.tar.gz"
+  NEW_SHA256: "c6a8cc8b949eed3a847876b242790aadabaed9f2b1ffb0a2babf6a6c61f91ff2"
 
 jobs:
   details:
@@ -212,40 +214,40 @@ jobs:
           repository: ${{ env.OWNER }}/homebrew-${{ env.PACKAGE_NAME }}
           token: ${{ secrets.BREW_TAP_TOKEN }}
 
-      - name: Download Bottles
-        uses: actions/download-artifact@v4
-        with:
-          name: homebrew-bottles
+      # - name: Download Bottles
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: homebrew-bottles
 
-      - name: Download new source tarball
-        run: |
-          NEW_VERSION="${{ env.NEW_VERSION }}"
-          NEW_URL="https://github.com/${{ env.OWNER }}/${{ env.REPO_NAME }}/releases/download/${NEW_VERSION}/${{ env.PACKAGE_FILENAME }}-${NEW_VERSION}.tar.gz"
+      # - name: Download new source tarball
+      #   run: |
+      #     NEW_VERSION="${{ env.NEW_VERSION }}"
+      #     NEW_URL="https://github.com/${{ env.OWNER }}/${{ env.REPO_NAME }}/releases/download/${NEW_VERSION}/${{ env.PACKAGE_FILENAME }}-${NEW_VERSION}.tar.gz"
 
-          echo "Fetching: $NEW_URL"
-          curl -L -o source.tar.gz "$NEW_URL"
+      #     echo "Fetching: $NEW_URL"
+      #     curl -L -o source.tar.gz "$NEW_URL"
 
-          # Compute SHA-256
-          SHA256=$(shasum -a 256 source.tar.gz | awk '{print $1}')
-          echo "SHA256: $SHA256"
+      #     # Compute SHA-256
+      #     SHA256=$(shasum -a 256 source.tar.gz | awk '{print $1}')
+      #     echo "SHA256: $SHA256"
 
-          echo "NEW_URL=$NEW_URL" >> $GITHUB_ENV
-          echo "NEW_SHA256=$SHA256" >> $GITHUB_ENV
+      #     echo "NEW_URL=$NEW_URL" >> $GITHUB_ENV
+      #     echo "NEW_SHA256=$SHA256" >> $GITHUB_ENV
 
-      - name: Extract SHAs for Bottles
-        run: |
-          FORMULA_PATH="Formula/${{ env.PACKAGE_NAME }}.rb"
+      # - name: Extract SHAs for Bottles
+      #   run: |
+      #     FORMULA_PATH="Formula/${{ env.PACKAGE_NAME }}.rb"
 
-          for file in ${{ env.PACKAGE_NAME }}-*.tar.gz; do
-            SHA=$(shasum -a 256 $file | awk '{print $1}')
-            if [[ $file == *"macos-14"* ]]; then
-              sed -i "s|sha256 .* arm64_sequoia: .*|sha256 cellar: :any, arm64_sequoia: \"$SHA\"|" $FORMULA_PATH
-            elif [[ $file == *"macos-latest"* ]]; then
-              sed -i "s|sha256 .* x86_64: .*|sha256 cellar: :any, x86_64: \"$SHA\"|" $FORMULA_PATH
-            elif [[ $file == *"ubuntu-latest"* ]]; then
-              sed -i "s|sha256 .* x86_64_linux: .*|sha256 cellar: :any_skip_relocation, x86_64_linux: \"$SHA\"|" $FORMULA_PATH
-            fi
-          done
+      #     for file in ${{ env.PACKAGE_NAME }}-*.tar.gz; do
+      #       SHA=$(shasum -a 256 $file | awk '{print $1}')
+      #       if [[ $file == *"macos-14"* ]]; then
+      #         sed -i "s|sha256 .* arm64_sequoia: .*|sha256 cellar: :any, arm64_sequoia: \"$SHA\"|" $FORMULA_PATH
+      #       elif [[ $file == *"macos-latest"* ]]; then
+      #         sed -i "s|sha256 .* x86_64: .*|sha256 cellar: :any, x86_64: \"$SHA\"|" $FORMULA_PATH
+      #       elif [[ $file == *"ubuntu-latest"* ]]; then
+      #         sed -i "s|sha256 .* x86_64_linux: .*|sha256 cellar: :any_skip_relocation, x86_64_linux: \"$SHA\"|" $FORMULA_PATH
+      #       fi
+      #     done
 
       - name: Update Formula URL and SHA
         run: |
@@ -253,7 +255,7 @@ jobs:
 
           sed -i "s|url \".*\"|url \"${{ env.NEW_URL }}\"|" $FORMULA_PATH
           sed -i "s|sha256 \".*\"|sha256 \"${{ env.NEW_SHA256 }}\"|" $FORMULA_PATH
-
+          
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions"
