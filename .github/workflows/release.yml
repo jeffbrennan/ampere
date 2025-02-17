@@ -158,6 +158,7 @@ jobs:
 
   build_homebrew_bottles:
     # needs: [setup_and_build, details]
+    if: github.event_name != 'workflow_dispatch' || inputs.debug != 'true'
     environment:
       name: release
     strategy:
