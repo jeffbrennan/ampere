@@ -257,6 +257,7 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
+          git remote set-url origin https://${{ secrets.BREW_TAP_TOKEN }}@github.com/${{ env.OWNER }}/homebrew-${{ env.PACKAGE_NAME }}.git
           git add Formula/${{ env.PACKAGE_NAME }}.rb
           git commit -m "Update ${{ env.PACKAGE_NAME }} to ${{ env.NEW_VERSION }}"
           git push origin main
