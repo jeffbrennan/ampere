@@ -201,7 +201,7 @@ jobs:
 
   update_homebrew_tap:
     # needs: [build_homebrew_bottles, details]
-    needs: [build_homebrew_bottles]
+    # needs: [build_homebrew_bottles]
     environment:
       name: release
     runs-on: ubuntu-latest
