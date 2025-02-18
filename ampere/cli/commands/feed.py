@@ -22,7 +22,7 @@ feed_app = typer.Typer()
 @dataclass
 class ParsedDates:
     date_format: str
-    dates: set[datetime.datetime]
+    dates: list[datetime.datetime]
     trunc_dates: list[datetime.datetime]
     formatted_dates: list[str]
 
@@ -82,6 +82,8 @@ def get_feed_list_response(
     action: FeedPublicAction | None,
     username: str | None,
     n_days: int | None,
+    min_date: str | None,
+    max_date: str | None,
     limit: int,
     descending: bool,
     ctx: typer.Context,
@@ -97,6 +99,8 @@ def get_feed_list_response(
         "action": action,
         "username": username,
         "n_days": n_days,
+        "min_date": min_date,
+        "max_date": max_date,
         "limit": limit,
         "descending": descending,
     }
@@ -207,7 +211,7 @@ def parse_summary_dates(
     descending: bool,
     n_periods: int | None,
 ) -> ParsedDates:
-    dates = set(i.event_timestamp for i in model.data)
+    dates = sorted(set(i.event_timestamp for i in model.data))
     max_date = max(dates)
     min_date = min(dates)
     n_days_lookup = {
@@ -232,33 +236,18 @@ def parse_summary_dates(
             formatted_dates=[i.strftime(date_format) for i in trunc_dates],
         )
 
-    expected_min_date = max_date - datetime.timedelta(
-        days=n_days_lookup[granularity] * n_periods
-    )
-
     trunc_dates = []
     for i in range(n_periods):
         expected_date = max_date - datetime.timedelta(days=n_days_lookup[granularity] * i)
-        if expected_date < min_date:
-            print(f"""
-            expected min date: {expected_min_date.strftime('%Y-%m-%d')}
-            stopping at: {min_date.strftime('%Y-%m-%d')}
-            increase `n_days` or decrease `n_periods`.
-            """)
-            break
-
         trunc_dates.append(date_trunc(expected_date, granularity))
 
-    assert min(trunc_dates) >= date_trunc(
-        min_date, granularity
-    ), f"specified min date {min(trunc_dates)} older than earliest record {min_date}"
-
-    assert max(trunc_dates) <= date_trunc(
-        max_date, granularity
-    ), f"specified max date {max(trunc_dates)} newer than latest record {max_date}"
-
+    min_trunc_date = min(trunc_dates)
     trunc_dates = sorted(trunc_dates, reverse=descending)
     formatted_dates = [i.strftime(date_format) for i in trunc_dates]
+    dates = [i for i in dates if i >= min_trunc_date]
+    if min_trunc_date not in dates:
+        dates.insert(0, min_trunc_date)
+
     return ParsedDates(
         date_format=date_format,
         dates=dates,
@@ -375,18 +364,26 @@ def list_feed(
     action: Annotated[FeedPublicAction | None, typer.Option("--action", "-a")] = None,
     username: Annotated[str | None, typer.Option("--user", "-u")] = None,
     n_days: Annotated[int | None, typer.Option("--n-days", "-n")] = None,
+    min_date: Annotated[str | None, typer.Option("--min-date", "-mind")] = None,
+    max_date: Annotated[str | None, typer.Option("--max-date", "-maxd")] = None,
     limit: Annotated[int, typer.Option("--limit", "-l")] = 50,
     descending: Annotated[bool, typer.Option("--desc/--asc", "-d/-a")] = True,
     output: Annotated[
         CLIOutputFormat, typer.Option("--output", "-o")
     ] = CLIOutputFormat.table,
 ) -> None:
+    # remove default limit if min_date is set
+    if min_date is not None and limit == 50:
+        limit = 10_000
+
     model = get_feed_list_response(
         repo,
         event,
         action,
         username,
         n_days,
+        min_date,
+        max_date,
         limit,
         descending,
         ctx,
@@ -421,17 +418,31 @@ def summarize_feed(
     action: Annotated[FeedPublicAction | None, typer.Option("--action", "-a")] = None,
     username: Annotated[str | None, typer.Option("--user", "-u")] = None,
     n_periods: Annotated[int | None, typer.Option("--n-periods", "-n")] = 30,
+    min_date: Annotated[str | None, typer.Option("--min-date", "-mind")] = None,
+    max_date: Annotated[str | None, typer.Option("--max-date", "-maxd")] = None,
     descending: Annotated[bool, typer.Option("--desc/--asc", "-d/-a")] = True,
     output: Annotated[
         CLIOutputFormat, typer.Option("--output", "-o")
     ] = CLIOutputFormat.table,
 ) -> None:
+    day_lookup = {
+        FeedGranularity.daily: 1,
+        FeedGranularity.weekly: 7,
+        FeedGranularity.monthly: 30,
+    }
+    if n_periods is None:
+        n_days = None
+    else:
+        n_days = day_lookup[granularity] * n_periods
+
     model = get_feed_list_response(
         repo,
         event,
         action,
         username,
-        None,
+        n_days,
+        min_date,
+        max_date,
         10_000,
         descending,
         ctx,
