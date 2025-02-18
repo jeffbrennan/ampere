@@ -283,6 +283,14 @@ class FeedPublic(SQLModel):
     count: int
 
 
+class FeedBounds(SQLModel):
+    repo: str
+    event: FeedPublicEvent
+    action: FeedPublicAction
+    min_date: datetime.datetime
+    max_date: datetime.datetime
+
+
 class ReposPublic(SQLModel):
     repos: list[str]
     count: int
