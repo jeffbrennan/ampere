@@ -228,6 +228,7 @@ class FeedPublicEvent(StrEnum):
     issue = auto()
     pull_request = "pull request"
     star = auto()
+    overall = auto()
 
 
 class FeedPublicAction(StrEnum):
@@ -235,6 +236,7 @@ class FeedPublicAction(StrEnum):
     updated = auto()
     closed = auto()
     merged = auto()
+    overall = auto()
 
 
 class DownloadPublic(SQLModel):
