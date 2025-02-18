@@ -12,22 +12,31 @@ Tooling to track and visualize engagement with the [mrpowers-io](https://github.
 
 ampere is available as a CLI tool and a self-hosted web application (dagster scheduled jobs, fastapi api, and plotly dash frontend)
 
-to use the CLI:
+### CLI
 
-uv steps:
+#### uv
 
 1. create a virtual env via `uv venv`
 2. add the package to the virtual env via `uv add ampere-meter`
 3. see available cli commands via `uv run ampere --help` or `source .venv/bin/activate && ampere --help`
 
-pip steps:
+#### pip
 
-1. install the package via `pip install ampere-meter`
+1. run `pip install ampere-meter`
 2. see available cli commands via `ampere --help`
 
-[WIP] to use the web application:
+#### homebrew
 
-disclaimer: this is a work in progress and init scripts are not yet available
+> [!WARNING]  
+the package is not bottled so this will build from source (might take a few minutes)
+
+1. run `brew tap jeffbrennan/homebrew-ampere-meter && brew install ampere-meter`
+2. see available cli commands via `ampere --help`
+
+### [WIP] Web Application
+
+> [!WARNING]  
+this is a work in progress and init scripts are not yet available
 
 1. clone the repository
 2. configure required environment variables in `.env` - refer to `.env.example`
@@ -44,15 +53,18 @@ currently supports three endpoints:
 
 1. `/repos` - list of current repos
 2. `/feed` - recent github activity (stars, issues, prs, etc.)
-3. `/downloads` - download statistics (hourly, daily, weekly, monthly)
+3. `/downloads` - pypi download statistics (hourly, daily, weekly, monthly)
 
 ---
 
 ## Metrics
 
-## Data
+### Models
+
+model definitions are available in the [models](./models/) directory
 
 ![data model](docs/assets.svg)
+
 
 ### Sources
 
@@ -171,6 +183,6 @@ This project is build with an open source (d)ata stack:
 - [x] create API
 - [ ] create init scripts for first time setup
 - [ ] add tests for API, CLI, and web application
-- [ ] and github actions to run tests, linting checks
-- [ ] publish to pypi
+- [x] and github actions to run tests, linting checks
+- [x] publish to pypi
 - [ ] add `ampere` to `mrpowers-io` organization
