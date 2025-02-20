@@ -1,18 +1,33 @@
 # [ampere](https://ampere.jeffbrennan.dev)
 
-Tooling to track and visualize engagement with the [mrpowers-io](https://github.com/mrpowers-io) organization
+Tooling to track engagement with the [mrpowers-io](https://github.com/mrpowers-io) organization - available as a self-hosted dashboard and CLI
 
----
+## Dashboard
 
 ![site](docs/site.png)
 
----
+## CLI
+
+### downloads
+
+![downloads summary](docs/downloads_summary.png)
+
+![downloads summary by country](docs/downloads_summary_country.png)
+
+### feed
+
+![feed summary](docs/feed_summary.png)
+
+![feed list json](docs/feed_list_json.png)
 
 ## Installation
 
-ampere is available as a CLI tool and a self-hosted web application (dagster scheduled jobs, fastapi api, and plotly dash frontend)
+### CLI steps
 
-### CLI
+#### pip
+
+1. run `pip install ampere-meter`
+2. see available cli commands via `ampere --help`
 
 #### uv
 
@@ -20,20 +35,22 @@ ampere is available as a CLI tool and a self-hosted web application (dagster sch
 2. add the package to the virtual env via `uv add ampere-meter`
 3. see available cli commands via `uv run ampere --help` or `source .venv/bin/activate && ampere --help`
 
-#### pip
+#### clone
 
-1. run `pip install ampere-meter`
-2. see available cli commands via `ampere --help`
+1. clone the repo `git clone git@github.com:jeffbrennan/ampere.git`
+2. cd into the directory `cd ampere`
+3. install the CLI requirements `uv sync`
+4. see available cli commands via `uv run ampere --help` or `source .venv/bin/activate && ampere --help`
 
 #### homebrew
 
-> [!WARNING]  
+> [!WARNING]
 the package is not bottled so this will build from source (might take a few minutes)
 
 1. run `brew tap jeffbrennan/homebrew-ampere-meter && brew install ampere-meter`
 2. see available cli commands via `ampere --help`
 
-### [WIP] Web Application
+### [WIP] Dashboard steps
 
 > [!WARNING]  
 this is a work in progress and init scripts are not yet available
@@ -64,7 +81,6 @@ currently supports three endpoints:
 model definitions are available in the [models](./models/) directory
 
 ![data model](docs/assets.svg)
-
 
 ### Sources
 
