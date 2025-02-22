@@ -1,14 +1,76 @@
+from dataclasses import asdict, dataclass
+from enum import StrEnum, auto
+import json
 from pathlib import Path
+
 import typer
 from rich.console import Console
-
 
 console = Console()
 scaffold_app = typer.Typer(help="manage dashboard resources")
 
 
+class ValidationType(StrEnum):
+    up = auto()
+    down = auto()
+
+
+@dataclass
+class ScaffoldTestExists:
+    dotenv: bool
+    bronze: bool
+    frontend_db: bool
+    backend_db: bool
+
+
+@dataclass
+class ScaffoldTests:
+    def pretty_print(self):
+        console.print_json(json.dumps(asdict(self)))
+
+    exists: ScaffoldTestExists
+
+
+def test_resources_exist(verbose: bool = False) -> bool:
+    return test(ValidationType.up, verbose)
+
+
+def test_resources_do_not_exist(verbose: bool = False) -> bool:
+    return test(ValidationType.down, verbose)
+
+
+@scaffold_app.command(help="run tests")
+def test(validation_type: ValidationType, verbose: bool = False) -> bool:
+    root_dir = Path(__file__).parents[3]
+    env_exists = (root_dir / ".env").exists()
+    bronze_exists = (root_dir / "data" / "bronze").exists()
+    frontend_db_exists = (root_dir / "data" / "frontend.duckdb").exists()
+    backend_db_exists = (root_dir / "data" / "backend.duckdb").exists()
+
+    exists = ScaffoldTestExists(
+        dotenv=env_exists,
+        bronze=bronze_exists,
+        frontend_db=frontend_db_exists,
+        backend_db=backend_db_exists,
+    )
+    tests = ScaffoldTests(exists=exists)
+
+    if verbose:
+        tests.pretty_print()
+
+    if validation_type == ValidationType.up:
+        return all([env_exists, bronze_exists, frontend_db_exists, backend_db_exists])
+
+    return not any([env_exists, bronze_exists, frontend_db_exists, backend_db_exists])
+
+
 @scaffold_app.command(help="build resources")
 def up(ctx: typer.Context) -> None:
+    resources_missing = test_resources_do_not_exist(verbose=True)
+    if not resources_missing:
+        console.print("resources already exist - exiting early")
+        return
+
     console.print("setting up resources for a new project")
 
     root_dir = Path(__file__).parents[3]
@@ -77,6 +139,12 @@ def up(ctx: typer.Context) -> None:
 
 @scaffold_app.command(help="destroy resources")
 def down(help="destroy resources"):
+    deletion_required = test_resources_exist(verbose=True)
+    if not deletion_required:
+        console.print("resources do not exist - exiting early")
+        return
+
+    typer.confirm("Are you sure you want to delete all resources?", abort=True)
     console.print("removing resources for a new project")
     root_dir = Path(__file__).parents[3]
     # remove .env file
