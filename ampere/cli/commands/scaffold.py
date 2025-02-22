@@ -4,8 +4,10 @@ from dataclasses import asdict, dataclass
 from enum import StrEnum, auto
 from pathlib import Path
 
+import duckdb
 import requests
 import typer
+from duckdb.duckdb import IOException
 from google.api_core.exceptions import BadRequest
 from google.cloud import bigquery
 from rich.console import Console
@@ -45,11 +47,12 @@ class Validation:
 @dataclass
 class ScaffoldTestValid:
     def passes(self):
-        validations = self.dotenv + self.api_access
+        validations = self.dotenv + self.api_access + [self.backend_db_views]
         return all([validation.passes for validation in validations])
 
     dotenv: list[Validation]
     api_access: list[Validation]
+    backend_db_views: Validation
 
 
 @dataclass
@@ -57,13 +60,22 @@ class ScaffoldTests:
     def pretty_print(self):
         dict_repr = asdict(self)
 
-        errors_to_remove: list[tuple[int, str]] = []
+        errors_to_remove: list[tuple[int, str] | str] = []
         for key, validations in dict_repr["valid"].items():
-            for i, validation in enumerate(validations):
-                if validation["error"] is None:
-                    errors_to_remove.append((i, key))
+            if isinstance(validations, list):
+                for i, validation in enumerate(validations):
+                    if validation["error"] is None:
+                        errors_to_remove.append((i, key))
+            else:
+                if validations["error"] is None:
+                    errors_to_remove.append((-1, key))
 
         for i, key in errors_to_remove:
+            # non-list validations
+            if i == -1:
+                del dict_repr["valid"][key]["error"]
+                continue
+
             del dict_repr["valid"][key][i]["error"]
 
         console.print_json(json.dumps(dict_repr))
@@ -76,11 +88,16 @@ class ScaffoldTests:
 
 
 def test_resources_exist(verbose: bool = False) -> bool:
-    return test(verbose).exists.passes(ValidationType.up)
+    test_results = test(verbose=verbose)
+    resources_exist = test_results.exists.passes(ValidationType.up)
+    resources_valid = test_results.valid.passes()
+    print(resources_valid)
+
+    return resources_exist and resources_valid
 
 
 def test_resources_do_not_exist(verbose: bool = False) -> bool:
-    return test(verbose).exists.passes(ValidationType.down)
+    return test(verbose=verbose).exists.passes(ValidationType.down)
 
 
 def validate_dotenv_host_path(
@@ -248,6 +265,9 @@ def validate_github_api_access(api_key: str) -> Validation:
 
 def validate_bigquery_access(gcloud_auth_path: Path) -> Validation:
     validation = Validation("bigquery")
+    validation.passes = True
+    validation.error = None
+    return validation
 
     query = """
         select project
@@ -298,6 +318,51 @@ def validate_api_access(api_key: str, gcloud_auth_path: Path) -> list[Validation
     ]
 
 
+def validate_backend_db_views(backend_db: Path) -> Validation:
+    validation = Validation("backend_db_views")
+    try:
+        con = duckdb.connect(backend_db)
+    except IOException as e:
+        validation.error = str(e).replace('"', "'")
+        return validation
+
+    views = con.execute(
+        "select sql from duckdb_views() where 'delta_scan' in sql;"
+    ).fetchall()
+
+    views_flat = [view[0] for view in views]
+    bronze_directories = get_bronze_directories()
+
+    errors = []
+    for directory in bronze_directories:
+        if f"delta_scan('data/bronze/{directory}')" not in views_flat:
+            errors.append(directory)
+
+    if errors:
+        validation.error = f"missing views for bronze directories: {errors}"
+        return validation
+
+    validation.passes = True
+    validation.error = None
+    return validation
+
+
+def get_bronze_directories() -> list[str]:
+    return [
+        "commits",
+        "followers",
+        "forks",
+        "issues",
+        "pull_requests",
+        "pypi_download_queries",
+        "pypi_downloads",
+        "releases",
+        "repos",
+        "stargazers",
+        "users",
+    ]
+
+
 @scaffold_app.command(help="run tests")
 def test(
     raise_error: bool = False,
@@ -308,7 +373,8 @@ def test(
     dotenv_exists = (root_dir / ".env").exists()
     bronze_exists = (root_dir / "data" / "bronze").exists()
     frontend_db_exists = (root_dir / "data" / "frontend.duckdb").exists()
-    backend_db_exists = (root_dir / "data" / "backend.duckdb").exists()
+    backend_db_path = root_dir / "data" / "backend.duckdb"
+    backend_db_exists = backend_db_path.exists()
 
     dotenv_valid, dotenv_keys, dotenv_values = validate_dotenv(root_dir / ".env")
 
@@ -325,7 +391,12 @@ def test(
         frontend_db=frontend_db_exists,
         backend_db=backend_db_exists,
     )
-    valid = ScaffoldTestValid(dotenv=dotenv_valid, api_access=api_access_valid)
+    valid = ScaffoldTestValid(
+        dotenv=dotenv_valid,
+        api_access=api_access_valid,
+        backend_db_views=validate_backend_db_views(backend_db_path),
+    )
+
     tests = ScaffoldTests(exists, valid)
 
     passed = tests.passes(validation_type)
@@ -350,7 +421,7 @@ def create_dotenv(root_dir: Path) -> None:
     console.print("please populate the .env file using .env.example as a template")
 
 
-def create_bronze(root_dir: Path) -> None:
+def create_bronze(root_dir: Path) -> list[str]:
     data_dir = root_dir / "data"
     if not data_dir.exists():
         console.print("creating data directory...")
@@ -362,47 +433,61 @@ def create_bronze(root_dir: Path) -> None:
         (data_dir / "bronze").mkdir()
 
     # add bronze directories
-    bronze_directories = [
-        "commits",
-        "followers",
-        "forks",
-        "issues",
-        "pull_requests",
-        "pypi_download_queries",
-        "pypi_downloads",
-        "releases",
-        "repos",
-        "stargazers",
-        "users",
-    ]
-
+    bronze_directories = get_bronze_directories()
     for directory in bronze_directories:
         if not (data_dir / "bronze" / directory).exists():
             console.print(f"creating bronze directory: {directory}")
             (data_dir / "bronze" / directory).mkdir()
+
+    return bronze_directories
 
 
 def create_databases(root_dir: Path) -> None:
     db_names = ["frontend", "backend"]
     for db_name in db_names:
         db = root_dir / "data" / f"{db_name}.duckdb"
-        if not db.exists():
-            console.print(f"creating {db_name} database...")
-            with open(db, "w") as f:
-                f.write("")
+        if db.exists():
+            continue
+
+        console.print(f"creating {db_name} database...")
+        with duckdb.connect(db) as con:
+            con.execute("select 1 as test;").fetchall()
+
+
+def create_views(root_dir: Path, bronze_directories: list[str]) -> None:
+    view_init_script = root_dir / "data" / "create_views.sql"
+    base_cmd = 'create or replace view VIEW_NAME as select * from delta_scan("data/bronze/VIEW_NAME");\n'
+    backend_db = root_dir / "data" / "backend.duckdb"
+    if view_init_script.exists() and validate_backend_db_views(backend_db).passes:
+        return
+
+    console.print("creating view init script...")
+    with open(view_init_script, "w") as f:
+        for directory in bronze_directories:
+            create_cmd = base_cmd.replace("VIEW_NAME", directory)
+            f.write(create_cmd)
+
+    console.print("creating views...")
+    with open(view_init_script, "r") as view_init_script:
+        commands = view_init_script.readlines()
+
+    with duckdb.connect(backend_db) as con:
+        for command in commands:
+            con.execute(command)
 
 
 def create_all_resources(root_dir: Path) -> None:
-    resources_missing = test_resources_do_not_exist(verbose=True)
-    if not resources_missing:
+    resources_exist = test_resources_exist(verbose=True)
+    if resources_exist:
         console.print("resources already exist - exiting early")
         return
 
     console.print("setting up resources for a new project")
 
     create_dotenv(root_dir)
-    create_bronze(root_dir)
+    bronze_directories = create_bronze(root_dir)
     create_databases(root_dir)
+    create_views(root_dir, bronze_directories)
 
 
 @scaffold_app.command(help="build resources")
@@ -411,15 +496,7 @@ def up(ctx: typer.Context) -> None:
     root_dir = Path(__file__).parents[3]
     create_all_resources(root_dir)
     # run dagster init
-
     # run dbt init and compile
-
-    # run duckdb view creation
-
-    # tests
-    # verify github api can be queried
-    # verify pypi api can be queried
-    # verify views exist in duckdb
 
 
 @scaffold_app.command(help="destroy resources")
