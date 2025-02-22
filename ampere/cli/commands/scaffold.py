@@ -6,6 +6,8 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
+from ampere.common import timeit
+
 console = Console()
 scaffold_app = typer.Typer(help="manage dashboard resources")
 
@@ -17,6 +19,12 @@ class ValidationType(StrEnum):
 
 @dataclass
 class ScaffoldTestExists:
+    def passes(self, validation_type: ValidationType):
+        results = all([self.dotenv, self.bronze, self.frontend_db, self.backend_db])
+        if validation_type == ValidationType.up:
+            return results
+        return not results
+
     dotenv: bool
     bronze: bool
     frontend_db: bool
@@ -24,64 +32,97 @@ class ScaffoldTestExists:
 
 
 @dataclass
+class ScaffoldTestValid:
+    def passes(self):
+        return all([self.dotenv])
+
+    dotenv: bool
+
+
+@dataclass
 class ScaffoldTests:
     def pretty_print(self):
         console.print_json(json.dumps(asdict(self)))
 
+    def passes(self, validation_type: ValidationType):
+        return all([self.exists.passes(validation_type), self.valid.passes()])
+
     exists: ScaffoldTestExists
+    valid: ScaffoldTestValid
 
 
 def test_resources_exist(verbose: bool = False) -> bool:
-    return test(ValidationType.up, verbose)
+    return test(verbose).exists.passes(ValidationType.up)
 
 
 def test_resources_do_not_exist(verbose: bool = False) -> bool:
-    return test(ValidationType.down, verbose)
+    return test(verbose).exists.passes(ValidationType.down)
+
+
+def validate_dotenv(dotenv: Path) -> bool:
+    required_vars = [
+        "GITHUB_TOKEN",
+        "AMPERE_HOST_PATH",
+        "GCLOUD_PROJECT",
+        "AMPERE_BACKEND",
+        "BACKEND_ADMIN",
+        "GOOGLE_APPLICATION_CREDENTIALS",
+        "AMPERE_BACKEND_EMAIL_FROM",
+        "AMPERE_BACKEND_EMAIL_PW",
+        "AMPERE_BACKEND_EMAIL_LIST",
+    ]
+
+    if not dotenv.exists():
+        return False
+
+    with open(dotenv, "r") as f:
+        dotenv_vars = f.readlines()
+
+    dotenv_vars = [var.split("=")[0] for var in dotenv_vars]
+    missing_vars = [var for var in required_vars if var not in dotenv_vars]
+    if missing_vars:
+        console.print(f"missing required variables: {missing_vars}")
+        return False
+
+    return True
 
 
 @scaffold_app.command(help="run tests")
-def test(validation_type: ValidationType, verbose: bool = False) -> bool:
+def test(verbose: bool = False) -> ScaffoldTests:
     root_dir = Path(__file__).parents[3]
-    env_exists = (root_dir / ".env").exists()
+    dotenv_exists = (root_dir / ".env").exists()
     bronze_exists = (root_dir / "data" / "bronze").exists()
     frontend_db_exists = (root_dir / "data" / "frontend.duckdb").exists()
     backend_db_exists = (root_dir / "data" / "backend.duckdb").exists()
 
+    dotenv_valid = validate_dotenv(root_dir / ".env")
+
     exists = ScaffoldTestExists(
-        dotenv=env_exists,
+        dotenv=dotenv_exists,
         bronze=bronze_exists,
         frontend_db=frontend_db_exists,
         backend_db=backend_db_exists,
     )
-    tests = ScaffoldTests(exists=exists)
+    valid = ScaffoldTestValid(dotenv=dotenv_valid)
+    tests = ScaffoldTests(exists, valid)
 
     if verbose:
         tests.pretty_print()
 
-    if validation_type == ValidationType.up:
-        return all([env_exists, bronze_exists, frontend_db_exists, backend_db_exists])
-
-    return not any([env_exists, bronze_exists, frontend_db_exists, backend_db_exists])
+    return tests
 
 
-@scaffold_app.command(help="build resources")
-def up(ctx: typer.Context) -> None:
-    resources_missing = test_resources_do_not_exist(verbose=True)
-    if not resources_missing:
-        console.print("resources already exist - exiting early")
-        return
-
-    console.print("setting up resources for a new project")
-
-    root_dir = Path(__file__).parents[3]
+def create_dotenv(root_dir: Path) -> None:
     dot_env_location = root_dir / ".env"
-    if not dot_env_location.exists():
-        console.print("creating .env file...")
-        with open(dot_env_location, "w") as f:
-            f.write("")
-        console.print("please populate the .env file using .env.example as a template")
+    if dot_env_location.exists():
+        return
+    console.print("creating .env file...")
+    with open(dot_env_location, "w") as f:
+        f.write("")
+    console.print("please populate the .env file using .env.example as a template")
 
-    # create a new project directory
+
+def create_bronze(root_dir: Path) -> None:
     data_dir = root_dir / "data"
     if not data_dir.exists():
         console.print("creating data directory...")
@@ -112,19 +153,35 @@ def up(ctx: typer.Context) -> None:
             console.print(f"creating bronze directory: {directory}")
             (data_dir / "bronze" / directory).mkdir()
 
-    # create frontend and backend databases
-    frontend_db = data_dir / "frontend.duckdb"
-    if not frontend_db.exists():
-        console.print("creating frontend database...")
-        with open(frontend_db, "w") as f:
-            f.write("")
 
-    backend_db = data_dir / "backend.duckdb"
-    if not backend_db.exists():
-        console.print("creating backend database...")
-        with open(backend_db, "w") as f:
-            f.write("")
+def create_databases(root_dir: Path) -> None:
+    db_names = ["frontend", "backend"]
+    for db_name in db_names:
+        db = root_dir / "data" / f"{db_name}.duckdb"
+        if not db.exists():
+            console.print(f"creating {db_name} database...")
+            with open(db, "w") as f:
+                f.write("")
 
+
+def create_all_resources(root_dir: Path) -> None:
+    resources_missing = test_resources_do_not_exist(verbose=True)
+    if not resources_missing:
+        console.print("resources already exist - exiting early")
+        return
+
+    console.print("setting up resources for a new project")
+
+    create_dotenv(root_dir)
+    create_bronze(root_dir)
+    create_databases(root_dir)
+
+
+@scaffold_app.command(help="build resources")
+@timeit
+def up(ctx: typer.Context) -> None:
+    root_dir = Path(__file__).parents[3]
+    create_all_resources(root_dir)
     # run dagster init
 
     # run dbt init and compile
@@ -132,12 +189,14 @@ def up(ctx: typer.Context) -> None:
     # run duckdb view creation
 
     # tests
+    # verify .env contains all required variables
     # verify github api can be queried
     # verify pypi api can be queried
     # verify views exist in duckdb
 
 
 @scaffold_app.command(help="destroy resources")
+@timeit
 def down(ctx: typer.Context) -> None:
     deletion_required = test_resources_exist(verbose=True)
     if not deletion_required:
