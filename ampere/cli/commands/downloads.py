@@ -24,7 +24,7 @@ from ampere.models import (
 
 console = Console()
 
-downloads_app = typer.Typer()
+downloads_app = typer.Typer(help="project downloads")
 
 
 class DownloadsSummary(BaseModel):

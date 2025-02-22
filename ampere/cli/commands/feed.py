@@ -16,7 +16,7 @@ from ampere.cli.models import CLIOutputFormat, repo_callback_without_downloads
 from ampere.models import FeedPublic, FeedPublicAction, FeedPublicEvent
 
 console = Console()
-feed_app = typer.Typer()
+feed_app = typer.Typer(help="github feed events (stars, forks, issues, prs, commits)")
 
 
 @dataclass

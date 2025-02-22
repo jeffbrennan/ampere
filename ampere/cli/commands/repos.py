@@ -6,7 +6,7 @@ from ampere.cli.common import get_api_url
 from ampere.models import ReposPublic
 
 console = Console()
-repos_app = typer.Typer()
+repos_app = typer.Typer(help="organization repo information")
 
 
 def get_repo_list_response(ctx: typer.Context) -> ReposPublic:
