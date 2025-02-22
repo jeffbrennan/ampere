@@ -1,6 +1,6 @@
+import json
 from dataclasses import asdict, dataclass
 from enum import StrEnum, auto
-import json
 from pathlib import Path
 
 import typer
@@ -32,17 +32,36 @@ class ScaffoldTestExists:
 
 
 @dataclass
+class Validation:
+    name: str
+    passes: bool = False
+    error: str | None = "uncaught error"
+
+
+@dataclass
 class ScaffoldTestValid:
     def passes(self):
-        return all([self.dotenv])
+        validations = self.dotenv
+        return all([validation.passes for validation in validations])
 
-    dotenv: bool
+    dotenv: list[Validation]
 
 
 @dataclass
 class ScaffoldTests:
     def pretty_print(self):
-        console.print_json(json.dumps(asdict(self)))
+        dict_repr = asdict(self)
+
+        errors_to_remove: list[tuple[int, str]] = []
+        for key, validations in dict_repr["valid"].items():
+            for i, validation in enumerate(validations):
+                if validation["error"] is None:
+                    errors_to_remove.append((i, key))
+
+        for i, key in errors_to_remove:
+            del dict_repr["valid"][key][i]["error"]
+
+        console.print_json(json.dumps(dict_repr))
 
     def passes(self, validation_type: ValidationType):
         return all([self.exists.passes(validation_type), self.valid.passes()])
@@ -59,7 +78,81 @@ def test_resources_do_not_exist(verbose: bool = False) -> bool:
     return test(verbose).exists.passes(ValidationType.down)
 
 
-def validate_dotenv(dotenv: Path) -> bool:
+def validate_dotenv_host_path(
+    dotenv_keys: list[str], dotenv_values: list[tuple]
+) -> Validation:
+    host_path_index = dotenv_keys.index("AMPERE_HOST_PATH")
+    host_path = dotenv_values[host_path_index][1]
+    host_path = Path(host_path).expanduser().resolve()
+
+    validation = Validation("host_path")
+
+    if '"' in host_path.as_posix():
+        validation.error = "host path contains illegal quote character"
+        return validation
+
+    if not host_path.exists():
+        validation.error = "host path does not exist"
+        return validation
+
+    if not host_path.is_dir():
+        validation.error = "host path is not a directory"
+        return validation
+
+    validation.passes = True
+    validation.error = None
+    return validation
+
+
+def validate_dotenv_gcloud(
+    dotenv_keys: list[str], dotenv_values: list[tuple]
+) -> Validation:
+    google_credentials_index = dotenv_keys.index("GOOGLE_APPLICATION_CREDENTIALS")
+    google_credentials = dotenv_values[google_credentials_index][1]
+    google_credentials_path = Path(google_credentials).expanduser().resolve()
+
+    validation = Validation("gcloud")
+
+    if not google_credentials_path.exists():
+        validation.error = "google credentials file does not exist"
+        return validation
+
+    if (
+        not google_credentials_path.parent
+        == Path("~/.config/gcloud").expanduser().resolve()
+    ):
+        validation.error = "google credentials file is not in ~/.config/gcloud"
+        return validation
+
+    if not google_credentials_path.suffix == ".json":
+        validation.error = "google credentials file is not a json file"
+        return validation
+
+    validation.passes = True
+    validation.error = None
+    return validation
+
+
+def validate_dotenv_github(
+    dotenv_keys: list[str], dotenv_values: list[tuple]
+) -> Validation:
+    github_token_index = dotenv_keys.index("GITHUB_TOKEN")
+    github_token = dotenv_values[github_token_index][1]
+    github_token_valid = github_token.startswith("ghp_")
+
+    validation = Validation("github")
+
+    if not github_token_valid:
+        validation.error = "github token is not valid"
+        return validation
+
+    validation.passes = True
+    validation.error = None
+    return validation
+
+
+def validate_dotenv_file(dotenv: Path) -> tuple[Validation, list[str], list[tuple]]:
+    validation = Validation("dotenv_file")
     required_vars = [
         "GITHUB_TOKEN",
         "AMPERE_HOST_PATH",
@@ -73,22 +166,60 @@ def validate_dotenv(dotenv: Path) -> bool:
     ]
 
     if not dotenv.exists():
-        return False
+        validation.error = ".env file does not exist"
+        return validation, [], []
 
     with open(dotenv, "r") as f:
-        dotenv_vars = f.readlines()
+        dotenv_raw = f.readlines()
 
-    dotenv_vars = [var.split("=")[0] for var in dotenv_vars]
-    missing_vars = [var for var in required_vars if var not in dotenv_vars]
+    dotenv_values = []
+    for line in dotenv_raw:
+        if line.startswith("#"):
+            continue
+        dotenv_values.append(line.strip().split("="))
+
+    dotenv_keys = [var[0] for var in dotenv_values]
+    missing_vars = [var for var in required_vars if var not in dotenv_keys]
     if missing_vars:
-        console.print(f"missing required variables: {missing_vars}")
-        return False
+        validation.error = "missing required variables"
+        return validation, dotenv_keys, dotenv_values
 
-    return True
+    validation.passes = True
+    validation.error = None
+    return validation, dotenv_keys, dotenv_values
+
+
+def validate_dotenv(dotenv: Path) -> list[Validation]:
+    validations: list[Validation] = []
+    dotenv_file_validation, dotenv_keys, dotenv_values = validate_dotenv_file(dotenv)
+    validations.append(dotenv_file_validation)
+    if not dotenv_file_validation.passes:
+        return validations
+
+    host_path_validation = validate_dotenv_host_path(dotenv_keys, dotenv_values)
+    validations.append(host_path_validation)
+    if not host_path_validation.passes:
+        return validations
+
+    github_validation = validate_dotenv_github(dotenv_keys, dotenv_values)
+    validations.append(github_validation)
+    if not github_validation.passes:
+        return validations
+    gcloud_validation = validate_dotenv_gcloud(dotenv_keys, dotenv_values)
+
+    validations.append(gcloud_validation)
+    if not gcloud_validation.passes:
+        return validations
+
+    return validations
 
 
 @scaffold_app.command(help="run tests")
-def test(verbose: bool = False) -> ScaffoldTests:
+def test(
+    raise_error: bool = False,
+    verbose: bool = False,
+    validation_type: ValidationType = ValidationType.up,
+) -> ScaffoldTests:
     root_dir = Path(__file__).parents[3]
     dotenv_exists = (root_dir / ".env").exists()
     bronze_exists = (root_dir / "data" / "bronze").exists()
@@ -106,9 +237,16 @@ def test(verbose: bool = False) -> ScaffoldTests:
     valid = ScaffoldTestValid(dotenv=dotenv_valid)
     tests = ScaffoldTests(exists, valid)
 
+    passed = tests.passes(validation_type)
+    if not passed:
+        tests.pretty_print()
+        if raise_error:
+            raise Exception("resources are not setup correctly")
+
     if verbose:
         tests.pretty_print()
 
+    console.print("✔︎") if passed else console.print("✘")
     return tests
 
 
@@ -189,7 +327,6 @@ def up(ctx: typer.Context) -> None:
     # run duckdb view creation
 
     # tests
-    # verify .env contains all required variables
     # verify github api can be queried
     # verify pypi api can be queried
     # verify views exist in duckdb
