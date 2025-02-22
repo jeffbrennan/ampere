@@ -138,7 +138,7 @@ def up(ctx: typer.Context) -> None:
 
 
 @scaffold_app.command(help="destroy resources")
-def down(help="destroy resources"):
+def down(ctx: typer.Context) -> None:
     deletion_required = test_resources_exist(verbose=True)
     if not deletion_required:
         console.print("resources do not exist - exiting early")
