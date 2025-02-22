@@ -2,7 +2,10 @@
 *.idea
 /scratch
 data/*
+
 !data/dagster/dagster.yaml
+!data/init.sql
+!data/create_views.sql
 
 target/
 logs/
