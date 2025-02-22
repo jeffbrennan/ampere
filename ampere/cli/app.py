@@ -5,12 +5,15 @@ import typer
 from ampere.cli.commands.downloads import downloads_app
 from ampere.cli.commands.feed import feed_app
 from ampere.cli.commands.repos import repos_app
+from ampere.cli.commands.scaffold import scaffold_app
 from ampere.cli.common import CLIEnvironment
 
 app = typer.Typer(pretty_exceptions_enable=False)
-app.add_typer(downloads_app, name="downloads")
-app.add_typer(feed_app, name="feed")
+app.add_typer(scaffold_app, name="scaffold")
+
 app.add_typer(repos_app, name="repos")
+app.add_typer(feed_app, name="feed")
+app.add_typer(downloads_app, name="downloads")
 
 
 @app.callback()
