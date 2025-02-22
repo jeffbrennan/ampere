@@ -1,9 +1,13 @@
 import json
+import os
 from dataclasses import asdict, dataclass
 from enum import StrEnum, auto
 from pathlib import Path
 
+import requests
 import typer
+from google.api_core.exceptions import BadRequest
+from google.cloud import bigquery
 from rich.console import Console
 
 from ampere.common import timeit
@@ -41,10 +45,11 @@ class Validation:
 @dataclass
 class ScaffoldTestValid:
     def passes(self):
-        validations = self.dotenv
+        validations = self.dotenv + self.api_access
         return all([validation.passes for validation in validations])
 
     dotenv: list[Validation]
+    api_access: list[Validation]
 
 
 @dataclass
@@ -128,6 +133,12 @@ def validate_dotenv_gcloud(
         validation.error = "google credentials file is not a json file"
         return validation
 
+    if not google_credentials_path.stem == "application_default_credentials":
+        validation.error = (
+            "google credentials file is not named application_default_credentials"
+        )
+        return validation
+
     validation.passes = True
     validation.error = None
     return validation
@@ -189,29 +200,102 @@ def validate_dotenv_file(dotenv: Path) -> tuple[Validation, list[str], list[tupl
     return validation, dotenv_keys, dotenv_values
 
 
-def validate_dotenv(dotenv: Path) -> list[Validation]:
+def validate_dotenv(dotenv: Path) -> tuple[list[Validation], list[str], list[tuple]]:
     validations: list[Validation] = []
+
     dotenv_file_validation, dotenv_keys, dotenv_values = validate_dotenv_file(dotenv)
     validations.append(dotenv_file_validation)
     if not dotenv_file_validation.passes:
-        return validations
+        return validations, dotenv_keys, dotenv_values
 
     host_path_validation = validate_dotenv_host_path(dotenv_keys, dotenv_values)
     validations.append(host_path_validation)
     if not host_path_validation.passes:
-        return validations
+        return validations, dotenv_keys, dotenv_values
 
     github_validation = validate_dotenv_github(dotenv_keys, dotenv_values)
     validations.append(github_validation)
     if not github_validation.passes:
-        return validations
-    gcloud_validation = validate_dotenv_gcloud(dotenv_keys, dotenv_values)
+        return validations, dotenv_keys, dotenv_values
 
+    gcloud_validation = validate_dotenv_gcloud(dotenv_keys, dotenv_values)
     validations.append(gcloud_validation)
     if not gcloud_validation.passes:
-        return validations
+        return validations, dotenv_keys, dotenv_values
 
-    return validations
+    return validations, dotenv_keys, dotenv_values
+
+
+def validate_github_api_access(api_key: str) -> Validation:
+    validation = Validation("github")
+    response = requests.get(
+        "https://api.github.com/rate_limit",
+        headers={"Authorization": f"Bearer {api_key}"},
+        params={
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+    )
+
+    if response.status_code != 200:
+        validation.error = f"github api key is not valid: {response.text}"
+        return validation
+
+    validation.passes = True
+    validation.error = None
+    return validation
+
+
+def validate_bigquery_access(gcloud_auth_path: Path) -> Validation:
+    validation = Validation("bigquery")
+
+    query = """
+        select project
+        from `bigquery-public-data.pypi.file_downloads`
+        where project = 'ampere-meter'
+            and TIMESTAMP_TRUNC(timestamp, hour) = timestamp '2025-02-17 19:00:00'
+        limit 1 
+    """
+
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = (
+        gcloud_auth_path.expanduser().resolve().as_posix()
+    )
+
+    try:
+        client = bigquery.Client()
+    except OSError as e:
+        validation.error = str(e)
+        return validation
+
+    with client:
+        try:
+            query_job = client.query_and_wait(query)
+        except BadRequest as e:
+            validation.error = str(e)
+            return validation
+
+    results = query_job.to_dataframe()
+
+    if results is None:
+        validation.error = "bigquery access is not valid. query did not return results"
+        return validation
+
+    if results.shape[0] != 1:
+        validation.error = (
+            "bigquery access is not valid. query did not return expected results"
+        )
+        return validation
+
+    validation.passes = True
+    validation.error = None
+    return validation
+
+
+def validate_api_access(api_key: str, gcloud_auth_path: Path) -> list[Validation]:
+    return [
+        validate_github_api_access(api_key),
+        validate_bigquery_access(gcloud_auth_path),
+    ]
 
 
 @scaffold_app.command(help="run tests")
@@ -226,7 +310,14 @@ def test(
     frontend_db_exists = (root_dir / "data" / "frontend.duckdb").exists()
     backend_db_exists = (root_dir / "data" / "backend.duckdb").exists()
 
-    dotenv_valid = validate_dotenv(root_dir / ".env")
+    dotenv_valid, dotenv_keys, dotenv_values = validate_dotenv(root_dir / ".env")
+
+    github_api_key = dotenv_values[dotenv_keys.index("GITHUB_TOKEN")][1]
+    gcloud_auth_path = Path(
+        dotenv_values[dotenv_keys.index("GOOGLE_APPLICATION_CREDENTIALS")][1]
+    )
+
+    api_access_valid = validate_api_access(github_api_key, gcloud_auth_path)
 
     exists = ScaffoldTestExists(
         dotenv=dotenv_exists,
@@ -234,20 +325,19 @@ def test(
         frontend_db=frontend_db_exists,
         backend_db=backend_db_exists,
     )
-    valid = ScaffoldTestValid(dotenv=dotenv_valid)
+    valid = ScaffoldTestValid(dotenv=dotenv_valid, api_access=api_access_valid)
     tests = ScaffoldTests(exists, valid)
 
     passed = tests.passes(validation_type)
-    if not passed:
-        tests.pretty_print()
-        if raise_error:
-            raise Exception("resources are not setup correctly")
+    if passed:
+        tests.pretty_print() if verbose else console.print("✔︎")
+        return tests
 
-    if verbose:
-        tests.pretty_print()
+    tests.pretty_print()
+    if not raise_error:
+        return tests
 
-    console.print("✔︎") if passed else console.print("✘")
-    return tests
+    raise Exception("resources are not setup correctly")
 
 
 def create_dotenv(root_dir: Path) -> None:
