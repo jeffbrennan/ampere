@@ -35,11 +35,25 @@ class Validation:
 
 
 @dataclass
+class ExistsInfo:
+    name: str
+    exists: bool = False
+    location: str | None = None
+
+
+@dataclass
 class ScaffoldTestExists:
-    dotenv: bool
-    bronze: bool
-    frontend_db: bool
-    backend_db: bool
+    dotenv: ExistsInfo = field(default_factory=lambda: ExistsInfo("dotenv"))
+    bronze: ExistsInfo = field(default_factory=lambda: ExistsInfo("bronze"))
+    frontend_db: ExistsInfo = field(default_factory=lambda: ExistsInfo("frontend_db"))
+    backend_db: ExistsInfo = field(default_factory=lambda: ExistsInfo("backend_db"))
+
+    def pretty_print(self) -> None:
+        dict_repr = asdict(self)
+        for _, v in dict_repr.items():
+            del v["name"]
+
+        console.print_json(json.dumps(dict_repr))
 
     def passes(self, validation_type: ValidationType):
         results = [self.dotenv, self.bronze, self.frontend_db, self.backend_db]
@@ -136,15 +150,18 @@ class ScaffoldTests:
         return all([self.exists.passes(validation_type), self.valid.passes()])
 
 
-def test_up_required(verbose: bool = False) -> bool:
+def test_up_required(verbose: bool) -> bool:
     test_results = test(verbose=verbose)
     resources_exist = test_results.exists.passes(ValidationType.up)
     resources_valid = test_results.valid.passes()
     return not resources_exist or not resources_valid
 
 
-def test_down_required(verbose: bool = False) -> bool:
-    return not test(verbose=verbose).exists.passes(ValidationType.down)
+def test_down_required(verbose: bool) -> bool:
+    test_result = test(verbose=verbose, validation_type=ValidationType.down)
+    test_result.exists.pretty_print()
+
+    return not test_result.exists.passes(ValidationType.down)
 
 
 def validate_dotenv_host_path(
@@ -407,18 +424,24 @@ def test(
     validation_type: ValidationType = ValidationType.up,
 ) -> ScaffoldTests:
     root_dir = Path(__file__).parents[3]
-    dotenv_exists = (root_dir / ".env").exists()
-    bronze_exists = (root_dir / "data" / "bronze").exists()
-    frontend_db_exists = (root_dir / "data" / "frontend.duckdb").exists()
-    backend_db_path = root_dir / "data" / "backend.duckdb"
-    backend_db_exists = backend_db_path.exists()
+    dotenv_path = root_dir / ".env"
+    bronze_path = root_dir / "data" / "bronze"
+    frontend_path = root_dir / "data" / "frontend.duckdb"
+    backend_path = root_dir / "data" / "backend.duckdb"
+    exists = ScaffoldTestExists()
 
-    exists = ScaffoldTestExists(
-        dotenv=dotenv_exists,
-        bronze=bronze_exists,
-        frontend_db=frontend_db_exists,
-        backend_db=backend_db_exists,
-    )
+    exists.dotenv.exists = dotenv_path.exists()
+    exists.dotenv.location = dotenv_path.as_posix()
+
+    exists.bronze.exists = bronze_path.exists()
+    exists.bronze.location = bronze_path.as_posix()
+
+    exists.frontend_db.exists = frontend_path.exists()
+    exists.frontend_db.location = frontend_path.as_posix()
+
+    exists.backend_db.exists = backend_path.exists()
+    exists.backend_db.location = backend_path.as_posix()
+
     dotenv_valid, dotenv_keys, dotenv_values = validate_dotenv(root_dir / ".env")
 
     api_access_valid = ScaffoldTestValidAPI()
@@ -430,8 +453,8 @@ def test(
         api_access_valid = validate_api_access(github_api_key, gcloud_auth_path)
 
     backend_valid = ScaffoldTestValidBackend()
-    if backend_db_exists:
-        backend_valid = validate_backend_db_views(backend_db_path)
+    if backend_path.exists():
+        backend_valid = validate_backend_db_views(backend_path)
 
     valid = ScaffoldTestValid(
         dotenv=dotenv_valid, api_access=api_access_valid, backend=backend_valid
@@ -440,11 +463,10 @@ def test(
     tests = ScaffoldTests(exists, valid)
 
     passed = tests.passes(validation_type)
-    if passed:
-        tests.pretty_print() if verbose else console.print("✔︎")
-        return tests
+    if verbose:
+        tests.pretty_print()
 
-    if not raise_error:
+    if passed or not raise_error:
         return tests
 
     raise Exception("resources are not setup correctly")
@@ -480,6 +502,7 @@ def create_bronze_table(bronze_path: Path) -> None:
                         pa.struct(
                             [
                                 ("additions", pa.int64()),
+                                ("changes", pa.int64()),
                                 ("deletions", pa.int64()),
                                 ("filename", pa.string()),
                                 ("status", pa.string()),
@@ -552,11 +575,12 @@ def create_bronze_table(bronze_path: Path) -> None:
             [
                 ("project", pa.string()),
                 ("timestamp", pa.timestamp("us", tz="UTC")),
-                ("package", pa.string()),
+                ("country_code", pa.string()),
+                ("package_version", pa.string()),
                 ("python_version", pa.string()),
                 ("system_distro_name", pa.string()),
                 ("system_distro_version", pa.string()),
-                ("system-name", pa.string()),
+                ("system_name", pa.string()),
                 ("system_release", pa.string()),
                 ("download_count", pa.int64()),
                 ("retrieved_at", pa.timestamp("us", tz="UTC")),
@@ -719,25 +743,45 @@ def create_all_resources(root_dir: Path) -> None:
         console.print(results.valid.list_fails())
 
 
+def run_dagster_job(job_name: str | None) -> None:
+    available_jobs = ["github_metrics_daily_4", "bigquery_backfill", "bigquery_daily"]
+
+    if job_name is None:
+        for job in available_jobs:
+            os.system(f"dagster job execute -j {job}")
+        return
+
+    if job_name not in available_jobs:
+        console.print(f"job {job_name} not found. available jobs: {available_jobs}")
+        return
+
+    os.system(f"dagster job execute -j {job_name}")
+
+
 @scaffold_app.command(help="build resources")
 @timeit
 def up(ctx: typer.Context) -> None:
     root_dir = Path(__file__).parents[3]
     create_all_resources(root_dir)
     # run dagster init
-    # run dbt init and compile
+    # get initial data
+
+
+@scaffold_app.command(help="seed data - this will take a while and consume api limits")
+def seed(job_name: str | None):
+    run_dagster_job(job_name)
 
 
 @scaffold_app.command(help="destroy resources")
 @timeit
 def down(ctx: typer.Context) -> None:
-    down_required = test_down_required(verbose=True)
+    down_required = test_down_required(verbose=False)
     if not down_required:
         console.print("resources do not exist - exiting early")
         return
 
     typer.confirm("Are you sure you want to delete all resources?", abort=True)
-    console.print("removing resources for a new project")
+    console.print("tearing down scaffold...")
     root_dir = Path(__file__).parents[3]
     # remove .env file
     dot_env_location = root_dir / ".env"
