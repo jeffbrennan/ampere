@@ -1,6 +1,7 @@
 import json
 import os
-from dataclasses import asdict, dataclass
+import shutil
+from dataclasses import asdict, dataclass, field
 from enum import StrEnum, auto
 from pathlib import Path
 
@@ -27,20 +28,6 @@ class ValidationType(StrEnum):
 
 
 @dataclass
-class ScaffoldTestExists:
-    def passes(self, validation_type: ValidationType):
-        results = all([self.dotenv, self.bronze, self.frontend_db, self.backend_db])
-        if validation_type == ValidationType.up:
-            return results
-        return not results
-
-    dotenv: bool
-    bronze: bool
-    frontend_db: bool
-    backend_db: bool
-
-
-@dataclass
 class Validation:
     name: str
     passes: bool = False
@@ -48,27 +35,89 @@ class Validation:
 
 
 @dataclass
-class ScaffoldTestValid:
-    def passes(self):
-        validations = self.dotenv + self.api_access + [self.backend_db_views]
-        return all([validation.passes for validation in validations])
+class ScaffoldTestExists:
+    dotenv: bool
+    bronze: bool
+    frontend_db: bool
+    backend_db: bool
 
-    dotenv: list[Validation]
-    api_access: list[Validation]
-    backend_db_views: Validation
+    def passes(self, validation_type: ValidationType):
+        results = [self.dotenv, self.bronze, self.frontend_db, self.backend_db]
+        if validation_type == ValidationType.up:
+            return all(results)
+        return not any(results)
+
+
+@dataclass
+class ScaffoldTestValidDotenv:
+    dotenv_file: Validation = field(default_factory=lambda: Validation("dotenv_file"))
+    host_path: Validation = field(default_factory=lambda: Validation("host_path"))
+    github: Validation = field(default_factory=lambda: Validation("github"))
+    gcloud: Validation = field(default_factory=lambda: Validation("gcloud"))
+
+
+@dataclass
+class ScaffoldTestValidAPI:
+    github: Validation = field(default_factory=lambda: Validation("github"))
+    bigquery: Validation = field(default_factory=lambda: Validation("bigquery"))
+
+
+@dataclass
+class ScaffoldTestValidBackend:
+    views: Validation = field(default_factory=lambda: Validation("views"))
+
+
+@dataclass
+class ScaffoldTestValid:
+    dotenv: ScaffoldTestValidDotenv = field(default_factory=ScaffoldTestValidDotenv)
+    api_access: ScaffoldTestValidAPI = field(default_factory=ScaffoldTestValidAPI)
+    backend: ScaffoldTestValidBackend = field(default_factory=ScaffoldTestValidBackend)
+
+    def get_all_validations(self) -> dict[str, list[Validation]]:
+        return {
+            "dotenv": [
+                self.dotenv.dotenv_file,
+                self.dotenv.host_path,
+                self.dotenv.github,
+                self.dotenv.gcloud,
+            ],
+            "api_access": [
+                self.api_access.github,
+                self.api_access.bigquery,
+                self.backend.views,
+            ],
+        }
+
+    def passes(self) -> bool:
+        results = self.get_all_validations()
+        dotenv_passes = (i.passes for i in results["dotenv"])
+        api_access_passes = (i.passes for i in results["api_access"])
+        return all(dotenv_passes) and all(api_access_passes)
+
+    def list_fails(self) -> dict[str, list[Validation]]:
+        results = self.get_all_validations()
+        output = {"dotenv": [], "api_access": []}
+        for key, validations in results.items():
+            for validation in validations:
+                if not validation.passes:
+                    output[key].append(validation)
+        return output
 
 
 @dataclass
 class ScaffoldTests:
+    exists: ScaffoldTestExists
+    valid: ScaffoldTestValid
+
     def pretty_print(self):
         dict_repr = asdict(self)
 
         errors_to_remove: list[tuple[int, str] | str] = []
         for key, validations in dict_repr["valid"].items():
-            if isinstance(validations, list):
-                for i, validation in enumerate(validations):
-                    if validation["error"] is None:
-                        errors_to_remove.append((i, key))
+            if isinstance(validations, dict):
+                for k, v in validations.items():
+                    if v["error"] is None:
+                        errors_to_remove.append((k, key))
             else:
                 if validations["error"] is None:
                     errors_to_remove.append((-1, key))
@@ -86,20 +135,16 @@ class ScaffoldTests:
     def passes(self, validation_type: ValidationType):
         return all([self.exists.passes(validation_type), self.valid.passes()])
 
-    exists: ScaffoldTestExists
-    valid: ScaffoldTestValid
 
-
-def test_resources_exist(verbose: bool = False) -> bool:
+def test_up_required(verbose: bool = False) -> bool:
     test_results = test(verbose=verbose)
     resources_exist = test_results.exists.passes(ValidationType.up)
     resources_valid = test_results.valid.passes()
+    return not resources_exist or not resources_valid
 
-    return resources_exist and resources_valid
 
-
-def test_resources_do_not_exist(verbose: bool = False) -> bool:
-    return test(verbose=verbose).exists.passes(ValidationType.down)
+def test_down_required(verbose: bool = False) -> bool:
+    return not test(verbose=verbose).exists.passes(ValidationType.down)
 
 
 def validate_dotenv_host_path(
@@ -183,17 +228,6 @@ def validate_dotenv_github(
 
 def validate_dotenv_file(dotenv: Path) -> tuple[Validation, list[str], list[tuple]]:
     validation = Validation("dotenv_file")
-    required_vars = [
-        "GITHUB_TOKEN",
-        "AMPERE_HOST_PATH",
-        "GCLOUD_PROJECT",
-        "AMPERE_BACKEND",
-        "BACKEND_ADMIN",
-        "GOOGLE_APPLICATION_CREDENTIALS",
-        "AMPERE_BACKEND_EMAIL_FROM",
-        "AMPERE_BACKEND_EMAIL_PW",
-        "AMPERE_BACKEND_EMAIL_LIST",
-    ]
 
     if not dotenv.exists():
         validation.error = ".env file does not exist"
@@ -209,6 +243,7 @@ def validate_dotenv_file(dotenv: Path) -> tuple[Validation, list[str], list[tupl
         dotenv_values.append(line.strip().split("="))
 
     dotenv_keys = [var[0] for var in dotenv_values]
+    required_vars = get_required_dotenv_vars()
     missing_vars = [var for var in required_vars if var not in dotenv_keys]
     if missing_vars:
         validation.error = "missing required variables"
@@ -219,29 +254,18 @@ def validate_dotenv_file(dotenv: Path) -> tuple[Validation, list[str], list[tupl
     return validation, dotenv_keys, dotenv_values
 
 
-def validate_dotenv(dotenv: Path) -> tuple[list[Validation], list[str], list[tuple]]:
-    validations: list[Validation] = []
+def validate_dotenv(
+    dotenv: Path,
+) -> tuple[ScaffoldTestValidDotenv, list[str], list[tuple]]:
+    validations = ScaffoldTestValidDotenv()
 
-    dotenv_file_validation, dotenv_keys, dotenv_values = validate_dotenv_file(dotenv)
-    validations.append(dotenv_file_validation)
-    if not dotenv_file_validation.passes:
+    validations.dotenv_file, dotenv_keys, dotenv_values = validate_dotenv_file(dotenv)
+    if not validations.dotenv_file.passes:
         return validations, dotenv_keys, dotenv_values
 
-    host_path_validation = validate_dotenv_host_path(dotenv_keys, dotenv_values)
-    validations.append(host_path_validation)
-    if not host_path_validation.passes:
-        return validations, dotenv_keys, dotenv_values
-
-    github_validation = validate_dotenv_github(dotenv_keys, dotenv_values)
-    validations.append(github_validation)
-    if not github_validation.passes:
-        return validations, dotenv_keys, dotenv_values
-
-    gcloud_validation = validate_dotenv_gcloud(dotenv_keys, dotenv_values)
-    validations.append(gcloud_validation)
-    if not gcloud_validation.passes:
-        return validations, dotenv_keys, dotenv_values
-
+    validations.host_path = validate_dotenv_host_path(dotenv_keys, dotenv_values)
+    validations.github = validate_dotenv_github(dotenv_keys, dotenv_values)
+    validations.gcloud = validate_dotenv_gcloud(dotenv_keys, dotenv_values)
     return validations, dotenv_keys, dotenv_values
 
 
@@ -314,19 +338,19 @@ def validate_bigquery_access(gcloud_auth_path: Path) -> Validation:
     return validation
 
 
-def validate_api_access(api_key: str, gcloud_auth_path: Path) -> list[Validation]:
-    return [
-        validate_github_api_access(api_key),
-        validate_bigquery_access(gcloud_auth_path),
-    ]
+def validate_api_access(api_key: str, gcloud_auth_path: Path) -> ScaffoldTestValidAPI:
+    return ScaffoldTestValidAPI(
+        github=validate_github_api_access(api_key),
+        bigquery=validate_bigquery_access(gcloud_auth_path),
+    )
 
 
-def validate_backend_db_views(backend_db: Path) -> Validation:
-    validation = Validation("backend_db_views")
+def validate_backend_db_views(backend_db: Path) -> ScaffoldTestValidBackend:
+    validation = ScaffoldTestValidBackend()
     try:
         con = duckdb.connect(backend_db)
     except IOException as e:
-        validation.error = str(e).replace('"', "'")
+        validation.views.error = str(e).replace('"', "'")
         return validation
 
     views = con.execute(
@@ -343,12 +367,21 @@ def validate_backend_db_views(backend_db: Path) -> Validation:
             errors.append(directory)
 
     if errors:
-        validation.error = f"missing views for bronze delta tables: {errors}"
+        validation.views.error = f"missing views for bronze delta tables: {errors}"
         return validation
 
-    validation.passes = True
-    validation.error = None
+    validation.views.passes = True
+    validation.views.error = None
     return validation
+
+
+def get_required_dotenv_vars() -> list[str]:
+    dotenv_example_path = Path(__file__).parents[3] / ".env.example"
+    with dotenv_example_path.open("r") as f:
+        dotenv_example = f.readlines()
+
+    keys = [line.split("=")[0] for line in dotenv_example if "=" in line]
+    return keys
 
 
 def get_bronze_directories() -> list[str]:
@@ -380,25 +413,28 @@ def test(
     backend_db_path = root_dir / "data" / "backend.duckdb"
     backend_db_exists = backend_db_path.exists()
 
-    dotenv_valid, dotenv_keys, dotenv_values = validate_dotenv(root_dir / ".env")
-
-    github_api_key = dotenv_values[dotenv_keys.index("GITHUB_TOKEN")][1]
-    gcloud_auth_path = Path(
-        dotenv_values[dotenv_keys.index("GOOGLE_APPLICATION_CREDENTIALS")][1]
-    )
-
-    api_access_valid = validate_api_access(github_api_key, gcloud_auth_path)
-
     exists = ScaffoldTestExists(
         dotenv=dotenv_exists,
         bronze=bronze_exists,
         frontend_db=frontend_db_exists,
         backend_db=backend_db_exists,
     )
+    dotenv_valid, dotenv_keys, dotenv_values = validate_dotenv(root_dir / ".env")
+
+    api_access_valid = ScaffoldTestValidAPI()
+    if dotenv_valid.github.passes and dotenv_valid.gcloud.passes:
+        github_api_key = dotenv_values[dotenv_keys.index("GITHUB_TOKEN")][1]
+        gcloud_auth_path = Path(
+            dotenv_values[dotenv_keys.index("GOOGLE_APPLICATION_CREDENTIALS")][1]
+        )
+        api_access_valid = validate_api_access(github_api_key, gcloud_auth_path)
+
+    backend_valid = ScaffoldTestValidBackend()
+    if backend_db_exists:
+        backend_valid = validate_backend_db_views(backend_db_path)
+
     valid = ScaffoldTestValid(
-        dotenv=dotenv_valid,
-        api_access=api_access_valid,
-        backend_db_views=validate_backend_db_views(backend_db_path),
+        dotenv=dotenv_valid, api_access=api_access_valid, backend=backend_valid
     )
 
     tests = ScaffoldTests(exists, valid)
@@ -408,7 +444,6 @@ def test(
         tests.pretty_print() if verbose else console.print("✔︎")
         return tests
 
-    tests.pretty_print()
     if not raise_error:
         return tests
 
@@ -417,11 +452,16 @@ def test(
 
 def create_dotenv(root_dir: Path) -> None:
     dot_env_location = root_dir / ".env"
+    dot_env_example_location = root_dir / ".env.example"
     if dot_env_location.exists():
         return
     console.print("creating .env file...")
+
+    with open(dot_env_example_location, "r") as f:
+        dotenv_example = f.readlines()
+
     with open(dot_env_location, "w") as f:
-        f.write("")
+        f.writelines(dotenv_example)
     console.print("please populate the .env file using .env.example as a template")
 
 
@@ -641,7 +681,7 @@ def create_views(root_dir: Path, bronze_directories: list[str]) -> None:
     view_init_script = root_dir / "data" / "create_views.sql"
     base_cmd = 'create or replace view VIEW_NAME as select * from delta_scan("data/bronze/VIEW_NAME");\n'
     backend_db = root_dir / "data" / "backend.duckdb"
-    if view_init_script.exists() and validate_backend_db_views(backend_db).passes:
+    if view_init_script.exists() and validate_backend_db_views(backend_db).views.passes:
         return
 
     console.print("creating view init script...")
@@ -660,17 +700,23 @@ def create_views(root_dir: Path, bronze_directories: list[str]) -> None:
 
 
 def create_all_resources(root_dir: Path) -> None:
-    resources_exist = test_resources_exist(verbose=True)
-    if resources_exist:
+    up_required = test_up_required(verbose=False)
+    if not up_required:
         console.print("resources already exist - exiting early")
         return
 
-    console.print("building scaffold")
+    console.print("building scaffold...")
 
     create_dotenv(root_dir)
     bronze_directories = create_bronze(root_dir)
     create_databases(root_dir)
     create_views(root_dir, bronze_directories)
+
+    results = test(verbose=False)
+    if not results.passes(ValidationType.up):
+        print("-" * 40)
+        console.print("⚠️ setup not complete")
+        console.print(results.valid.list_fails())
 
 
 @scaffold_app.command(help="build resources")
@@ -685,8 +731,8 @@ def up(ctx: typer.Context) -> None:
 @scaffold_app.command(help="destroy resources")
 @timeit
 def down(ctx: typer.Context) -> None:
-    deletion_required = test_resources_exist(verbose=True)
-    if not deletion_required:
+    down_required = test_down_required(verbose=True)
+    if not down_required:
         console.print("resources do not exist - exiting early")
         return
 
@@ -702,10 +748,7 @@ def down(ctx: typer.Context) -> None:
     # remove bronze directories
     data_dir = root_dir / "data" / "bronze"
     if data_dir.exists():
-        console.print("removing data directory...")
-        for directory in data_dir.iterdir():
-            directory.rmdir()
-        data_dir.rmdir()
+        shutil.rmtree(data_dir)
 
     # remove frontend and backend databases
     frontend_db = root_dir / "data" / "frontend.duckdb"
