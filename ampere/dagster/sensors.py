@@ -11,7 +11,7 @@ from ampere.common import get_current_time, get_secret
 
 def generate_run_url(context: "RunFailureSensorContext") -> str:
     run_id = context.dagster_run.run_id
-    run_url = f"{get_secret('AMPERE_BACKEND')}/runs/{run_id}"
+    run_url = f"{get_secret('AMPERE_BACKEND_SITE')}/runs/{run_id}"
     run_id_short = run_id.split("-")[0]
 
     return f'<h2> <a href="{run_url}">{run_id_short}</a> </h2>'
