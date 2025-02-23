@@ -17,7 +17,7 @@ def backfill(
     repo_dependency: Optional[str] = None,
     max_days_per_chunk: int = 15,
     dry_run: bool = True,
-) -> None:
+) -> int:
     if min_date is None and repo_dependency is None:
         raise ValueError(
             "expecting either `min_date` or `repo_dependency` to be provided"
@@ -40,13 +40,14 @@ def backfill(
     else:
         max_date_dt = None
 
-    add_backfill_to_table(
+    records_added = add_backfill_to_table(
         repo,
         min_date_dt,
         max_date_dt,
         max_days_per_chunk,
         dry_run,
     )
+    return records_added
 
 
 if __name__ == "__main__":

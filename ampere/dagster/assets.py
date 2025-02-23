@@ -21,6 +21,7 @@ from ampere.common import (
 )
 from ampere.get_pypi_downloads import (
     refresh_all_pypi_downloads,
+    get_repos_with_releases,
 )
 from ampere.get_repo_metrics import (
     get_commits,
@@ -49,7 +50,7 @@ from ampere.models import (
     Stargazer,
     User,
 )
-
+from scripts.backfill_pypi_downloads import backfill
 from .project import ampere_project
 
 db_path = ampere_project.project_dir.joinpath("data/backend.duckdb")
@@ -357,6 +358,17 @@ def dagster_refresh_summary_plots(context: AssetExecutionContext) -> None:
 @asset(compute_kind="python", key=["pypi_downloads"], group_name="bigquery_daily")
 def dagster_get_pypi_downloads(context: AssetExecutionContext) -> None:
     records_added = refresh_all_pypi_downloads(dry_run=False)
+    context.add_output_metadata({"n_records": records_added})
+
+
+@asset(compute_kind="python", key=["pypi_downloads"], group_name="bigquery_backfill")
+def dagster_get_pypi_downloads_backfill(context: AssetExecutionContext) -> None:
+    repos = get_repos_with_releases()
+    records_added = 0
+
+    for repo in repos:
+        records_added += backfill(repo)
+
     context.add_output_metadata({"n_records": records_added})
 
 

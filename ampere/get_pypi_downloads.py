@@ -232,14 +232,15 @@ def add_backfill_to_table(
     max_date: Optional[datetime.datetime],
     max_days_per_chunk: int,
     dry_run: bool,
-):
+) -> int:
     queries = get_backfill_queries(repo, min_date, max_date, max_days_per_chunk)
 
     print(f"backfilling {repo} {'-' * 20}")
     for query in queries:
         print(query.min_date, "->", query.max_date)
 
-    refresh_all_pypi_downloads(queries, dry_run)
+    records_added = refresh_all_pypi_downloads(queries, dry_run)
+    return records_added
 
 
 def refresh_all_pypi_downloads(

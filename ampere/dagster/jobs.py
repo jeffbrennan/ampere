@@ -8,3 +8,7 @@ github_metrics_daily_4_job = define_asset_job(
 bigquery_daily_job = define_asset_job(
     name="bigquery_daily", selection=AssetSelection.groups("bigquery_daily")
 )
+
+bigquery_backfill_job = define_asset_job(
+    name="bigquery_backfill", selection=AssetSelection.groups("bigquery_backfill")
+)
