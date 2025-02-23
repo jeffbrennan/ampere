@@ -5,9 +5,12 @@ from enum import StrEnum, auto
 from pathlib import Path
 
 import duckdb
+import pyarrow as pa
 import requests
 import typer
-from duckdb.duckdb import IOException
+from deltalake import DeltaTable
+from deltalake._internal import TableNotFoundError
+from duckdb import IOException
 from google.api_core.exceptions import BadRequest
 from google.cloud import bigquery
 from rich.console import Console
@@ -91,7 +94,6 @@ def test_resources_exist(verbose: bool = False) -> bool:
     test_results = test(verbose=verbose)
     resources_exist = test_results.exists.passes(ValidationType.up)
     resources_valid = test_results.valid.passes()
-    print(resources_valid)
 
     return resources_exist and resources_valid
 
@@ -269,6 +271,7 @@ def validate_bigquery_access(gcloud_auth_path: Path) -> Validation:
     validation.error = None
     return validation
 
+    # this will consume 8mb of the free 1tb monthly quota
     query = """
         select project
         from `bigquery-public-data.pypi.file_downloads`
@@ -327,7 +330,7 @@ def validate_backend_db_views(backend_db: Path) -> Validation:
         return validation
 
     views = con.execute(
-        "select sql from duckdb_views() where 'delta_scan' in sql;"
+        "select sql from duckdb_views() where sql like '%delta_scan%';"
     ).fetchall()
 
     views_flat = [view[0] for view in views]
@@ -335,11 +338,12 @@ def validate_backend_db_views(backend_db: Path) -> Validation:
 
     errors = []
     for directory in bronze_directories:
-        if f"delta_scan('data/bronze/{directory}')" not in views_flat:
+        substr_to_check = f'delta_scan("data/bronze/{directory}")'
+        if not any(substr_to_check in view for view in views_flat):
             errors.append(directory)
 
     if errors:
-        validation.error = f"missing views for bronze directories: {errors}"
+        validation.error = f"missing views for bronze delta tables: {errors}"
         return validation
 
     validation.passes = True
@@ -421,23 +425,202 @@ def create_dotenv(root_dir: Path) -> None:
     console.print("please populate the .env file using .env.example as a template")
 
 
+def create_bronze_table(bronze_path: Path) -> None:
+    schema_lookup = {
+        "commits": pa.schema(
+            [
+                ("repo_id", pa.int64()),
+                ("commit_id", pa.string()),
+                ("author_id", pa.float64()),
+                ("comment_count", pa.int64()),
+                ("message", pa.string()),
+                (
+                    "stats",
+                    pa.list_(
+                        pa.struct(
+                            [
+                                ("additions", pa.int64()),
+                                ("deletions", pa.int64()),
+                                ("filename", pa.string()),
+                                ("status", pa.string()),
+                            ]
+                        )
+                    ),
+                ),
+                ("committed_at", pa.timestamp("us", tz="UTC")),
+                ("retrieved_at", pa.timestamp("us", tz="UTC")),
+            ]
+        ),
+        "followers": pa.schema(
+            [
+                ("user_id", pa.int64()),
+                ("follower_id", pa.int64()),
+                ("retrieved_at", pa.timestamp("us", tz="UTC")),
+            ]
+        ),
+        "forks": pa.schema(
+            [
+                ("repo_id", pa.int64()),
+                ("fork_id", pa.int64()),
+                ("owner_id", pa.int64()),
+                ("created_at", pa.timestamp("us", tz="UTC")),
+                ("retrieved_at", pa.timestamp("us", tz="UTC")),
+            ]
+        ),
+        "issues": pa.schema(
+            [
+                ("repo_id", pa.int64()),
+                ("issue_id", pa.int64()),
+                ("issue_number", pa.int64()),
+                ("issue_title", pa.string()),
+                ("issue_body", pa.string()),
+                ("author_id", pa.int64()),
+                ("state", pa.string()),
+                ("state_reason", pa.string()),
+                ("comments_count", pa.int64()),
+                ("created_at", pa.timestamp("us", tz="UTC")),
+                ("updated_at", pa.timestamp("us", tz="UTC")),
+                ("closed_at", pa.timestamp("us", tz="UTC")),
+                ("retrieved_at", pa.timestamp("us", tz="UTC")),
+            ]
+        ),
+        "pull_requests": pa.schema(
+            [
+                ("repo_id", pa.int64()),
+                ("pr_id", pa.int64()),
+                ("pr_number", pa.int64()),
+                ("pr_title", pa.string()),
+                ("pr_state", pa.string()),
+                ("pr_body", pa.string()),
+                ("author_id", pa.int64()),
+                ("created_at", pa.timestamp("us", tz="UTC")),
+                ("updated_at", pa.timestamp("us", tz="UTC")),
+                ("closed_at", pa.timestamp("us", tz="UTC")),
+                ("merged_at", pa.timestamp("us", tz="UTC")),
+                ("retrieved_at", pa.timestamp("us", tz="UTC")),
+            ]
+        ),
+        "pypi_download_queries": pa.schema(
+            [
+                ("repo", pa.string()),
+                ("retrieved_at", pa.timestamp("us", tz="UTC")),
+                ("min_date", pa.string()),
+                ("max_date", pa.string()),
+            ]
+        ),
+        "pypi_downloads": pa.schema(
+            [
+                ("project", pa.string()),
+                ("timestamp", pa.timestamp("us", tz="UTC")),
+                ("package", pa.string()),
+                ("python_version", pa.string()),
+                ("system_distro_name", pa.string()),
+                ("system_distro_version", pa.string()),
+                ("system-name", pa.string()),
+                ("system_release", pa.string()),
+                ("download_count", pa.int64()),
+                ("retrieved_at", pa.timestamp("us", tz="UTC")),
+            ]
+        ),
+        "releases": pa.schema(
+            [
+                ("repo_id", pa.int64()),
+                ("release_id", pa.int64()),
+                ("release_name", pa.string()),
+                ("tag_name", pa.string()),
+                ("release_body", pa.string()),
+                ("created_at", pa.timestamp("us", tz="UTC")),
+                ("published_at", pa.timestamp("us", tz="UTC")),
+                ("retrieved_at", pa.timestamp("us", tz="UTC")),
+            ]
+        ),
+        "repos": pa.schema(
+            [
+                ("repo_id", pa.int64()),
+                ("repo_name", pa.string()),
+                ("license", pa.string()),
+                ("topics", pa.list_(pa.string())),
+                (
+                    "language",
+                    pa.list_(
+                        pa.struct([("name", pa.string()), ("size_bytes", pa.int64())])
+                    ),
+                ),
+                ("repo_size", pa.int64()),
+                ("forks_count", pa.int64()),
+                ("stargazers_count", pa.int64()),
+                ("open_issues_count", pa.int64()),
+                ("pushed_at", pa.timestamp("us", tz="UTC")),
+                ("created_at", pa.timestamp("us", tz="UTC")),
+                ("updated_at", pa.timestamp("us", tz="UTC")),
+                ("retrieved_at", pa.timestamp("us", tz="UTC")),
+            ]
+        ),
+        "stargazers": pa.schema(
+            [
+                ("repo_id", pa.int64()),
+                ("user_id", pa.int64()),
+                ("starred_at", pa.timestamp("us", tz="UTC")),
+                ("retrieved_at", pa.timestamp("us", tz="UTC")),
+            ]
+        ),
+        "users": pa.schema(
+            [
+                ("user_id", pa.int64()),
+                ("user_name", pa.string()),
+                ("full_name", pa.string()),
+                ("company", pa.string()),
+                ("avatar_url", pa.string()),
+                ("repos_count", pa.int64()),
+                ("followers_count", pa.int64()),
+                ("following_count", pa.int64()),
+                ("created_at", pa.timestamp("us", tz="UTC")),
+                ("updated_at", pa.timestamp("us", tz="UTC")),
+                ("retrieved_at", pa.timestamp("us", tz="UTC")),
+            ]
+        ),
+    }
+
+    directory = bronze_path.stem
+    if directory not in schema_lookup:
+        console.print(f"no schema found for {directory}")
+        return
+
+    bronze_path.mkdir(exist_ok=True)
+
+    schema = schema_lookup[directory]
+    dt = DeltaTable.create(bronze_path, schema)
+    dt.schema()
+
+
 def create_bronze(root_dir: Path) -> list[str]:
     data_dir = root_dir / "data"
+    bronze_dir = data_dir / "bronze"
     if not data_dir.exists():
         console.print("creating data directory...")
         data_dir.mkdir()
 
     # add bronze parent dir
-    if not (data_dir / "bronze").exists():
+    if not bronze_dir.exists():
         console.print("creating bronze directory...")
-        (data_dir / "bronze").mkdir()
+        bronze_dir.mkdir()
 
     # add bronze directories
     bronze_directories = get_bronze_directories()
     for directory in bronze_directories:
-        if not (data_dir / "bronze" / directory).exists():
-            console.print(f"creating bronze directory: {directory}")
-            (data_dir / "bronze" / directory).mkdir()
+        bronze_path = bronze_dir / directory
+
+        dir_exists = bronze_path.exists()
+        dt_exists = False
+        try:
+            _ = DeltaTable(bronze_path)
+            dt_exists = True
+        except TableNotFoundError:
+            pass
+
+        if not dir_exists or not dt_exists:
+            console.print(f"creating bronze delta table: {directory}")
+            create_bronze_table(bronze_path)
 
     return bronze_directories
 
@@ -473,7 +656,7 @@ def create_views(root_dir: Path, bronze_directories: list[str]) -> None:
 
     with duckdb.connect(backend_db) as con:
         for command in commands:
-            con.execute(command)
+            con.execute(command).commit()
 
 
 def create_all_resources(root_dir: Path) -> None:
@@ -482,7 +665,7 @@ def create_all_resources(root_dir: Path) -> None:
         console.print("resources already exist - exiting early")
         return
 
-    console.print("setting up resources for a new project")
+    console.print("building scaffold")
 
     create_dotenv(root_dir)
     bronze_directories = create_bronze(root_dir)
