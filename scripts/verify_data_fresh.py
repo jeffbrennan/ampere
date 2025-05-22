@@ -39,7 +39,7 @@ def check_freshness() -> None:
         con.sql("""
             select *
             from int_status_summary
-            where stale = false
+            where stale = true
         """)
         .to_df()
         .to_dict(orient="records")
