@@ -1,10 +1,8 @@
 from ampere.common import get_frontend_db_con, get_secret
-from dotenv import load_dotenv
 import smtplib
 
 
 def send_email(body: str) -> None:
-    load_dotenv()
     subject = "[ALERT] Ampere Data Stale"
 
     sender = get_secret("AMPERE_BACKEND_EMAIL_FROM")
