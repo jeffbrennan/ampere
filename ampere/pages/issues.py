@@ -216,7 +216,6 @@ def get_styled_issues_summary_table(dark_mode: bool, breakpoint_name: str):
         ColumnInfo(name="closed issues (this month)", ascending=True, palette="greens"),
     ]
 
-
     col_value_heatmaps = style_dt_background_colors_by_rank(
         df=summary_df,
         n_bins=n_repos,
